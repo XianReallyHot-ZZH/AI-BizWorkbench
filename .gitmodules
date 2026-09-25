@@ -1,0 +1,6 @@
+[submodule "vendors/CodexFDE"]
+	path = vendors/CodexFDE
+	url = https://github.com/congde/CodexFDE.git
+[submodule "vendors/flowERP"]
+	path = vendors/flowERP
+	url = https://github.com/congde/flowERP.git
