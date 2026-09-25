@@ -1,2 +1,9 @@
 # archify visual-check verification sidecars (reproducible from delivered HTML)
 docs/research/diagrams/*.visual-check.*
+
+# workbench runtime data and virtualenv (L01 起复刻产物)
+.venv/
+.runtime/
+__pycache__/
+*.egg-info/
+
