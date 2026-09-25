@@ -1,0 +1,206 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "CodexFDE 16 讲四阶段路线",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1600,
+      660
+    ],
+    "views": [
+      {
+        "id": "week1",
+        "label": "第一周 · V0",
+        "focus": [
+          "l00",
+          "stage1"
+        ],
+        "note": "接管、规则、Spec、受控执行；L04 换挡引入 FlowERP。"
+      },
+      {
+        "id": "week2",
+        "label": "第二周 · 质量链",
+        "focus": [
+          "stage2"
+        ],
+        "note": "Eval、Harness、Hook、CI 建立红绿证据。"
+      },
+      {
+        "id": "week3",
+        "label": "第三周 · 协作",
+        "focus": [
+          "stage3"
+        ],
+        "note": "Repair、Loop、Subagents、Graph；全绿不能替代人审。"
+      },
+      {
+        "id": "week4",
+        "label": "第四周 · 产品化",
+        "focus": [
+          "stage4",
+          "defense"
+        ],
+        "note": "Task API、Web、反馈与冷启动答辩收口。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "w1",
+      "label": "课前与第一周 · 工作台 V0"
+    },
+    {
+      "id": "w2",
+      "label": "第二周 · 质量证据链"
+    },
+    {
+      "id": "w3",
+      "label": "第三周 · 受控协作"
+    },
+    {
+      "id": "w4",
+      "label": "第四周 · 产品化与反馈"
+    }
+  ],
+  "phases": [
+    {
+      "id": "boot",
+      "label": "自举期",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "quality",
+      "label": "质量与协作",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ship",
+      "label": "产品化与答辩",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "l00",
+    "stage1",
+    "stage2",
+    "stage3",
+    "stage4",
+    "defense"
+  ],
+  "nodes": [
+    {
+      "id": "l00",
+      "lane": "w1",
+      "col": 0,
+      "type": "external",
+      "label": "L00 环境自检",
+      "width": 128
+    },
+    {
+      "id": "stage1",
+      "lane": "w1",
+      "col": 1,
+      "type": "backend",
+      "label": "L01-L04 工作台 V0",
+      "tag": "L04 FlowERP 登场",
+      "width": 128
+    },
+    {
+      "id": "stage2",
+      "lane": "w2",
+      "col": 2,
+      "type": "security",
+      "label": "L05-L08 质量证据链",
+      "tag": "假绿可识别",
+      "width": 128
+    },
+    {
+      "id": "stage3",
+      "lane": "w3",
+      "col": 3,
+      "type": "backend",
+      "label": "L09-L12 受控协作",
+      "tag": "全绿 ≠ 自批",
+      "width": 128
+    },
+    {
+      "id": "stage4",
+      "lane": "w4",
+      "col": 4,
+      "type": "frontend",
+      "label": "L13-L16 产品化与反馈",
+      "width": 140
+    },
+    {
+      "id": "defense",
+      "lane": "w4",
+      "col": 5,
+      "type": "external",
+      "label": "L16 冷启动答辩",
+      "tag": "现场抽题",
+      "width": 128
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "l00",
+      "to": "stage1"
+    },
+    {
+      "id": "e1",
+      "from": "stage1",
+      "to": "stage2"
+    },
+    {
+      "id": "e2",
+      "from": "stage2",
+      "to": "stage3"
+    },
+    {
+      "id": "e3",
+      "from": "stage3",
+      "to": "stage4"
+    },
+    {
+      "id": "e4",
+      "from": "stage4",
+      "to": "defense"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四周退出门槛",
+      "items": [
+        "V0：可追溯决定 + 红转绿",
+        "V1：假绿可识别 + 退出码一致",
+        "V2：循环有界 + 无写集冲突",
+        "V3：四方一致 + 冷启动"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "复刻注意",
+      "items": [
+        "参考仓库 L09-L15 讲义缺失",
+        "靠大纲 + LESSONS 合同组织 lesson"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "两条验收线",
+      "items": [
+        "工作台 eval.harness 10 项 blocking",
+        "FlowERP 独立 19 项 blocking"
+      ]
+    }
+  ]
+}

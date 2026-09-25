@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "双仓库进程边界协作全景",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "handoff", "label": "命令转交链", "focus": ["cli", "ext", "fvenv", "flowerp"], "note": "工作台命令经 external_project 用客户自己的 .venv 执行。" },
+      { "id": "eval", "label": "Eval 委托", "focus": ["ext", "feval", "eharness"], "note": "业务用例经独立进程在客户仓库执行。" },
+      { "id": "gates", "label": "两套质量门", "focus": ["eharness", "feval"], "note": "工作台绿灯与 ERP 绿灯是两套裁判，不能互证。" }
+    ]
+  },
+  "components": [
+    { "id": "cli", "type": "backend", "label": "workbench.cli", "sublabel": "serve-workbench :8001", "tag": "工作台唯一入口", "pos": [50, 120], "size": [170, 76] },
+    { "id": "eharness", "type": "security", "label": "eval.harness", "sublabel": "工作台唯一质量入口", "tag": "默认排除 ERP 用例", "pos": [300, 120], "size": [170, 76] },
+    { "id": "wbdb", "type": "database", "label": "workbench.db", "sublabel": "harness_projects 登记表", "pos": [50, 310], "size": [170, 64] },
+    { "id": "ext", "type": "messagebus", "label": "external_project.py", "sublabel": "进程边界转交", "pos": [300, 310], "size": [170, 64] },
+    { "id": "fvenv", "type": "backend", "label": "flowERP .venv", "sublabel": "客户自己的解释器", "tag": "独立进程", "pos": [620, 310], "size": [160, 64] },
+    { "id": "flowerp", "type": "frontend", "label": "flowerp 服务", "sublabel": "客户界面 :8000", "pos": [620, 120], "size": [160, 64] },
+    { "id": "feval", "type": "security", "label": "ERP 阻断 Eval", "sublabel": "19 项 blocking", "tag": "客户质量入口", "pos": [850, 310], "size": [150, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "CodexFDE 工作台仓库", "wraps": ["cli", "eharness", "wbdb", "ext"] },
+    { "kind": "region", "label": "flowERP 独立仓库", "wraps": ["fvenv", "flowerp", "feval"] }
+  ],
+  "connections": [
+    { "id": "handoff-cmd", "from": "cli", "to": "ext", "label": "serve / demo / init 转交", "fromSide": "bottom", "toSide": "top" },
+    { "id": "lookup", "from": "ext", "to": "wbdb", "label": "项目登记定位" },
+    { "id": "run-customer", "from": "ext", "to": "fvenv", "label": "用客户 .venv 执行", "variant": "emphasis" },
+    { "id": "serve-customer", "from": "fvenv", "to": "flowerp", "label": "启动" },
+    { "id": "eval-case", "from": "ext", "to": "feval", "label": "evaluate_case() 独立进程", "fromSide": "bottom", "toSide": "bottom" },
+    { "id": "no-import", "from": "eharness", "to": "flowerp", "label": "不 import · 不共享进程", "variant": "dashed" },
+    { "id": "block-check", "from": "feval", "to": "flowerp", "label": "阻断验收", "variant": "security", "fromSide": "top", "toSide": "right" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "进程边界三规则", "items": ["不共享进程", "不互相 import", "客户命令用客户自己的 .venv"] },
+    { "dot": "amber", "title": "客户仓库定位顺序", "items": ["显式参数", "环境变量 FLOWERP_PROJECT_ROOT", "workbench.db 项目登记（只读）"] },
+    { "dot": "rose", "title": "两套绿灯别混", "items": ["工作台 10 项 blocking", "ERP 19 项 blocking 在独立仓库", "工作台绿灯 ≠ ERP 通过"] }
+  ]
+}

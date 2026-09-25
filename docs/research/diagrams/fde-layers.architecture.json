@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "CodexFDE 三层关系与 FDE 三循环",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "mainline", "label": "建设主线", "focus": ["student", "codex", "workbench", "flowerp"], "note": "用 Codex 搭工作台，再通过工作台组织协同开发 FlowERP。" },
+      { "id": "productline", "label": "产品主线", "focus": ["flowerp", "master", "inventory", "sales", "purchase", "ui"], "note": "FlowERP 从主数据到可操作界面逐讲增长。" },
+      { "id": "capability", "label": "能力循环", "focus": ["workbench", "assets"], "note": "重复失败沉淀为可复用的经验与流程版本。" },
+      { "id": "learning", "label": "学习证据", "focus": ["student", "evidence", "workbench"], "note": "判断、失败、修订与答辩是第三条产品线。" }
+    ]
+  },
+  "components": [
+    { "id": "student", "type": "external", "label": "学生 / 复刻者", "sublabel": "现场判断 · 监督 Codex", "pos": [40, 96], "size": [140, 60] },
+    { "id": "codex", "type": "external", "label": "Codex", "sublabel": "AI 开发伙伴", "pos": [250, 96], "size": [130, 60] },
+    { "id": "workbench", "type": "backend", "label": "个人研发工作台", "sublabel": "第一个建设成果", "tag": "受控交付", "pos": [460, 92], "size": [170, 70] },
+    { "id": "flowerp", "type": "backend", "label": "FlowERP", "sublabel": "客户产品 · 逐讲增长", "pos": [710, 96], "size": [160, 60] },
+    { "id": "assets", "type": "database", "label": "经验 / 流程资产", "sublabel": "能力循环产物", "tag": "版本化", "pos": [560, 262], "size": [170, 60] },
+    { "id": "evidence", "type": "database", "label": "学习证据账", "sublabel": "判断 · 失败 · 修订 · 答辩", "pos": [230, 262], "size": [160, 60] },
+    { "id": "master", "type": "database", "label": "主数据", "pos": [710, 420], "size": [120, 52] },
+    { "id": "inventory", "type": "database", "label": "库存", "pos": [550, 420], "size": [120, 52] },
+    { "id": "sales", "type": "database", "label": "订单", "pos": [390, 420], "size": [120, 52] },
+    { "id": "purchase", "type": "database", "label": "采购", "pos": [230, 420], "size": [120, 52] },
+    { "id": "ui", "type": "frontend", "label": "操作界面", "pos": [70, 420], "size": [120, 52] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "现场循环 · 什么问题值得现在做", "wraps": ["student", "codex", "workbench", "flowerp", "evidence", "assets"] },
+    { "kind": "security-group", "label": "交付循环 · 在边界内做对", "wraps": ["codex", "workbench", "flowerp"] },
+    { "kind": "security-group", "label": "能力循环 · 失败升级为可复用能力", "wraps": ["assets"] }
+  ],
+  "connections": [
+    { "id": "supervise", "from": "student", "to": "codex", "label": "监督 · 协同" },
+    { "id": "build", "from": "codex", "to": "workbench", "label": "搭建", "variant": "emphasis" },
+    { "id": "organize", "from": "workbench", "to": "flowerp", "label": "协同交付", "variant": "emphasis" },
+    { "id": "deposit", "from": "workbench", "to": "assets", "label": "沉淀 · 提炼", "fromSide": "bottom", "toSide": "top" },
+    { "id": "recall", "from": "assets", "to": "workbench", "label": "召回复用", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
+    { "id": "keep-evidence", "from": "workbench", "to": "evidence", "label": "保留交付证据" },
+    { "id": "grow", "from": "flowerp", "to": "master", "label": "逐讲增长", "fromSide": "bottom", "toSide": "top" },
+    { "id": "g1", "from": "master", "to": "inventory" },
+    { "id": "g2", "from": "inventory", "to": "sales" },
+    { "id": "g3", "from": "sales", "to": "purchase" },
+    { "id": "g4", "from": "purchase", "to": "ui" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "一句话主线", "items": ["用 Codex 搭建个人研发工作台", "通过工作台组织人与 AI 协同", "持续开发 FlowERP"] },
+    { "dot": "emerald", "title": "FDE 三个嵌套循环", "items": ["现场：判断什么问题值得现在做", "交付：让 Codex 在边界内做对", "能力：把重复失败升级为可复用能力"] },
+    { "dot": "rose", "title": "叙事红线", "items": ["三线互相引用，缺一不算课程成果", "不训练模型，资产升级 ≠ 模型自动进化"] }
+  ]
+}

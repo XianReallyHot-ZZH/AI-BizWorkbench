@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "工作台三件套与跨事项闭环",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "loop", "label": "跨事项闭环", "focus": ["task_n", "harness", "memory", "task_n1", "review"], "note": "事项 N 的经验被事项 N+1 召回并采用，闭环才算成立。" },
+      { "id": "trio", "label": "三件套内部", "focus": ["harness", "memory", "distill"], "note": "Harness 受控交付，记忆送回经验，蒸馏固化流程版本。" },
+      { "id": "human", "label": "人审位置", "focus": ["harness", "review", "task_n1"], "note": "Harness 执行并保留 Eval 报告与具名人审结果。" }
+    ]
+  },
+  "components": [
+    { "id": "task_n", "type": "backend", "label": "事项 N 交付", "sublabel": "真实 ERP 需求", "pos": [40, 180], "size": [140, 64] },
+    { "id": "harness", "type": "backend", "label": "Harness", "sublabel": "initiative_workflow.py", "tag": "受控交付枢纽", "pos": [300, 170], "size": [180, 76] },
+    { "id": "review", "type": "security", "label": "具名人审", "sublabel": "Eval 报告 + 审核决定", "pos": [600, 170], "size": [160, 64] },
+    { "id": "task_n1", "type": "backend", "label": "事项 N+1", "sublabel": "后续任务", "pos": [860, 180], "size": [140, 64] },
+    { "id": "memory", "type": "database", "label": "记忆系统", "sublabel": "learning.py · 四状态经验", "tag": "candidate / active / superseded / revoked", "pos": [300, 370], "size": [180, 76] },
+    { "id": "distill", "type": "backend", "label": "工作流蒸馏", "sublabel": "evolution.py · 版本化流程", "pos": [620, 400], "size": [180, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "个人研发工作台", "wraps": ["harness", "review", "memory", "distill"] }
+  ],
+  "connections": [
+    { "id": "input", "from": "task_n", "to": "harness", "label": "Spec + 授权写集" },
+    { "id": "report", "from": "harness", "to": "review", "label": "Diff + Eval 报告" },
+    { "id": "deliver", "from": "review", "to": "task_n1", "label": "通过后交付", "variant": "dashed" },
+    { "id": "deposit", "from": "harness", "to": "memory", "label": "沉淀经验", "labelDy": 30 },
+    { "id": "recall", "from": "memory", "to": "task_n1", "label": "recall 召回", "variant": "emphasis", "fromSide": "bottom", "toSide": "bottom", "labelAt": [850, 457] },
+    { "id": "adopt", "from": "task_n1", "to": "harness", "label": "明确采用流程版本", "fromSide": "top", "toSide": "top" },
+    { "id": "extract", "from": "harness", "to": "distill", "label": "提炼", "labelAt": [530, 345] },
+    { "id": "reuse", "from": "distill", "to": "harness", "label": "版本被采用", "variant": "dashed", "labelAt": [760, 330] }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "三件套分工", "items": ["Harness：受控交付，保留事件与报告", "记忆系统：带来源与适用边界的经验", "工作流蒸馏：版本化工程流程，可停用"] },
+    { "dot": "cyan", "title": "跨事项闭环四步", "items": ["事项 N+1 召回事项 N 的经验", "流程版本被明确采用", "Harness 执行并保留 Eval + 人审", "复用失败可追溯 → 修订或停用"] },
+    { "dot": "rose", "title": "不足以证明闭环", "items": ["单次交付成功", "事件持久化 / 反馈登记 / 资产登记"] }
+  ]
+}

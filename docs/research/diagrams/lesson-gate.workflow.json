@@ -1,0 +1,249 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "每讲验收门流水线",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1600,
+      660
+    ],
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "正常验收路径",
+        "focus": [
+          "env",
+          "contract",
+          "impl",
+          "ceval",
+          "submit",
+          "reverify",
+          "review"
+        ],
+        "note": "从环境自检到具名人审的完整一讲流水线。"
+      },
+      {
+        "id": "red-loop",
+        "label": "红灯回修",
+        "focus": [
+          "ceval",
+          "impl"
+        ],
+        "note": "Eval 红灯回到实现，修订后再验。"
+      },
+      {
+        "id": "rework",
+        "label": "提交失败处理",
+        "focus": [
+          "submit",
+          "trouble",
+          "impl"
+        ],
+        "note": "退出非零时查事件、保留终态、修订后再交。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "build",
+      "label": "准备与实现"
+    },
+    {
+      "id": "machine",
+      "label": "机器验收"
+    },
+    {
+      "id": "human",
+      "label": "人审"
+    },
+    {
+      "id": "trouble",
+      "label": "异常处理",
+      "variant": "exception"
+    }
+  ],
+  "phases": [
+    {
+      "id": "prepare",
+      "label": "准备",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "verify",
+      "label": "实现 + 验证",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "deliver",
+      "label": "交付 + 人审",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "env",
+    "contract",
+    "impl",
+    "ceval",
+    "submit",
+    "reverify",
+    "review"
+  ],
+  "nodes": [
+    {
+      "id": "env",
+      "lane": "build",
+      "col": 0,
+      "type": "backend",
+      "label": "environment-check",
+      "width": 128
+    },
+    {
+      "id": "contract",
+      "lane": "build",
+      "col": 1,
+      "type": "backend",
+      "label": "合同 + 隔离工作区",
+      "tag": "起始红",
+      "width": 128
+    },
+    {
+      "id": "impl",
+      "lane": "build",
+      "col": 2,
+      "type": "frontend",
+      "label": "学员实现",
+      "tag": "前红→Diff→后绿",
+      "width": 128
+    },
+    {
+      "id": "ceval",
+      "lane": "machine",
+      "col": 3,
+      "type": "security",
+      "label": "course-eval",
+      "width": 128
+    },
+    {
+      "id": "submit",
+      "lane": "machine",
+      "col": 4,
+      "type": "backend",
+      "label": "course-submit",
+      "tag": "停在 review 态",
+      "width": 128
+    },
+    {
+      "id": "reverify",
+      "lane": "machine",
+      "col": 5,
+      "type": "security",
+      "label": "独立复验候选",
+      "width": 128
+    },
+    {
+      "id": "review",
+      "lane": "human",
+      "col": 5,
+      "type": "security",
+      "label": "具名 review",
+      "width": 128
+    },
+    {
+      "id": "trouble",
+      "lane": "trouble",
+      "col": 4,
+      "type": "security",
+      "label": "查错误与事件",
+      "width": 128
+    }
+  ],
+  "edges": [
+    {
+      "id": "g1",
+      "from": "env",
+      "to": "contract"
+    },
+    {
+      "id": "g2",
+      "from": "contract",
+      "to": "impl"
+    },
+    {
+      "id": "g3",
+      "from": "impl",
+      "to": "ceval"
+    },
+    {
+      "id": "g4",
+      "from": "ceval",
+      "to": "submit"
+    },
+    {
+      "id": "g5",
+      "from": "submit",
+      "to": "reverify"
+    },
+    {
+      "id": "g6",
+      "from": "reverify",
+      "to": "review"
+    },
+    {
+      "id": "red",
+      "from": "ceval",
+      "to": "impl",
+      "label": "红灯回修",
+      "variant": "dashed",
+      "role": "error"
+    },
+    {
+      "id": "fail",
+      "from": "submit",
+      "to": "trouble",
+      "label": "退出非零",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "again",
+      "from": "trouble",
+      "to": "impl",
+      "label": "修订后再交",
+      "variant": "dashed",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "两个停止点",
+      "items": [
+        "submit 退出非零：查 task.error，不重建任务",
+        "review 待审核 ≠ 已接受"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "证据在隔离候选",
+      "items": [
+        "前红 / Diff / 后绿 不在终态仓库",
+        "每次复验用新报告目录"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "verify-only 不算实现",
+      "items": [
+        "--verify-only 只复验已有候选",
+        "不能作为亲手实现的证据"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,245 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "复刻推进顺序（阶段 0-8）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1600,
+      660
+    ],
+    "views": [
+      {
+        "id": "main",
+        "label": "主线 0→7",
+        "focus": [
+          "s0",
+          "s1",
+          "s2",
+          "s3",
+          "s4",
+          "s5",
+          "s6",
+          "s7"
+        ],
+        "note": "从双仓库环境自检到产品化冷启动的主线顺序。"
+      },
+      {
+        "id": "fork",
+        "label": "阶段 1 决策点",
+        "focus": [
+          "s1"
+        ],
+        "note": "是否重建课程基线链决定整条渐进式路线。"
+      },
+      {
+        "id": "memory",
+        "label": "记忆支线",
+        "focus": [
+          "s4",
+          "s7",
+          "s8"
+        ],
+        "note": "记忆系统闭环可与主线并行推进。"
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "foundation",
+      "label": "环境与决策"
+    },
+    {
+      "id": "v0",
+      "label": "工作台 V0（L01-L04）"
+    },
+    {
+      "id": "scale",
+      "label": "持续交付升级（L05-L16）"
+    },
+    {
+      "id": "side",
+      "label": "记忆系统支线"
+    }
+  ],
+  "phases": [
+    {
+      "id": "boot",
+      "label": "自举",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "v0p",
+      "label": "V0 受控执行",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "prod",
+      "label": "质量 → 产品化",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "foundation",
+      "col": 0,
+      "type": "backend",
+      "label": "阶段 0 环境自检",
+      "width": 128
+    },
+    {
+      "id": "s1",
+      "lane": "foundation",
+      "col": 1,
+      "type": "security",
+      "label": "阶段 1 基线决策",
+      "tag": "分叉点",
+      "width": 128
+    },
+    {
+      "id": "s2",
+      "lane": "v0",
+      "col": 1,
+      "type": "backend",
+      "label": "阶段 2 最小自举",
+      "width": 128
+    },
+    {
+      "id": "s3",
+      "lane": "v0",
+      "col": 2,
+      "type": "backend",
+      "label": "阶段 3 规则+Spec",
+      "width": 128
+    },
+    {
+      "id": "s4",
+      "lane": "v0",
+      "col": 3,
+      "type": "backend",
+      "label": "阶段 4 受控执行",
+      "tag": "引入 flowERP",
+      "width": 128
+    },
+    {
+      "id": "s5",
+      "lane": "scale",
+      "col": 3,
+      "type": "security",
+      "label": "阶段 5 质量链",
+      "width": 128
+    },
+    {
+      "id": "s6",
+      "lane": "scale",
+      "col": 4,
+      "type": "backend",
+      "label": "阶段 6 协作编排",
+      "width": 128
+    },
+    {
+      "id": "s7",
+      "lane": "scale",
+      "col": 5,
+      "type": "frontend",
+      "label": "阶段 7 产品化",
+      "width": 128
+    },
+    {
+      "id": "s8",
+      "lane": "side",
+      "col": 4,
+      "type": "database",
+      "label": "阶段 8 记忆闭环",
+      "width": 128
+    }
+  ],
+  "edges": [
+    {
+      "id": "r1",
+      "from": "s0",
+      "to": "s1"
+    },
+    {
+      "id": "r2",
+      "from": "s1",
+      "to": "s2"
+    },
+    {
+      "id": "r3",
+      "from": "s2",
+      "to": "s3"
+    },
+    {
+      "id": "r4",
+      "from": "s3",
+      "to": "s4"
+    },
+    {
+      "id": "r5",
+      "from": "s4",
+      "to": "s5"
+    },
+    {
+      "id": "r6",
+      "from": "s5",
+      "to": "s6"
+    },
+    {
+      "id": "r7",
+      "from": "s6",
+      "to": "s7"
+    },
+    {
+      "id": "parallel",
+      "from": "s4",
+      "to": "s8",
+      "label": "并行支线",
+      "variant": "dashed",
+      "role": "branch",
+      "route": "outside-right"
+    },
+    {
+      "id": "converge",
+      "from": "s7",
+      "to": "s8",
+      "variant": "dashed",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "阶段 1 分叉",
+      "items": [
+        "重建基线链 → course_ready: true",
+        "或放弃门闩：终态参考 + 自建隔离"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "每阶段客观标志",
+      "items": [
+        "先让合同测试红，再实现",
+        "保留前红 / Diff / 后绿 证据目录"
+      ]
+    }
+  ]
+}
