@@ -1,0 +1,21 @@
+test_wb07b_diff_record_may_use_diff_command (tests.test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07b_diff_record_may_use_diff_command) ... FAIL
+
+======================================================================
+FAIL: test_wb07b_diff_record_may_use_diff_command (tests.test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07b_diff_record_may_use_diff_command)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/l01-repro/tests/test_l01_workbench_bootstrap.py", line 265, in test_wb07b_diff_record_may_use_diff_command
+    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 0 : {
+  "ok": false,
+  "error": "same_command_red_diff_green_missing: 缺少同命令的红—Diff—绿链",
+  "flowerp_connected": false,
+  "evidence_complete": false
+}
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.610s
+
+FAILED (failures=1)

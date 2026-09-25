@@ -9,6 +9,7 @@ workbench-evidence-add / workbench-status 由 workbench.bootstrap 提供后在�
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Callable, Sequence
 
@@ -39,7 +40,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     if handler is None:
         parser.print_help(sys.stderr)
         return 2
-    return handler(args)
+    try:
+        return handler(args)
+    except Exception as error:  # 基础设施失败也保持 JSON 错误契约，不裸 traceback
+        print(json.dumps({"ok": False, "flowerp_connected": False,
+                          "error": f"内部错误：{type(error).__name__}: {error}"},
+                         ensure_ascii=False, indent=2))
+        return 1
 
 
 if __name__ == "__main__":

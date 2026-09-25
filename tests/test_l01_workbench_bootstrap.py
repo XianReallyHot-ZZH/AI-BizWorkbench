@@ -15,6 +15,19 @@ WB-11 → test_wb11_recovery_after_supplement → 补齐缺失记录后重查 �
 WB-12 → test_wb12_isolated_runtime_and_no_flowerp → 检查数据目录与字段 → 运行库独立，flowerp_connected 为 false
 C6   → test_evidence_add_rejects_naive_time_and_empty_output → 缺时区时间 / 空输出 → 追加失败，旧记录保留
 
+复查修复轮（code-review 发现，2026-09-25，test-first）：
+F1  → test_task_create_accepts_title → --title 等价 --request，正常入库
+F2  → test_stale_green_global_across_commands → 绿后跨命令失败同样失权（上游全局锚定）
+F3  → test_status_flags_digest_mismatch → status 复核存储内容与 SHA-256 摘要
+F4  → test_unreadable_spec_file_reports_clean_error → 非 UTF-8 输入报 JSON 错误
+F5  → test_foreign_db_file_reports_uninitialized → 空/伪 db 报尚未初始化
+F6  → test_infra_failure_returns_json_error → 基础设施异常保持 JSON 契约
+F7  → test_chain_any_matching_red_with_diff_between → 红的存在性判定（上游语义）
+F12 → test_init_name_optional_and_requirement_id_fallback → 可选 --name；requirement_id 回退
+F13 → test_same_owner_reinit_idempotent → 同 owner 幂等；跨 owner 消息属实
+F14 → test_observed_at_z_suffix_accepted → 'Z' 后缀合法
+—   → test_evidence_add_returns_record_id → 返回记录编号（Spec §5）
+
 所有用例经真实 CLI 子进程（sys.executable -X utf8 -m workbench.cli）驱动，
 不绕开命令入口直调内部函数。
 """
@@ -208,7 +221,7 @@ class WorkbenchBootstrapContractTest(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         data = payload(proc)
         self.assertFalse(data.get("evidence_complete"))
-        self.assertIn("same_command_red_diff_green_missing", data.get("error", "") + json.dumps(data, ensure_ascii=False))
+        self.assertIn("same_command_red_diff_green_missing", " ".join(data.get("errors", [])))
         # 任务与项目仍保留
         plain = payload(self.status())
         self.assertTrue(plain.get("ok"))
@@ -272,7 +285,7 @@ class WorkbenchBootstrapContractTest(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         data = payload(proc)
         self.assertFalse(data.get("evidence_complete"))
-        self.assertIn("same_command_red_diff_green_missing", data.get("error", ""))
+        self.assertIn("same_command_red_diff_green_missing", " ".join(data.get("errors", [])))
         # 三条记录全保留，不因判缺而删除
         self.assertEqual(len(self.task_evidence(self.status())), 3)
 
@@ -382,6 +395,168 @@ class WorkbenchBootstrapContractTest(unittest.TestCase):
         self.assertNotEqual(missing_out.returncode, 0)
         # 失败后原任务仍无被污染的记录
         self.assertEqual(self.task_evidence(self.status()), [])
+
+    # ---- 复查修复轮（code-review @master...lesson-01 发现，2026-09-25） ----
+
+    def test_task_create_accepts_title(self):
+        # F1：--title 与 --request 等价（上游 create_task 的 title 即任务请求）
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        proc = run_cli("workbench-task-create", "--runtime-dir", str(self.rt),
+                       "--project-id", "PROJECT-A", "--task-id", "T-TITLE",
+                       "--requirement-id", "T-TITLE", "--title", "标题形式的请求",
+                       "--actor", "tester-A")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        data = payload(self.status())
+        tasks = {t["task_id"]: t for p in data.get("projects", []) for t in p.get("tasks", [])}
+        self.assertEqual(tasks["T-TITLE"]["request"], "标题形式的请求")
+
+    def test_stale_green_global_across_commands(self):
+        # F2：绿后任一 red/diff/green 相失败（跨命令同罪）→ 链失权（上游全局锚定）
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        self.assertEqual(self.create_task().returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "red", CHAIN_COMMAND,
+                                           self.write_output("s-r.txt", "r\n"), 1,
+                                           "2026-09-25T10:00:01+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "diff", CHAIN_COMMAND,
+                                           self.write_output("s-d.txt", "d\n"), 0,
+                                           "2026-09-25T10:00:02+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "green", CHAIN_COMMAND,
+                                           self.write_output("s-g.txt", "g\n"), 0,
+                                           "2026-09-25T10:00:03+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "red", CHAIN_COMMAND + " --variant-b",
+                                           self.write_output("s-r2.txt", "r2\n"), 1,
+                                           "2026-09-25T10:00:04+08:00").returncode, 0)
+        proc = self.require_status()
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertFalse(payload(proc).get("evidence_complete"))
+
+    def test_chain_any_matching_red_with_diff_between(self):
+        # F7：上游对红是存在性判定——早期红 + 其后 Diff + 绿也算完整（不应只看最新红）
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        self.assertEqual(self.create_task().returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "red", CHAIN_COMMAND,
+                                           self.write_output("e-r1.txt", "r1\n"), 1,
+                                           "2026-09-25T10:00:01+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "diff", CHAIN_COMMAND,
+                                           self.write_output("e-d.txt", "d\n"), 0,
+                                           "2026-09-25T10:00:02+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "red", CHAIN_COMMAND,
+                                           self.write_output("e-r2.txt", "r2\n"), 1,
+                                           "2026-09-25T10:00:03+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "green", CHAIN_COMMAND,
+                                           self.write_output("e-g.txt", "g\n"), 0,
+                                           "2026-09-25T10:00:04+08:00").returncode, 0)
+        proc = self.require_status()
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(payload(proc).get("evidence_complete"))
+
+    def test_status_flags_digest_mismatch(self):
+        # F3：status 复核存储内容与摘要（上游 spec/output_digest_mismatch）
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        spec = self.tmp / "spec.md"
+        spec.write_text(SPEC_TEXT_V1, encoding="utf-8")
+        self.assertEqual(self.create_task(spec=spec).returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "observation", "echo z",
+                                           self.write_output("z.txt", "z\n"), 0,
+                                           "2026-09-25T10:00:00+08:00").returncode, 0)
+        import sqlite3
+        conn = sqlite3.connect(self.rt / "workbench.db")
+        conn.execute("UPDATE evidence SET output_text = '篡改后的内容' WHERE task_id = 'T-1'")
+        conn.execute("UPDATE tasks SET requirement_snapshot = '被改写的需求' WHERE task_id = 'T-1'")
+        conn.commit()
+        conn.close()
+        plain = self.status()
+        self.assertNotEqual(plain.returncode, 0)
+        text = plain.stdout
+        self.assertIn("output_digest_mismatch", text)
+        self.assertIn("spec_digest_mismatch", text)
+
+    def test_unreadable_spec_file_reports_clean_error(self):
+        # F4：非 UTF-8 文件 → JSON 错误，不裸 traceback
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        bad = self.tmp / "bad-spec.md"
+        bad.write_bytes(b"\xff\xfe\x00binary-not-utf8")
+        proc = self.create_task(spec=bad)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("需求文件不可读取", payload(proc).get("error", ""))
+        self.assertEqual(self.task_evidence(self.status()), [])
+
+    def test_foreign_db_file_reports_uninitialized(self):
+        # F5：空文件/非 sqlite 文件占据 workbench.db → 尚未初始化，不裸 traceback
+        self.rt.mkdir(parents=True)
+        (self.rt / "workbench.db").write_bytes(b"")
+        proc = self.status()
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("工作台尚未初始化", payload(proc).get("error", ""))
+        (self.rt / "workbench.db").write_bytes(b"not a sqlite database at all........")
+        proc = self.status()
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("工作台尚未初始化", payload(proc).get("error", ""))
+
+    def test_infra_failure_returns_json_error(self):
+        # F6：基础设施异常保持 JSON 错误契约（不裸 traceback）
+        blocker = self.tmp / "not-a-dir"
+        blocker.write_text("占用 runtime-dir 路径的普通文件\n", encoding="utf-8")
+        proc = run_cli("workbench-init", "--runtime-dir", str(blocker),
+                       "--name", "X", "--owner", "tester-A")
+        self.assertNotEqual(proc.returncode, 0)
+        data = payload(proc)
+        self.assertFalse(data.get("ok"))
+        self.assertTrue(data.get("error"))
+
+    def test_init_name_optional_and_requirement_id_fallback(self):
+        # F12：--name 可选（Spec §5）；--requirement-id 缺省回退任务编号（上游同形）
+        proc = run_cli("workbench-init", "--runtime-dir", str(self.rt), "--owner", "tester-A")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual(payload(proc)["workbench"]["name"], "个人 AI 研发工作台")
+        self.assertEqual(self.add_project().returncode, 0)
+        proc = run_cli("workbench-task-create", "--runtime-dir", str(self.rt),
+                       "--project-id", "PROJECT-A", "--task-id", "T-FALLBACK",
+                       "--request", "无显式需求编号", "--actor", "tester-A")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        data = payload(self.status())
+        tasks = {t["task_id"]: t for p in data.get("projects", []) for t in p.get("tasks", [])}
+        self.assertEqual(tasks["T-FALLBACK"]["requirement_id"], "T-FALLBACK")
+
+    def test_same_owner_reinit_idempotent(self):
+        # F13：同 owner 重复 init 幂等返回既有身份；跨 owner 拒绝且消息属实
+        self.assertEqual(self.init_workbench().returncode, 0)
+        again = run_cli("workbench-init", "--runtime-dir", str(self.rt),
+                        "--name", "换一个名字也不生效", "--owner", "tester-A")
+        self.assertEqual(again.returncode, 0, again.stdout + again.stderr)
+        data = payload(self.status())
+        self.assertEqual(data["workbench"]["name"], "合同测试工作台")  # 保持原身份
+        clash = self.init_workbench(owner="tester-B")
+        self.assertNotEqual(clash.returncode, 0)
+        self.assertIn("另一个所有者", payload(clash).get("error", ""))
+
+    def test_observed_at_z_suffix_accepted(self):
+        # F14：RFC 3339 'Z' 后缀是合法时区时间（pyproject 声明 ≥3.10）
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        self.assertEqual(self.create_task().returncode, 0)
+        proc = self.add_evidence("T-1", "observation", "echo utc",
+                                 self.write_output("u.txt", "utc\n"), 0,
+                                 "2026-09-25T10:00:00Z")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+    def test_evidence_add_returns_record_id(self):
+        # Spec §5：workbench-evidence-add 返回记录编号与输出摘要
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        self.assertEqual(self.create_task().returncode, 0)
+        proc = self.add_evidence("T-1", "observation", "echo id",
+                                 self.write_output("i.txt", "i\n"), 0,
+                                 "2026-09-25T10:00:00+08:00")
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        record = payload(proc).get("record", {})
+        self.assertIsInstance(record.get("record_id"), int)
+        self.assertEqual(len(record.get("output_sha256", "")), 64)
 
 
 if __name__ == "__main__":
