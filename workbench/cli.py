@@ -23,6 +23,10 @@ def build_parser() -> argparse.ArgumentParser:
         description="AI-BizWorkbench 个人研发工作台 CLI",
     )
     subparsers = parser.add_subparsers(dest="command", metavar="<command>")
+    # L01：bootstrap 注册五个合同命令；接缝保持注册表形状，后续讲次同形扩展。
+    from .bootstrap import register_commands
+
+    register_commands(REGISTRY)
     for register in REGISTRY.values():
         register(subparsers)
     return parser

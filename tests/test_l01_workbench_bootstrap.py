@@ -92,11 +92,13 @@ class WorkbenchBootstrapContractTest(unittest.TestCase):
                        "--output-file", str(output_file), "--returncode", str(returncode),
                        "--observed-at", observed_at)
 
-    def require_status(self, task_id: str = "T-1",
-                       project_id: str = "PROJECT-A") -> subprocess.CompletedProcess:
-        return run_cli("workbench-status", "--runtime-dir", str(self.rt),
-                       "--require-project", project_id, "--require-task", task_id,
-                       "--require-red-green-evidence")
+    def require_status(self, task_id: str = "T-1", project_id: str = "PROJECT-A",
+                       require_evidence: bool = True) -> subprocess.CompletedProcess:
+        args = ["workbench-status", "--runtime-dir", str(self.rt),
+                "--require-project", project_id, "--require-task", task_id]
+        if require_evidence:
+            args.append("--require-red-green-evidence")
+        return run_cli(*args)
 
     def status(self) -> subprocess.CompletedProcess:
         return run_cli("workbench-status", "--runtime-dir", str(self.rt))
@@ -145,7 +147,8 @@ class WorkbenchBootstrapContractTest(unittest.TestCase):
         proc = self.create_task(spec=spec, problem=problem)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
-        check = self.require_status()
+        # WB-02 只验收归属与快照，不要求证据链（修订：初版误带 --require-red-green-evidence）
+        check = self.require_status(require_evidence=False)
         self.assertEqual(check.returncode, 0, check.stdout + check.stderr)
         data = payload(check)
         self.assertTrue(data.get("ok"))
