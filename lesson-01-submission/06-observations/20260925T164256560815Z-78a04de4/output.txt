@@ -1,0 +1,6 @@
+{
+  "ok": false,
+  "error": "same_command_red_diff_green_missing: 缺少同命令的红—Diff—绿链",
+  "flowerp_connected": false,
+  "evidence_complete": false
+}
