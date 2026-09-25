@@ -234,6 +234,26 @@ class WorkbenchBootstrapContractTest(unittest.TestCase):
         self.assertEqual(data.get("acceptance"), "pending_human_review")
         self.assertFalse(data.get("flowerp_connected"))
 
+    def test_wb07b_diff_record_may_use_diff_command(self):
+        # 上游手册 §5：Diff 记录的 command 本就是 git diff；同命令约束只适用红→绿对
+        self.assertEqual(self.init_workbench().returncode, 0)
+        self.assertEqual(self.add_project().returncode, 0)
+        self.assertEqual(self.create_task().returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "red", CHAIN_COMMAND,
+                                           self.write_output("r.txt", "r\n"), 1,
+                                           "2026-09-25T10:00:01+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "diff", "git diff -- workbench tests",
+                                           self.write_output("d.txt", "d\n"), 0,
+                                           "2026-09-25T10:00:02+08:00").returncode, 0)
+        self.assertEqual(self.add_evidence("T-1", "green", CHAIN_COMMAND,
+                                           self.write_output("g.txt", "g\n"), 0,
+                                           "2026-09-25T10:00:03+08:00").returncode, 0)
+        proc = self.require_status()
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        data = payload(proc)
+        self.assertTrue(data.get("evidence_complete"))
+        self.assertEqual(data.get("acceptance"), "pending_human_review")
+
     def test_wb08_different_command_breaks_chain(self):
         self.assertEqual(self.init_workbench().returncode, 0)
         self.assertEqual(self.add_project().returncode, 0)

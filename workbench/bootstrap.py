@@ -111,32 +111,36 @@ def _parse_aware(value: str) -> datetime | None:
 
 
 def _chain_error(records: list[dict]) -> str | None:
-    """同命令红—Diff—绿链判定：返回 None 表示完整。
+    """同命令红—绿链判定：返回 None 表示完整。
 
-    完整 = 存在同一 command_text 的 red(rc≠0) < diff(rc=0) < green(rc=0)
-    观察时间严格递增，且该链绿灯之后同命令再无失败记录（旧绿灯失权）。
+    完整 = 存在同一 command_text 的 red(rc≠0) 与 green(rc=0)，观察时间严格递增，
+    其间夹一条 diff 阶段记录（rc=0；Diff 的 command 本就是 git diff，
+    上游手册 §5，不受同命令约束），且该链绿灯之后同命令再无失败记录（旧绿灯失权）。
     """
     by_command: dict[str, list[tuple[datetime, dict]]] = {}
+    diff_moments: list[datetime] = []
     for record in records:
         moment = _parse_aware(record["observed_at"])
         if moment is None:
             return MISSING_CHAIN
-        by_command.setdefault(record["command_text"], []).append((moment, record))
+        if record["phase"] == "diff" and record["returncode"] == 0:
+            diff_moments.append(moment)
+        else:
+            by_command.setdefault(record["command_text"], []).append((moment, record))
     for moments in by_command.values():
         moments.sort(key=lambda item: item[0])
-        for index, (_, green) in enumerate(moments):
+        for index, (green_time, green) in enumerate(moments):
             if green["phase"] != "green" or green["returncode"] != 0:
                 continue
-            prefix = [rec for _, rec in moments[:index]]
-            reds = [rec for rec in prefix if rec["phase"] == "red" and rec["returncode"] != 0]
-            diffs = [rec for rec in prefix if rec["phase"] == "diff" and rec["returncode"] == 0]
-            if not reds or not diffs:
+            reds = [rec for _, rec in moments[:index]
+                    if rec["phase"] == "red" and rec["returncode"] != 0]
+            if not reds:
                 continue
             red = max(reds, key=lambda rec: _parse_aware(rec["observed_at"]))
-            diff = max(diffs, key=lambda rec: _parse_aware(rec["observed_at"]))
-            if _parse_aware(red["observed_at"]) < _parse_aware(diff["observed_at"]) and not any(
-                rec["returncode"] != 0 for _, rec in moments[index + 1:]
-            ):
+            red_time = _parse_aware(red["observed_at"])
+            if not any(red_time < diff_time < green_time for diff_time in diff_moments):
+                continue
+            if not any(rec["returncode"] != 0 for _, rec in moments[index + 1:]):
                 return None
     return MISSING_CHAIN
 

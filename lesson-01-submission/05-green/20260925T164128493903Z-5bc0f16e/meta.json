@@ -1,0 +1,23 @@
+{
+  "phase": "green",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-v",
+    "-p",
+    "test_l01_*.py"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"unittest\", \"discover\", \"-s\", \"tests\", \"-v\", \"-p\", \"test_l01_*.py\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-25T16:41:28.493903+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-01-submission/05-green/20260925T164128493903Z-5bc0f16e/output.txt",
+  "sha256": "4f63a64cc9783d68ca1d8ef8a5a166c6d4c70a8e7e5d63ee7fe95d121571f955",
+  "provenance": "local_teaching_capture"
+}
