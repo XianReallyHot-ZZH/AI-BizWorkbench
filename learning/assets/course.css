@@ -1,0 +1,119 @@
+/* AI-BizWorkbench 教学区共享样式 — 所有课程与速查文档统一引用
+   设计取向：Tufte 式印刷排版，纸面优先，克制的强调色 */
+
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #555;
+  --paper: #fdfcf9;
+  --accent: #a0522d;      /* 赭石：链接与强调 */
+  --accent-dim: #c8845f;
+  --ok: #2e7d43;
+  --bad: #b3402f;
+  --rule: #d8d2c4;
+  --code-bg: #f3f0e8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+  max-width: 46rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Georgia, "Songti SC", "Noto Serif CJK SC", serif;
+  font-size: 1.06rem;
+  line-height: 1.75;
+}
+
+header.masthead { margin-bottom: 2.5rem; }
+header.masthead .kicker {
+  font-family: "SF Mono", Menlo, monospace;
+  font-size: .78rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+header.masthead h1 { font-size: 1.9rem; line-height: 1.25; margin: .3rem 0 .4rem; }
+header.masthead .subtitle { color: var(--ink-soft); font-style: italic; }
+
+h2 { font-size: 1.32rem; margin-top: 2.6rem; border-bottom: 1px solid var(--rule); padding-bottom: .3rem; }
+h3 { font-size: 1.08rem; margin-top: 1.8rem; }
+
+a { color: var(--accent); text-decoration-color: var(--accent-dim); text-underline-offset: 3px; }
+
+code, pre {
+  font-family: "SF Mono", Menlo, "JetBrains Mono", monospace;
+  font-size: .86em;
+}
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 3px; }
+pre {
+  background: var(--code-bg);
+  padding: .9rem 1.1rem;
+  border-left: 3px solid var(--accent-dim);
+  overflow-x: auto;
+  line-height: 1.55;
+}
+pre code { background: none; padding: 0; }
+
+table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--rule); padding: .45rem .7rem; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.marginnote {
+  font-size: .88rem;
+  color: var(--ink-soft);
+  border-left: 2px solid var(--rule);
+  padding-left: .9rem;
+  margin: 1rem 0;
+}
+
+.callout {
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: .9rem 1.2rem;
+  margin: 1.4rem 0;
+}
+.callout .label { font-weight: 700; color: var(--accent); }
+
+footer.colophon {
+  margin-top: 4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  font-size: .85rem;
+  color: var(--ink-soft);
+}
+
+/* ---- 测验组件 ---- */
+.quiz { margin: 1.5rem 0; }
+.quiz .q-scenario { margin: .6rem 0; }
+.quiz .q-options { list-style: none; padding: 0; }
+.quiz .q-options li { margin: .45rem 0; }
+.quiz .q-options button {
+  display: block; width: 100%; text-align: left;
+  background: #fff; border: 1px solid var(--rule); border-radius: 6px;
+  padding: .55rem .9rem; font: inherit; cursor: pointer; color: var(--ink);
+}
+.quiz .q-options button:hover { border-color: var(--accent-dim); }
+.quiz .q-options button.correct { border-color: var(--ok); background: #edf6ef; }
+.quiz .q-options button.wrong { border-color: var(--bad); background: #f9eeec; }
+.quiz .q-options button:disabled { cursor: default; opacity: .82; }
+.quiz .q-feedback { display: none; margin-top: .6rem; padding: .7rem 1rem; border-radius: 6px; font-size: .93rem; }
+.quiz .q-feedback.show { display: block; }
+.quiz .q-feedback.good { background: #edf6ef; border-left: 3px solid var(--ok); }
+.quiz .q-feedback.bad { background: #f9eeec; border-left: 3px solid var(--bad); }
+.quiz-score {
+  font-family: "SF Mono", Menlo, monospace;
+  font-size: .9rem; color: var(--ink-soft);
+  border-top: 1px solid var(--rule); padding-top: .8rem; margin-top: 2rem;
+}
+
+@media print {
+  body { max-width: none; padding: 0; font-size: 10.5pt; }
+  .quiz .q-options button { border: 1px solid var(--rule); }
+  a { color: var(--ink); text-decoration: none; }
+  h2 { break-after: avoid; }
+  table, pre, .callout { break-inside: avoid; }
+}

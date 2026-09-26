@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 0001 课 · 证据链判定：像验收人一样读账</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="kicker">Lesson · 0001 · 约 10 分钟</div>
+  <h1>证据链判定：像验收人一样读账</h1>
+  <div class="subtitle">练成之后，你看任何一份"红转绿"证据，都能一眼指出它缺哪条规则</div>
+</header>
+
+<h2>为什么从这一课开始</h2>
+<p>你的使命是<b>读懂并验收本工作台</b>。验收的核心动作只有一个：判断一份证据链可不可信。
+L01 里你亲手签过一次字，但那时规则是讲给你听的；这一课把它变成你的<b>肌肉记忆</b>——
+给你六本小账，你来当验收人。</p>
+
+<h2>知识：链判定三规则（60 秒版）</h2>
+<p>一条任务的证据链"完整"，当且仅当同时满足（判定器：
+<a href="../../workbench/bootstrap.py"><code>_chain_error</code></a>，语义对齐
+<a href="../../vendors/CodexFDE/workbench/bootstrap.py">上游 <code>_chain</code></a>）：</p>
+<table>
+  <tr><th>#</th><th>规则</th><th>防的是什么</th></tr>
+  <tr><td>一</td><td>存在<b>同命令</b>的 red(rc≠0) 与 green(rc=0)</td><td>换个命令跑绿来配旧红</td></tr>
+  <tr><td>二</td><td>有一条成功 Diff，时间<b>严格介于</b>红与绿之间</td><td>没改代码就宣称转绿</td></tr>
+  <tr><td>三</td><td>全局最新的 red/diff/green 记录必须是那条成功绿（<code>observation</code> 不参与）</td><td>绿后又失败，还拿旧绿说现在完整</td></tr>
+</table>
+<div class="marginnote">记法：红与绿必须"同一句话、中间有改动、结尾还是绿"。Diff 的命令本来就是
+<code>git diff</code>，所以规则一不约束 Diff——只约束红→绿这对。</div>
+
+<h2>练习：六本小账，逐一判定</h2>
+<p>记号：<code>T1&lt;T2&lt;T3&lt;T4</code> 表示观察时间严格递增；括号内是退出码。
+点选判定，立即出反馈。错了不要紧——错的地方正是规则边界。</p>
+<div id="quiz1"></div>
+
+<h2>这一课对应的真实账本</h2>
+<p>六道题的判定逻辑，就是你验收 L01 时那条查询背后跑的程序：
+账里 5 条记录（red rc=1 → diff → green → diff → green）之所以
+<code>evidence_complete: true</code>，正是因为同时满足了三规则。
+复核材料：<a href="../../docs/replication/evidence/L01.md">L01 证据账</a>。</p>
+
+<h2>主要原始资料</h2>
+<p>想追到底层语义，读这一处就够：<a href="../../vendors/CodexFDE/workbench/bootstrap.py">上游
+<code>bootstrap.py</code> 的 <code>_chain</code> 方法（约 122–140 行）</a>——
+注意它比讲义更权威；若发现两者矛盾，以上游代码 + WORKBENCH_SPEC 为准，并回来告诉我。</p>
+
+<div class="callout"><span class="label">卡住了？</span>
+随时在会话里直接问 Claude（你的教学代理）：哪道题、哪个规则没想通，我可以换例子重讲，
+或者带你去 <code>tests/test_l01_workbench_bootstrap.py</code> 看钉住该规则的测试。</div>
+
+<footer class="colophon">
+  下一课候选（按你的进度决定）：② 摘要防篡改——SHA-256 如何抓住改库的手；
+  ③ 存在性判定——为什么"早期的红"也算数。速查表：
+  <a href="../reference/0001-workbench-cheatsheet.html">Workbench 证据账速查</a>。
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script>
+const T = (rows) => `<table><tr><th>阶段</th><th>命令</th><th>时间</th><th class="num">退出码</th></tr>` +
+  rows.map(r => `<tr><td><code>${r[0]}</code></td><td><code>${r[1]}</code></td><td>${r[2]}</td><td class="num">${r[3]}</td></tr>`).join("") + `</table>`;
+const A = "命令 A（同一条测试命令）", B = "命令 B", D = "git diff";
+
+mountQuiz("quiz1", [
+  { scenario: T([["red", A, "T1", 1], ["diff", D, "T2", 0], ["green", A, "T3", 0]]),
+    options: [
+      { text: "缺链——没有同命令的红", correct: false,
+        why: "有：T1 的 red 用的就是命令 A，与绿同命令。规则一满足，请再看规则二、三。" },
+      { text: "完整——同命令红绿、Diff 居间、全局最新为绿", correct: true,
+        why: "三规则全过：红绿同是命令 A；Diff@T2 严格介于 T1 与 T3；最新 red/diff/green 记录就是这条成功绿。这就是教科书正例。" },
+      { text: "缺链——Diff 不在红绿之间", correct: false,
+        why: "Diff@T2 在 T1 与 T3 之间（T1&lt;T2&lt;T3），规则二满足。" } ] },
+  { scenario: T([["red", A, "T1", 1], ["diff", D, "T2", 0], ["green", B, "T3", 0]]),
+    options: [
+      { text: "缺链——绿与红不是同一命令", correct: true,
+        why: "规则一被杀：A 红配 B 绿，等于'换个命令跑绿来配旧红'。上游 WB-08 专门钉了这一形态，账上三条记录全保留、但链不成立。" },
+      { text: "完整——红绿 Diff 齐备且时序正确", correct: false,
+        why: "齐备是假象：规则一要求红与绿 command_text 完全相同，这里绿换成了命令 B。" },
+      { text: "缺链——Diff 晚于绿灯", correct: false,
+        why: "时序没错（T2&lt;T3），错在命令不一致。看清每条记录的 command 列再判。" } ] },
+  { scenario: T([["red", A, "T1", 1], ["green", A, "T2", 0]]),
+    options: [
+      { text: "完整——红绿同命令即可", correct: false,
+        why: "规则一只是必要条件。没有 Diff，就无法证明'红到绿之间改过代码'——可能只是重跑碰运气。" },
+      { text: "缺链——最新记录不是绿灯", correct: false,
+        why: "最新记录恰恰是 T2 的成功绿，规则三满足。缺口在别处。" },
+      { text: "缺链——红绿之间没有成功的 Diff", correct: true,
+        why: "规则二被杀：任何 diff 记录都不存在。这也是为什么 L01 流程强制在实现后、复验前采集 Diff。" } ] },
+  { scenario: T([["red", A, "T1", 1], ["diff", D, "T2", 0], ["green", A, "T3", 0], ["red", B, "T4", 1]]),
+    options: [
+      { text: "完整——失败的是另一命令，不影响 A 的链", correct: false,
+        why: "这正是 L01 复查修复轮（F2）修掉的误区：失权是<b>全局</b>的，不按命令分桶。语义对齐上游后，跨命令新失败同样让旧绿作废。" },
+      { text: "缺链——绿后出现新失败，旧绿失权（跨命令同罪）", correct: true,
+        why: "规则三：全局最新 red/diff/green 记录是 T4 的失败红，不是 T3 的绿。'不能拿旧绿灯说现在完整'——它最近一次跑是失败的。" },
+      { text: "缺链——B 的红没有对应绿", correct: false,
+        why: "B 自己有没有绿不重要；问题在于 B 的失败让'全局最新'不再是那条成功绿。" } ] },
+  { scenario: T([["diff", D, "T1", 0], ["red", A, "T2", 1], ["green", A, "T3", 0]]),
+    options: [
+      { text: "缺链——Diff 必须在红之后、绿之前，这条 Diff 太早", correct: true,
+        why: "规则二的精确版：Diff 要严格介于该红与绿之间。Diff@T1 早于红@T2，证明不了'红之后改过代码'。时序是硬约束，'有 Diff 记录'不算数。" },
+      { text: "完整——Diff、红、绿各有一条", correct: false,
+        why: "各有一条 ≠ 相对位置正确。把三规则当成一个整体检查，而不是数条目。" },
+      { text: "缺链——最新记录不是绿灯", correct: false,
+        why: "最新记录是 T3 的成功绿，规则三满足。别被第一条的 diff 干扰——它在规则三里也参与排序，但它不是最新。" } ] },
+  { scenario: T([["red", A, "T1", 1], ["diff", D, "T2", 0], ["green", A, "T3", 0], ["observation", "某查询", "T4", 1]]),
+    options: [
+      { text: "缺链——绿后有失败记录", correct: false,
+        why: "规则三的失权范围只覆盖 red/diff/green 三相。observation 是旁证（比如一次环境探针失败），不参与链判定——但它是失败这个事实仍会留在账上。" },
+      { text: "缺链——旁证查询与红绿不同命令", correct: false,
+        why: "observation 根本不进判定，命令同不同无关紧要。" },
+      { text: "完整——旁证不参与链判定，全局最新红/绿仍是 T3 的绿", correct: true,
+        why: "规则三限定在 red/diff/green 三相（上游 _chain 的 checks 过滤）。这也是 L01 自举后真实账本的形态：三次失败现场捕获（rc=127 的 shell 误操作）留在 lesson-01-submission，但没导入账本；即使导入，observation 相也不影响链。" } ] },
+]);
+</script>
+</body>
+</html>

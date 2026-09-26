@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>速查 0001 · Workbench V0.1 证据账速查</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="kicker">Reference · 0001</div>
+  <h1>Workbench V0.1 证据账速查</h1>
+  <div class="subtitle">四表 · 五命令 · 链三规则 · 防伪机制 —— 印刷友好，随时回查</div>
+</header>
+
+<h2>数据模型（.runtime/course/L01-workbench/workbench.db）</h2>
+<table>
+  <tr><th>表</th><th>关键列</th><th>存在理由</th></tr>
+  <tr><td><code>workbench</code></td><td>owner, name, version（仅一行）</td><td>身份；同 owner 幂等，异 owner 拒绝覆盖</td></tr>
+  <tr><td><code>projects</code></td><td>project_id（主键）</td><td>任务必须有已登记项目（不留孤儿）</td></tr>
+  <tr><td><code>tasks</code></td><td><b>requirement_snapshot（全文）</b>+ sha256</td><td>快照语义：原文件再改，任务记得当时版本</td></tr>
+  <tr><td><code>evidence</code></td><td>phase, command_text, output_text+sha256, returncode, observed_at</td><td>只追加；失败与成功同等永久</td></tr>
+</table>
+<div class="marginnote">phase 取值：<code>red / diff / green / observation</code>。前三相参与链判定，observation 是旁证。</div>
+
+<h2>五命令与失败纪律（接口冻结：上游 WORKBENCH_SPEC §5）</h2>
+<table>
+  <tr><th>命令</th><th>正常路径</th><th>失败时</th></tr>
+  <tr><td><code>workbench-init</code></td><td>建身份行</td><td>异 owner 拒绝；同 owner 幂等返回既有身份</td></tr>
+  <tr><td><code>workbench-project-add</code></td><td>登记项目</td><td>重复编号拒绝，不覆盖</td></tr>
+  <tr><td><code>workbench-task-create</code></td><td>建任务+抄快照</td><td>缺项目 / 重复编号 / 文件不可读 → 拒绝且不留半条</td></tr>
+  <tr><td><code>workbench-evidence-add</code></td><td>追加运行记录</td><td>缺时区 / 空输出 / 任务不存在 → 拒绝且不留半条</td></tr>
+  <tr><td><code>workbench-status</code></td><td>查询+完整性+摘要复核</td><td>绝不建库建目录；对象缺失报 <code>required_*_missing</code></td></tr>
+</table>
+
+<h2>链判定三规则（<code>_chain_error</code>）</h2>
+<table>
+  <tr><th>#</th><th>规则</th><th>杀死的作弊形态</th></tr>
+  <tr><td>一</td><td>存在同 <code>command_text</code> 的 red(rc≠0) 与 green(rc=0)</td><td>换个命令跑绿来配旧红</td></tr>
+  <tr><td>二</td><td>有一条成功 Diff 的时间<b>严格介于</b>该红与绿之间</td><td>没改代码就宣称"改完转绿"</td></tr>
+  <tr><td>三</td><td>全局最新的 red/diff/green 记录必须是成功绿（observation 不参与；绿后任何相出新失败即失权）</td><td>拿旧绿灯给现在的坏状态翻旧账</td></tr>
+</table>
+<div class="marginnote">红的判定是<b>存在性</b>的：早期红 + 其后 Diff + 绿也算完整（不必是"最新红"）。出处：<a href="../../vendors/CodexFDE/workbench/bootstrap.py">上游 <code>_chain</code></a>。</div>
+
+<h2>防伪机制</h2>
+<table>
+  <tr><th>机制</th><th>一句话</th></tr>
+  <tr><td>摘要复核</td><td><code>status</code> 每次重算 SHA-256 对账，改库即报 <code>*_digest_mismatch</code></td></tr>
+  <tr><td>失败不可抹</td><td>退出码原样存原样返，无任何"由红改绿"路径</td></tr>
+  <tr><td>查询不建数据</td><td>四个读命令在库缺失时报"尚未初始化"，绝不偷偷初始化</td></tr>
+  <tr><td>人审不代签</td><td><code>evidence_complete</code> 与 <code>acceptance: pending_human_review</code> 互相独立——材料完整 ≠ 有人接受；<code>limitations</code> 字段声明程序不能证明什么</td></tr>
+</table>
+
+<h2>术语对照</h2>
+<table>
+  <tr><th>词面</th><th>含义</th></tr>
+  <tr><td><code>same_command_red_diff_green_missing</code></td><td>错误词面：缺同命令红—Diff—绿链</td></tr>
+  <tr><td><code>required_task_missing</code> / <code>required_project_missing</code></td><td>要求存在的对象不存在</td></tr>
+  <tr><td><code>spec_digest_mismatch</code> / <code>output_digest_mismatch</code></td><td>存储内容与摘要不一致（疑似篡改）</td></tr>
+  <tr><td><code>pending_human_review</code></td><td>材料完整、等待人工审核（程序不代签）</td></tr>
+  <tr><td>自举（bootstrap）</td><td>用刚建好的工作台记录它自己的建设过程</td></tr>
+</table>
+
+<footer class="colophon">
+  依据：<a href="../../workbench/bootstrap.py">workbench/bootstrap.py</a> ·
+  <a href="../../tests/test_l01_workbench_bootstrap.py">合同测试</a> ·
+  <a href="../../vendors/CodexFDE/docs/courses/L01/WORKBENCH_SPEC.md">上游 WORKBENCH_SPEC</a>。
+  本速查与课程 <a href="../lessons/0001-evidence-chain-judgement.html">0001 证据链判定</a> 配套。
+  有疑问随时问 Claude（你的教学代理）。
+</footer>
+</body>
+</html>
