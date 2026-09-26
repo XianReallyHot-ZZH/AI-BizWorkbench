@@ -358,3 +358,16 @@ FlowERP 自带独立质量入口：自己的 `eval/harness.py`，**19 项 blocki
 6. **命名陷阱**：`--report-path` 属于 `eval.harness`，`--report` 属于 `workbench.ci_evidence`（实操手册 L100 专门提示）；`workbench.cli serve` 名义上是"工作台 CLI 的命令"，实际转交 FlowERP——端口/职责表（8001 工作台 / 8000 客户 / 8010 可选）必须记牢。
 7. **flowERP 仓库自带 `MIGRATION.json`** 记录迁入来源与摘要（"保留 19 项 ERP 阻断检查"，flowERP/README），说明双仓库拆分是近期完成的迁移，CodexFDE 里已无 `flowerp/`、`web/` 业务目录（已核实顶层结构）。
 8. **工作台 blocking 只有 10 项**而非 Eval 全集 31 项（29 blocking + 2 observing）：PROJECT_CASES 机制默认跳过 19 项 ERP 用例 + 2 项 harness 平台用例也未进 blocking 默认集（plugin_lifecycle 等 10 项为默认 blocking 集，实跑 total=10 与之吻合）。
+
+---
+
+## 10. 检查点 changelog（ADR-0003）
+
+每个检查点一条：pin 变动 + 合同 fixture 裁决 + 计划影响。缺失记录视为未升级。
+
+### 检查点 0001 — 2026-09-27，L02 开讲前
+
+- **pin**：`58f4612` → `a74445a`（3 个 commit：`dd9f205` 发布 L09-L12 labs 材料、`ae9279b` L16 材料撤回待发布、`a74445a` 精修 L01-L12 叙述）。裁决人：用户（AskUserQuestion 显式选择"升级检查点"）。
+- **合同 fixture**：上游 `workbench/` 路径零变动，LESSONS 逐字未变，fixture 无需采纳；L02 合同条款（`write_scope=("AGENTS.md", "tests/")`、两条 acceptance、无 eval 名）维持原样。
+- **材料修订**：L01/L02 辅导资料实质修订。对 L02 起草有直接影响的三点——① 新增「课程大纲中的本讲要求」节（核心内容 = Prompt/`AGENTS.md`/Skill/Hook/MCP 职责边界；通过标准 = 新会话能读取约束、越界请求被明确拒绝或纠正）；② `status()`/`_chain()` 改口为"参考实现的入口，自己的程序找承担同样职责的代码"（同形映射口径）；③ N0/N1 澄清：手册固定请求含库存/订单/采购边界，属"预先说明规则的情境题"，不要求已实现后面几讲业务。
+- **计划影响**：上游出现 `course/l01-start`～`course/l16-start` 16 个 progression 标签（第 9 节意外项 1 已消解）；L09-L12 labs 上架，解锁的是 **L08 检查点**的后半程粒度决策，本次不裁；L16 材料被撤回，路线图引用 L16 材料处需在 L16 前重新确认可得性。
