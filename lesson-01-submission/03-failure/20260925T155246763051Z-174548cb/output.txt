@@ -1,0 +1,137 @@
+test_evidence_add_rejects_naive_time_and_empty_output (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_evidence_add_rejects_naive_time_and_empty_output) ... FAIL
+test_wb01_init_persists_and_cannot_be_overwritten (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb01_init_persists_and_cannot_be_overwritten) ... FAIL
+test_wb02_project_and_task_with_snapshots (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb02_project_and_task_with_snapshots) ... FAIL
+test_wb03_task_requires_registered_project (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb03_task_requires_registered_project) ... FAIL
+test_wb04_duplicate_task_id_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb04_duplicate_task_id_rejected) ... FAIL
+test_wb05_snapshots_survive_source_changes (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb05_snapshots_survive_source_changes) ... FAIL
+test_wb06_missing_chain_reported (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb06_missing_chain_reported) ... FAIL
+test_wb07_same_command_red_diff_green_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07_same_command_red_diff_green_chain) ... FAIL
+test_wb08_different_command_breaks_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb08_different_command_breaks_chain) ... FAIL
+test_wb09_ordering_and_stale_green_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb09_ordering_and_stale_green_rejected) ... FAIL
+test_wb10_queries_never_create_data (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb10_queries_never_create_data) ... FAIL
+test_wb11_recovery_after_supplement (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb11_recovery_after_supplement) ... FAIL
+test_wb12_isolated_runtime_and_no_flowerp (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb12_isolated_runtime_and_no_flowerp) ... FAIL
+
+======================================================================
+FAIL: test_evidence_add_rejects_naive_time_and_empty_output (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_evidence_add_rejects_naive_time_and_empty_output)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 349, in test_evidence_add_rejects_naive_time_and_empty_output
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb01_init_persists_and_cannot_be_overwritten (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb01_init_persists_and_cannot_be_overwritten)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 121, in test_wb01_init_persists_and_cannot_be_overwritten
+    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-init' (choose from )
+
+
+======================================================================
+FAIL: test_wb02_project_and_task_with_snapshots (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb02_project_and_task_with_snapshots)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 139, in test_wb02_project_and_task_with_snapshots
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb03_task_requires_registered_project (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb03_task_requires_registered_project)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 161, in test_wb03_task_requires_registered_project
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb04_duplicate_task_id_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb04_duplicate_task_id_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 169, in test_wb04_duplicate_task_id_rejected
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb05_snapshots_survive_source_changes (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb05_snapshots_survive_source_changes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 179, in test_wb05_snapshots_survive_source_changes
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb06_missing_chain_reported (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb06_missing_chain_reported)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 201, in test_wb06_missing_chain_reported
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb07_same_command_red_diff_green_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07_same_command_red_diff_green_chain)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 215, in test_wb07_same_command_red_diff_green_chain
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb08_different_command_breaks_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb08_different_command_breaks_chain)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 235, in test_wb08_different_command_breaks_chain
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb09_ordering_and_stale_green_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb09_ordering_and_stale_green_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 258, in test_wb09_ordering_and_stale_green_rejected
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb10_queries_never_create_data (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb10_queries_never_create_data)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 299, in test_wb10_queries_never_create_data
+    self.assertIn("工作台尚未初始化", payload(proc).get("error", ""))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '工作台尚未初始化' not found in ''
+
+======================================================================
+FAIL: test_wb11_recovery_after_supplement (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb11_recovery_after_supplement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 314, in test_wb11_recovery_after_supplement
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_wb12_isolated_runtime_and_no_flowerp (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb12_isolated_runtime_and_no_flowerp)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l01_workbench_bootstrap.py", line 336, in test_wb12_isolated_runtime_and_no_flowerp
+    self.assertEqual(self.init_workbench().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.912s
+
+FAILED (failures=13)

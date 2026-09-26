@@ -1,0 +1,25 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "-m",
+    "workbench.cli",
+    "workbench-status",
+    "--runtime-dir",
+    ".runtime/course/L01-workbench",
+    "--require-project",
+    "PERSONAL-WORKBENCH",
+    "--require-task",
+    "CASE-WB-L01-001",
+    "--require-red-green-evidence"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"workbench.cli\", \"workbench-status\", \"--runtime-dir\", \".runtime/course/L01-workbench\", \"--require-project\", \"PERSONAL-WORKBENCH\", \"--require-task\", \"CASE-WB-L01-001\", \"--require-red-green-evidence\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-25T16:43:36.269032+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-01-submission/06-observations/20260925T164336269032Z-28899ff8/output.txt",
+  "sha256": "f02aec9a285519dba8db956b8c7d2d69c2f61c0f63812e35dffa3ed1bb4ea4a9",
+  "provenance": "local_teaching_capture"
+}

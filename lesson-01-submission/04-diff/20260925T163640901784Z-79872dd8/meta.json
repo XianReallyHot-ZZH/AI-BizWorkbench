@@ -1,0 +1,19 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "diff",
+    "--",
+    "workbench",
+    "tests",
+    "pyproject.toml",
+    ".gitignore"
+  ],
+  "command": "[\"git\", \"diff\", \"--\", \"workbench\", \"tests\", \"pyproject.toml\", \".gitignore\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-25T16:36:40.901784+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-01-submission/04-diff/20260925T163640901784Z-79872dd8/output.txt",
+  "sha256": "9bc66011520f82fe007194239c838c9b7cd2aa9285000f6c304b79e18af01abe",
+  "provenance": "local_teaching_capture"
+}

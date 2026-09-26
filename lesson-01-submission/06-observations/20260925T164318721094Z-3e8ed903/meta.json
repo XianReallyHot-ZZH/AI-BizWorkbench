@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python -X utf8 -m workbench.cli workbench-status --runtime-dir .runtime/course/L01-workbench --require-project PERSONAL-WORKBENCH --require-task",
+    "CASE-WB-L01-MISSING",
+    "--require-red-green-evidence"
+  ],
+  "command": "[\".venv/bin/python -X utf8 -m workbench.cli workbench-status --runtime-dir .runtime/course/L01-workbench --require-project PERSONAL-WORKBENCH --require-task\", \"CASE-WB-L01-MISSING\", \"--require-red-green-evidence\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 127,
+  "observed_at": "2026-09-25T16:43:18.721094+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-01-submission/06-observations/20260925T164318721094Z-3e8ed903/output.txt",
+  "sha256": "7c13ac3464367929765690975de99b696ee41d2d76278c077188a939b7989266",
+  "provenance": "local_teaching_capture"
+}

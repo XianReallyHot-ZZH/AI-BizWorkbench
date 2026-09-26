@@ -1,0 +1,19 @@
+{
+  "phase": "red",
+  "argv": [
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python",
+    "-X",
+    "utf8",
+    "-m",
+    "unittest",
+    "tests.test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07b_diff_record_may_use_diff_command",
+    "-v"
+  ],
+  "command": "[\"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"unittest\", \"tests.test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07b_diff_record_may_use_diff_command\", \"-v\"]",
+  "cwd": "/private/tmp/l01-repro",
+  "returncode": 1,
+  "observed_at": "2026-09-25T17:40:36.012444+00:00",
+  "output_file": "/private/tmp/l01-repro/lesson-01-submission/03-failure/20260925T174036012444Z-6aef9063/output.txt",
+  "sha256": "710c5ccfe2e1ab3735096ebe84f87698a95d3e234aaf14cd855300b1588f372c",
+  "provenance": "local_teaching_capture"
+}

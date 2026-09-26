@@ -1,0 +1,9 @@
+test_l01_contract_is_frozen_baseline (test_course_contracts.CourseContractFixtureTest.test_l01_contract_is_frozen_baseline) ... ok
+test_l01_story_fields_present (test_course_contracts.CourseContractFixtureTest.test_l01_story_fields_present) ... ok
+test_lessons_cover_l01_to_l16 (test_course_contracts.CourseContractFixtureTest.test_lessons_cover_l01_to_l16) ... ok
+test_out_of_range_lesson_rejected (test_course_contracts.CourseContractFixtureTest.test_out_of_range_lesson_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK
