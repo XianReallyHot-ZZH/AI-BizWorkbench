@@ -1,0 +1,13 @@
+{
+  "phase": "observation",
+  "argv": [
+    "--help"
+  ],
+  "command": "[\"--help\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 127,
+  "observed_at": "2026-09-26T16:13:41.716731+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-01-submission/06-observations/20260926T161341716731Z-900bd71c/output.txt",
+  "sha256": "e77b3280b6c3440f5357127c6f5d2b76d21e37718c3e32a01beb3b36cc7451b6",
+  "provenance": "local_teaching_capture"
+}
