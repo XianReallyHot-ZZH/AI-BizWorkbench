@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0004 · 受控执行：笼子怎么关住造笼子的物种</title>
+<link rel="stylesheet" href="../assets/course.css">
+<script defer src="../assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="kicker">Lesson 0004 · L04 复盘</div>
+  <h1>受控执行：笼子怎么关住造笼子的物种</h1>
+  <div class="subtitle">L04 的意图、机制与代码实现 —— 信任不是声明出来的，是被笼子拦出来、拦不住时被账本记出来的</div>
+</header>
+
+<h2 id="why">为什么补这一课</h2>
+<p>你刚验收了 L04——A/B 双票、双具名验收门。但验收人最危险的时刻是<strong>亲手放行了什么都没看懂的东西</strong>。L04 的交付物（<a href="../../workbench/execution.py"><code>workbench/execution.py</code></a>，三个新命令）在你仓库里只活了半天，就被真实使用抓出<strong>三处接缝缺陷</strong>：接口收参数被 <code>-X</code> 吞掉、预算缺声明不拒绝、spawn 失败裸崩丢记录。这一课的目标：下次看这类代码，你能自己指出"这道门防什么、防不住什么、失败了账本记什么"。</p>
+
+<h2 id="intent">意图：能读合同 ≠ 能组织执行</h2>
+<p>L01–L03 依次交付了记账、守规、读合同。但让工作台念一遍 <code>FDE_SPEC.md</code>，库存导出不会自己发生——<strong>从"合同在场"到"代码交付"中间的每一步都可能走样</strong>：执行器进错目录、顺手改了无关文件、把失败说成完成、把 eval 绿说成验收。L04 把这中间过程交给了两票：</p>
+<table>
+  <tr><th></th><th>Ticket A（建设）</th><th>Ticket B（交付）</th></tr>
+  <tr><td>谁监督</td><td>人会话直接监督 Claude</td><td><strong>已具名接受的 V0</strong> 组织执行器</td></tr>
+  <tr><td>对象</td><td>工作台自身（造笼子）</td><td>flowERP 候选内的库存导出交付</td></tr>
+  <tr><td>验收门</td><td>A 具名接受，才准启动 B</td><td>probe 六场景 + 具名验收</td></tr>
+</table>
+<div class="callout"><span class="label">自举递归</span>A 造的笼子，关的正是造笼子的同一个物种（Claude Code）。这不是段子而是设计约束：笼子对"自己人"必须同样有效，否则它只防外人。L04 实测恰好验证了这一点——三处缺陷全是 V0 被<strong>真人 operator 和真实执行器</strong>使用时暴露的，不是测试想出来的。</div>
+
+<h2 id="mechanism">机制：执行器合同五要素 → 状态机</h2>
+<p><a href="../../docs/adr/0002-claude-code-executor.md">ADR-0002</a> 说执行器合同与上游同形：<strong>写集、预算、JSON 事件流、沙箱边界、退出码</strong>。落到 V0，每个要素都有"事前声明 + 事后实测 + 如实限制"三层：</p>
+<table>
+  <tr><th>要素</th><th>事前（拒绝启动）</th><th>事后（实测留证）</th><th>如实限制（防不住什么）</th></tr>
+  <tr><td>写集</td><td>code 模式缺 <code>--write-scope</code> 拒启动</td><td>候选 <code>git status --porcelain -uall</code> 逐文件比对，越界 → <code>out_of_scope</code>、<strong>eval 前停止</strong></td><td>提示词约定防不住全部越界；<strong>不自动回滚</strong>（停止推进 ≠ 还原）</td></tr>
+  <tr><td>预算</td><td><code>--execution-timeout</code> 必须显式（缺 → 拒）</td><td>超时 → <code>timed_out</code> 标志 + 部分输出保留</td><td>—</td></tr>
+  <tr><td>事件流</td><td>—</td><td><code>claude -p --output-format stream-json</code> 全量落 stdout 封 SHA-256</td><td>约 1.5MB 未逐事件人工审读</td></tr>
+  <tr><td>沙箱</td><td>cwd=候选、无起点提交拒收</td><td>change_manifest 逐文件<strong>字节</strong>指纹</td><td>候选是普通目录不是容器——事后抓，不事前锁</td></tr>
+  <tr><td>退出码</td><td>—</td><td>rc、<code>eval_returncode</code>、<code>eval_timed_out</code> 分立记录</td><td><strong>rc 0 ≠ 业务正确</strong>（本讲真实发生过）</td></tr>
+</table>
+<p>所有执行结局汇入一条<strong>只派生、不存储</strong>的状态机（账本只追加，状态永远是记录事实的函数）：<code>no_execution → review → accepted/rejected</code>，失败态（<code>failed / timeout / out_of_scope / eval_failed</code>）原样即状态。三道门-guard：<strong>review 态拒绝重跑</strong>（不毁待审）、<strong>自批拒绝</strong>（复核人 ≠ 最近执行者）、<strong>前置门</strong>（B 单创建须绑定已具名接受的 A 单，拒绝不静默链接）。review 之后源码再变？新执行存在即旧复核自动失效——<strong>复核只覆盖它引用的那一次执行</strong>。</p>
+
+<h2 id="code">代码实现：三段真实代码，三个真实教训</h2>
+<p>全在 <a href="../../workbench/execution.py"><code>workbench/execution.py</code></a>（419 行）与 <a href="../../workbench/bootstrap.py"><code>bootstrap.py</code></a> 状态推导里。每段代码后面跟着它为什么长这样——<strong>三个教训都是本讲当天真实发生的</strong>：</p>
+<h3>① <code>_cmd_task_run</code> 的门序：校验不落账，执行必落账</h3>
+<pre><code># 事前校验区：任一失败 → return _fail(...)，不产生任何记录
+if args.mode == "code":
+    if not scope:                  return _fail("write_scope_required: …")
+    if executor_command is None:   return _fail("executor_command_required: …")
+if args.execution_timeout is None: return _fail("execution_timeout_required: …")
+if _task_state(conn, args.task_id) == "review":
+                                   return _fail("task_in_review: …")
+
+# 执行区：任何结局都走 _insert_execution 落账
+outcome = _run_process(...)        # spawn 失败也返回 outcome，不抛异常
+if outcome.timed_out:         record["status"] = "timeout"
+elif outcome.returncode != 0: record["status"] = "failed"
+elif out_of_scope:            record["status"] = "out_of_scope"   # eval 前停止
+else: eval → "completed" / "eval_failed"
+_insert_execution(conn, record, actor=args.actor)  # 兜底：记录必落</code></pre>
+<div class="marginnote">真实教训：<strong>B 票首跑</strong>，执行器 <code>claude -p</code> 已在候选内完成交付，但 eval 解释器路径写错 → spawn 的 <code>FileNotFoundError</code> 裸崩成"内部错误"，崩在插入之前，<strong>执行记录尽失</strong>。修复：<code>_run_process</code> 捕 <code>OSError</code> 返回"启动失败"outcome（<a href="../../tests/test_l04_workbench_v0.py"><code>test_launch_error_preserved_as_failed_record</code></a> 先复现红再转绿）。门序本身就是答案：<strong>校验类拒绝不污染账本；执行类失败必须入账</strong>。</div>
+<h3>② <code>_collect_changes</code>：事后实测，字节指纹</h3>
+<pre><code>raw = _git(ws, "status", "--porcelain", "-z", "-uall")  # -uall：新目录不折叠
+_git(ws, "add", "-N", ".")          # 意图添加：未跟踪文件进 diff（仅索引标记）
+diff_text = _git(ws, "diff", "HEAD").stdout
+before = sha256(git show HEAD:path 的原始字节) if 在 HEAD else None
+after  = sha256(工作树文件的原始字节) if 文件在 else None</code></pre>
+<div class="marginnote">两个细节都是修出来的：<code>-uall</code>——不加则新目录被折叠成 <code>?? dir/</code>，manifest 会把里面每个文件误记成 deleted；指纹对<strong>原始字节</strong>而非 decode 后文本——否则编码同形的篡改能从 status 复核眼皮底下溜走。注意双轨口径：manifest 对字节（保交付物指纹），stdout/stderr/diff 摘要对账本内文本（防手改账本）。</div>
+<h3>③ <code>_task_state</code>：复核按 execution_id 匹配，不比时间戳</h3>
+<pre><code>execution = _latest_execution(conn, task_id)
+if execution is None: return "no_execution"
+review = _latest_review(conn, task_id)
+if review and review["execution_id"] == execution["execution_id"]:
+    return "accepted" if review["decision"] == "approve" else "rejected"
+return "review" if execution["status"] in COMPLETE else execution["status"]</code></pre>
+<div class="marginnote">第一版曾用秒级时间戳跨表比"最新"——<strong>同秒内</strong>新执行与旧复核并列时旧接受误判有效（合同测试抓出）。正确语义一句话：复核只覆盖它引用的那次执行；新执行存在，旧接受即失效。这就是"A 接受后源码又变，旧接受不再覆盖当前版本"的机器落点。</div>
+
+<h2 id="hands-on">亲手复验：一败一成两条执行记录</h2>
+<p>先写预测，再动手（仓库根目录）：</p>
+<pre><code># ① 读 B 票的全部执行记录——同一任务，一败一成
+.venv/bin/python -X utf8 -m workbench.cli workbench-task-show CASE-WB-L04-002 \
+  --runtime-dir .runtime/course/L01-workbench
+
+# ② A 票链的全局锚定实物：绿后有新 diff → 旧绿失权，最新须为绿
+.venv/bin/python -X utf8 -m workbench.cli workbench-status \
+  --runtime-dir .runtime/course/L01-workbench \
+  --require-task CASE-WB-L04-001 --require-red-green-evidence</code></pre>
+<table>
+  <tr><th>复验项</th><th>我的预测（先填）</th><th>实际</th></tr>
+  <tr><td>execution 2 的 status 是什么？为什么保留不删？</td><td>＿＿</td><td>＿＿</td></tr>
+  <tr><td>execution 2 的 changed_files 有几项？有越界吗？</td><td>＿＿</td><td>＿＿</td></tr>
+  <tr><td>task_state 现在是什么？靠哪条记录支持？</td><td>＿＿</td><td>＿＿</td></tr>
+  <tr><td>② 的 ok / evidence_complete / 链里有几条绿？</td><td>＿＿</td><td>＿＿</td></tr>
+</table>
+
+<h2 id="quiz">测验：这道门防什么？失败了账记什么？</h2>
+<div id="quiz-root"></div>
+<script defer>
+window.addEventListener("load", () => mountQuiz("quiz-root", [
+  { scenario: "受控执行中，执行器退出码 0，但在写集外多改了一个文件。任务最终状态与 eval 会怎样？",
+    options: [
+      { text: "out_of_scope，eval 未运行", correct: true,
+        why: "对。越界在 eval 前停止、越界文件留证、不自动回滚——退出码 0 救不了越界（test_out_of_scope_stops_before_eval）。" },
+      { text: "completed，进 review 待审", correct: false,
+        why: "错。rc 0 只说明执行器自身正常结束；范围也是验收条件，越界必须先于 eval 拦下。" },
+      { text: "failed，并自动回滚改动", correct: false,
+        why: "错。失败如实记 failed，但停止推进 ≠ 自动还原——改动留证供人裁决（test_executor_failure…）。" },
+      { text: "timeout，保留部分输出", correct: false,
+        why: "错。那是超时分支的语义；本题执行器正常退出，只是越界。" } ] },
+  { scenario: "创建 B 单时 --prerequisite-task 指向一个存在但未具名接受的任务。工作台行为是？",
+    options: [
+      { text: "拒绝，任务不创建不链接", correct: true,
+        why: "对。prerequisite_not_accepted，且不静默链接（上游 V0 同形：missing source task is not silently linked）。" },
+      { text: "静默链接，仅在输出里警告", correct: false,
+        why: "错。前置门的意义就是让\"未验收先交付\"在创建时不可能，而不是留个提醒。" },
+      { text: "阻塞任务，等待 A 接受后放行", correct: false,
+        why: "错。工作台不等也不代排程；A 何时接受是人的决定，B 由人重新发起。" },
+      { text: "创建成功，但降级为普通任务", correct: false,
+        why: "错。降级即绕过门——绑定关系要么成立且已验真，要么任务根本不存在。" } ] },
+  { scenario: "复核人把自己的名字填成与最近一次执行的 actor 完全相同，提交 approve。会发生什么？",
+    options: [
+      { text: "self_review_rejected，记录不追加", correct: true,
+        why: "对。执行者不能批准自己——这道门比较最近一次执行的 actor 与 reviewer（test_review_named_decision…）。" },
+      { text: "允许 approve，但标记为自批", correct: false,
+        why: "错。自批不是可标记的瑕疵，是直接拒绝：接受记录的存在前提是非执行者。" },
+      { text: "拒绝，但留一条无效复核记录", correct: false,
+        why: "错。校验类拒绝不写任何记录——账本只追加，坏记录进了就删不掉。" },
+      { text: "转交 workbench-status 裁决处理", correct: false,
+        why: "错。status 只做完整性与摘要复核，不裁决人审资格；门在 review 命令内。" } ] },
+  { scenario: "执行器命令的二进制不存在（spawn 直接 ENOENT）。V0 的行为是？",
+    options: [
+      { text: "failed 记录落账，stderr 记启动失败", correct: true,
+        why: "对。B 票首跑的真实教训：裸崩曾把执行器已完成工作的记录尽失；现捕 OSError 落账（test_launch_error…）。" },
+      { text: "内部错误裸崩，不产生任何记录", correct: false,
+        why: "错。这正是修复前的旧行为——执行器干完活、账本空空，等于失败被抹掉，铁律 3 红线。" },
+      { text: "eval_failed，附 eval_timed_out 标志", correct: false,
+        why: "错。那是 eval 超时分支；spawn 失败发生在执行器侧，状态是 failed。" },
+      { text: "out_of_scope，越界文件留证", correct: false,
+        why: "错。越界针对\"改了不该改的\"；启动失败什么都没执行，语义完全不同。" } ] },
+]));
+</script>
+
+<h2 id="next">这一课之后的下一站</h2>
+<p>L04 把"组织协同"的笼子造好并实测了；按 roadmap，下一步是<strong>支线：记忆系统六步最小闭环</strong>（召回→采用→复验→失效），然后才进 L05——"先设计失败，再编写 Eval"。L05 会追问一个本讲已经埋了引子的问题：<strong>你的检查器自己会错吗？</strong>（V1 eval 误报就是活例。）验收口头禅升级为三句：<strong>"这道门防什么、防不住什么、失败了账记什么？"</strong></p>
+
+<h2 id="sources">主要原始资料</h2>
+<ul>
+  <li><strong>首选精读</strong>：<a href="../../docs/lessons/L04-受控执行.md">本仓库 L04 讲义</a>——§2 合同表（C1–C15）与 §4 人审清单红旗；机制取舍全部有出处。</li>
+  <li><a href="../../docs/replication/evidence/L04.md">L04 证据账</a>——三处真实缺陷的完整现场（§3-15/16/17）、eval 误报裁决、失败现场原文（§5）。</li>
+  <li><a href="../../workbench/execution.py"><code>workbench/execution.py</code></a> 与 <a href="../../tests/test_l04_workbench_v0.py"><code>tests/test_l04_workbench_v0.py</code></a>——本课三段代码的全文与其钉死行为的 17 个用例（文件头有验收项映射表）。</li>
+  <li><a href="../../vendors/CodexFDE/docs/courses/L04/辅导资料.md">上游 L04 辅导资料</a>（§3"一份委托怎样变成一次受控执行"）与 <a href="../../vendors/CodexFDE/docs/courses/L04/assets/execution/records/07-real-codex-executor.json">07-real-codex-executor.json</a>——执行记录同形（ADR-0002）的对照原形。</li>
+  <li>左邻右舍：<a href="0002-spec-parser-boundary.html">0002 六段闸门</a>（执行器吃的合同怎么被闸）· <a href="0003-rules-behavior-proof.html">0003 三层分检</a>（"防不住什么"的判断模板）· <a href="../reference/0001-workbench-cheatsheet.html">速查：Workbench 内核</a>。</li>
+</ul>
+
+<footer class="colophon">
+  <p>卡住了？把问题丢给会话里的 Claude——门序、字节指纹、状态派生、三处缺陷的现场，都值得追问。做完复验和测验记得回来对答案；0001/0002 的测验仍在等你，按你自己的间隔来。</p>
+</footer>
+
+</body>
+</html>
