@@ -13,6 +13,12 @@
 import_evidence.py 调用一致；错误词面对齐上游（required_task_missing /
 same_command_red_diff_green_missing / 工作台尚未初始化）。
 L01 不接入 FlowERP：flowerp_connected 恒为 False（L04 换挡点改判）。
+
+L04 扩容（docs/lessons/L04-受控执行.md）：账本新增 executions / reviews 两张
+只追加表与 tasks.prerequisite_task_id 列（旧账本经 ``_ensure_v0_schema`` 幂等
+迁移）；状态推导（``_task_state``）从记录事实派生，不落状态字段——账本只追加、
+失败不可抹的信用内核不变。执行编排/写集检查在 workbench/execution.py（经同一条
+REGISTRY 缝注册），存储与完整性复核仍归本模块单一来源。
 """
 
 from __future__ import annotations
@@ -29,6 +35,8 @@ WORKBENCH_VERSION = "V0.1"
 DEFAULT_WORKBENCH_NAME = "个人 AI 研发工作台"
 FLOWERP_CONNECTED = False  # 冻结边界：L01 不接入 FlowERP，恒为 False
 PHASES = ("red", "diff", "green", "observation")
+# L04：执行记录到达这两态即任务停 review，等具名复核（eval 过 ≠ 已接受）。
+EXECUTION_COMPLETE_STATUSES = ("completed", "verify_completed")
 UNINITIALIZED = "工作台尚未初始化，请先运行 workbench-init"
 MISSING_CHAIN = "same_command_red_diff_green_missing"
 MISSING_TASK = "required_task_missing"
@@ -36,6 +44,51 @@ LIMITATIONS = (
     "用户导入的观察记录，未认证命令执行者和时间",
     "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成",
 )
+
+# L04 执行/复核表（只追加）：init 建库与 _ensure_v0_schema 旧账迁移共用同一 DDL。
+_EXECUTION_SCHEMA = """
+CREATE TABLE IF NOT EXISTS executions (
+  execution_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  workspace TEXT NOT NULL,
+  write_scope TEXT NOT NULL DEFAULT '[]',
+  executor_command TEXT,
+  executor_prompt TEXT,
+  returncode INTEGER,
+  timed_out INTEGER NOT NULL DEFAULT 0,
+  stdout_text TEXT NOT NULL DEFAULT '',
+  stderr_text TEXT NOT NULL DEFAULT '',
+  stdout_sha256 TEXT NOT NULL DEFAULT '',
+  stderr_sha256 TEXT NOT NULL DEFAULT '',
+  changed_files TEXT NOT NULL DEFAULT '[]',
+  out_of_scope_files TEXT NOT NULL DEFAULT '[]',
+  change_manifest TEXT NOT NULL DEFAULT '[]',
+  change_manifest_sha256 TEXT NOT NULL DEFAULT '',
+  diff_text TEXT NOT NULL DEFAULT '',
+  diff_sha256 TEXT NOT NULL DEFAULT '',
+  eval_command TEXT NOT NULL DEFAULT '[]',
+  eval_returncode INTEGER,
+  eval_output_text TEXT NOT NULL DEFAULT '',
+  eval_output_sha256 TEXT NOT NULL DEFAULT '',
+  eval_timed_out INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL,
+  actor TEXT NOT NULL DEFAULT '',
+  observed_at TEXT NOT NULL,
+  recorded_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS executions_by_task ON executions (task_id);
+CREATE TABLE IF NOT EXISTS reviews (
+  review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id TEXT NOT NULL,
+  execution_id INTEGER NOT NULL,
+  reviewer TEXT NOT NULL,
+  decision TEXT NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  reviewed_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
+"""
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS workbench (
@@ -63,6 +116,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   requirement_summary TEXT NOT NULL DEFAULT '',
   problem_snapshot TEXT,
   problem_summary TEXT,
+  prerequisite_task_id TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS evidence (
@@ -77,7 +131,7 @@ CREATE TABLE IF NOT EXISTS evidence (
   recorded_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS evidence_by_task ON evidence (task_id);
-"""
+""" + _EXECUTION_SCHEMA  # L04 执行/复核表：单一 DDL 来源，init 与旧账迁移共用（复查轮 S1）
 
 
 class LedgerUnavailable(RuntimeError):
@@ -133,6 +187,73 @@ def _parse_aware(value: str) -> datetime | None:
     if moment.tzinfo is None or moment.utcoffset() is None:
         return None
     return moment
+
+
+# ---- V0 执行记录的状态推导（只读账本事实，不落状态字段）--------------------
+
+
+def _has_table(conn: sqlite3.Connection, name: str) -> bool:
+    """旧账本可能还没有 V0 表；读路径按空处理，不偷偷建表。"""
+    row = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (name,)
+    ).fetchone()
+    return row is not None
+
+
+def _ensure_v0_schema(conn: sqlite3.Connection) -> None:
+    """幂等迁移：新建 executions/reviews；旧 tasks 表补 prerequisite_task_id 列。
+
+    只在写路径调用（task-create / task-run / task-review）；读命令按 _has_table 走空，
+    维持 L01"读命令不建库不建目录"的口径在表层面的同形。
+    """
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(tasks)")}
+    if "prerequisite_task_id" not in columns:
+        conn.execute("ALTER TABLE tasks ADD COLUMN prerequisite_task_id TEXT NOT NULL DEFAULT ''")
+    conn.executescript(_EXECUTION_SCHEMA)
+    # 复查轮新增列：commit-2 形状的既有账本补列（只加不改，旧记录保持原样）
+    execution_columns = {row[1] for row in conn.execute("PRAGMA table_info(executions)")}
+    if "change_manifest_sha256" not in execution_columns:
+        conn.execute("ALTER TABLE executions ADD COLUMN change_manifest_sha256 TEXT NOT NULL DEFAULT ''")
+    if "eval_timed_out" not in execution_columns:
+        conn.execute("ALTER TABLE executions ADD COLUMN eval_timed_out INTEGER NOT NULL DEFAULT 0")
+    conn.commit()
+
+
+def _latest_execution(conn: sqlite3.Connection, task_id: str) -> sqlite3.Row | None:
+    if not _has_table(conn, "executions"):
+        return None
+    return conn.execute(
+        "SELECT * FROM executions WHERE task_id = ? ORDER BY execution_id DESC LIMIT 1",
+        (task_id,),
+    ).fetchone()
+
+
+def _latest_review(conn: sqlite3.Connection, task_id: str) -> sqlite3.Row | None:
+    if not _has_table(conn, "reviews"):
+        return None
+    return conn.execute(
+        "SELECT * FROM reviews WHERE task_id = ? ORDER BY review_id DESC LIMIT 1",
+        (task_id,),
+    ).fetchone()
+
+
+def _task_state(conn: sqlite3.Connection, task_id: str) -> str:
+    """从只追加记录派生任务状态：无执行 → no_execution；
+    最近一次复核恰好覆盖最近一次执行 → accepted/rejected（复核只覆盖它引用的
+    那次执行，按 execution_id 匹配，不用跨表时间戳比较——同秒内新执行即让旧
+    接受失效）；
+    最近执行 completed/verify_completed → review（等人）；
+    其余执行结局（failed/timeout/out_of_scope/eval_failed）原样即状态。
+    """
+    execution = _latest_execution(conn, task_id)
+    if execution is None:
+        return "no_execution"
+    review = _latest_review(conn, task_id)
+    if review is not None and review["execution_id"] == execution["execution_id"]:
+        return "accepted" if review["decision"] == "approve" else "rejected"
+    if execution["status"] in EXECUTION_COMPLETE_STATUSES:
+        return "review"
+    return execution["status"]
 
 
 # ---- 任务与记录逻辑 -------------------------------------------------------
@@ -193,6 +314,18 @@ def _digest_problems(projects: list[dict]) -> list[str]:
                     problems.append(
                         f"output_digest_mismatch: 任务 {task['task_id']} 记录 "
                         f"{record['record_id']} 的输出与摘要不一致")
+            for record in task.get("executions", []):  # L04：执行记录同一条复核纪律
+                for text_key, sha_key, label in (
+                    ("stdout_text", "stdout_sha256", "stdout"),
+                    ("stderr_text", "stderr_sha256", "stderr"),
+                    ("change_manifest_json", "change_manifest_sha256", "change_manifest"),
+                    ("diff_text", "diff_sha256", "diff"),
+                    ("eval_output_text", "eval_output_sha256", "eval 输出"),
+                ):
+                    if record.get(sha_key) and _sha256(record[text_key]) != record[sha_key]:
+                        problems.append(
+                            f"execution_digest_mismatch: 任务 {task['task_id']} 执行 "
+                            f"{record['execution_id']} 的 {label} 与摘要不一致")
     return problems
 
 
@@ -267,6 +400,16 @@ def _cmd_task_create(args) -> int:
             return _fail(f"项目不存在：{args.project_id}，任务必须有已登记项目")
         if conn.execute("SELECT 1 FROM tasks WHERE task_id = ?", (args.task_id,)).fetchone():
             return _fail(f"任务编号已存在：{args.task_id}，原任务与记录保持不变")
+        _ensure_v0_schema(conn)
+        prerequisite = (getattr(args, "prerequisite_task", "") or "").strip()
+        if prerequisite:
+            # L04 前置门（讲义 C9）：B 单必须绑定已具名接受的 A 单，缺失或未接受都拒绝，
+            # 不静默链接（上游 V0 同形：missing source task is not silently linked）。
+            exists = conn.execute("SELECT 1 FROM tasks WHERE task_id = ?", (prerequisite,)).fetchone()
+            if exists is None:
+                return _fail(f"prerequisite_task_missing: 前置任务不存在：{prerequisite}，任务未创建")
+            if _task_state(conn, prerequisite) != "accepted":
+                return _fail(f"prerequisite_not_accepted: 前置任务未具名接受：{prerequisite}，任务未创建")
         request = args.request if args.request is not None else args.title
         requirement_id = args.requirement_id or args.task_id  # 上游同形：缺省回退任务编号
         requirement_snapshot = ""
@@ -285,16 +428,19 @@ def _cmd_task_create(args) -> int:
             problem_summary = _sha256(problem_snapshot)
         conn.execute(
             "INSERT INTO tasks (task_id, project_id, request, requirement_id, actor,"
-            " requirement_snapshot, requirement_summary, problem_snapshot, problem_summary, created_at)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?)",
+            " requirement_snapshot, requirement_summary, problem_snapshot, problem_summary,"
+            " prerequisite_task_id, created_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (args.task_id, args.project_id, request, requirement_id, args.actor,
-             requirement_snapshot, requirement_summary, problem_snapshot, problem_summary, _now()),
+             requirement_snapshot, requirement_summary, problem_snapshot, problem_summary,
+             prerequisite, _now()),
         )
         conn.commit()
         _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED,
                "task": {"task_id": args.task_id, "project_id": args.project_id,
                         "request": request, "requirement_id": requirement_id,
-                        "requirement_summary": requirement_summary}})
+                        "requirement_summary": requirement_summary,
+                        "prerequisite_task_id": prerequisite}})
         return 0
     finally:
         conn.close()
@@ -333,6 +479,48 @@ def _cmd_evidence_add(args) -> int:
         conn.close()
 
 
+def _row_value(row: sqlite3.Row, name: str):
+    """兼容旧账本行：缺列（V0 迁移前）按空值读。"""
+    try:
+        return row[name]
+    except (IndexError, KeyError):
+        return None
+
+
+def _executions_for(conn: sqlite3.Connection, task_id: str) -> list[dict]:
+    if not _has_table(conn, "executions"):
+        return []
+    return [_execution_payload(record) for record in conn.execute(
+        "SELECT * FROM executions WHERE task_id = ? ORDER BY execution_id", (task_id,))]
+
+
+def _reviews_for(conn: sqlite3.Connection, task_id: str) -> list[dict]:
+    if not _has_table(conn, "reviews"):
+        return []
+    return [dict(record) for record in conn.execute(
+        "SELECT * FROM reviews WHERE task_id = ? ORDER BY review_id", (task_id,))]
+
+
+_JSON_COLUMNS = ("write_scope", "executor_command", "changed_files",
+                 "out_of_scope_files", "change_manifest", "eval_command")
+
+
+def _execution_payload(record: sqlite3.Row) -> dict:
+    """执行记录出账形态：JSON 文本列还原为结构化值，timed_out 归一为 bool；
+    change_manifest 同时保留原始 JSON 文本（change_manifest_json），供摘要复核。"""
+    payload = dict(record)
+    for column in _JSON_COLUMNS:
+        try:
+            payload[column] = json.loads(payload[column]) if payload[column] else (
+                None if column == "executor_command" else [])
+        except (TypeError, ValueError):
+            payload[column] = []
+    payload["change_manifest_json"] = record["change_manifest"]
+    payload["timed_out"] = bool(payload["timed_out"])
+    payload["eval_timed_out"] = bool(payload["eval_timed_out"])
+    return payload
+
+
 def _load_projects(conn: sqlite3.Connection) -> list[dict]:
     projects: list[dict] = []
     for project in conn.execute("SELECT * FROM projects ORDER BY created_at, project_id"):
@@ -353,8 +541,11 @@ def _load_projects(conn: sqlite3.Connection) -> list[dict]:
                 "requirement_summary": task["requirement_summary"],
                 "problem_snapshot": task["problem_snapshot"],
                 "problem_summary": task["problem_summary"],
+                "prerequisite_task_id": _row_value(task, "prerequisite_task_id") or "",
                 "created_at": task["created_at"],
                 "evidence": evidence,
+                "executions": _executions_for(conn, task["task_id"]),
+                "reviews": _reviews_for(conn, task["task_id"]),
             })
         projects.append({
             "project_id": project["project_id"], "name": project["name"],
@@ -441,6 +632,8 @@ def _register_task_create(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--actor", default="", help="创建人具名")
     parser.add_argument("--spec-file", default="", help="需求文件（保存创建时快照）")
     parser.add_argument("--problem-file", default="", help="原始问题文件（可选快照）")
+    parser.add_argument("--prerequisite-task", default="",
+                        help="前置任务编号（L04：必须已具名接受，否则拒绝创建）")
     parser.set_defaults(handler=_cmd_task_create)
 
 

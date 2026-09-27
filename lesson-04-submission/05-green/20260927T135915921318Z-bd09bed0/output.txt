@@ -1,0 +1,21 @@
+test_accepted_task_rerun_invalidates_old_acceptance (test_l04_workbench_v0.WorkbenchV0ContractTest.test_accepted_task_rerun_invalidates_old_acceptance) ... ok
+test_code_run_records_manifest_diff_and_waits_for_review (test_l04_workbench_v0.WorkbenchV0ContractTest.test_code_run_records_manifest_diff_and_waits_for_review) ... ok
+test_eval_timeout_is_distinguishable_from_eval_failure (test_l04_workbench_v0.WorkbenchV0ContractTest.test_eval_timeout_is_distinguishable_from_eval_failure) ... ok
+test_executor_failure_preserves_output_and_diff (test_l04_workbench_v0.WorkbenchV0ContractTest.test_executor_failure_preserves_output_and_diff) ... ok
+test_invalid_workspace_rejected_before_process (test_l04_workbench_v0.WorkbenchV0ContractTest.test_invalid_workspace_rejected_before_process) ... ok
+test_out_of_scope_stops_before_eval (test_l04_workbench_v0.WorkbenchV0ContractTest.test_out_of_scope_stops_before_eval) ... ok
+test_prerequisite_binding_gates_task_creation (test_l04_workbench_v0.WorkbenchV0ContractTest.test_prerequisite_binding_gates_task_creation) ... ok
+test_review_named_decision_self_review_rejected (test_l04_workbench_v0.WorkbenchV0ContractTest.test_review_named_decision_self_review_rejected) ... ok
+test_review_state_rejects_rerun_and_keeps_state (test_l04_workbench_v0.WorkbenchV0ContractTest.test_review_state_rejects_rerun_and_keeps_state) ... ok
+test_status_digest_checks_cover_executions (test_l04_workbench_v0.WorkbenchV0ContractTest.test_status_digest_checks_cover_executions) ... ok
+test_task_run_code_mode_requires_write_scope (test_l04_workbench_v0.WorkbenchV0ContractTest.test_task_run_code_mode_requires_write_scope) ... ok
+test_task_run_requires_explicit_timeout_declaration (test_l04_workbench_v0.WorkbenchV0ContractTest.test_task_run_requires_explicit_timeout_declaration) ... ok
+test_task_show_lists_summary_fields (test_l04_workbench_v0.WorkbenchV0ContractTest.test_task_show_lists_summary_fields) ... ok
+test_timeout_preserves_partial_output (test_l04_workbench_v0.WorkbenchV0ContractTest.test_timeout_preserves_partial_output) ... ok
+test_verify_mode_never_launches_executor (test_l04_workbench_v0.WorkbenchV0ContractTest.test_verify_mode_never_launches_executor) ... ok
+test_workspace_without_start_commit_rejected (test_l04_workbench_v0.WorkbenchV0ContractTest.test_workspace_without_start_commit_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 16.417s
+
+OK

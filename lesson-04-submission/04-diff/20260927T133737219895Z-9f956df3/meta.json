@@ -1,0 +1,18 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "diff",
+    "--",
+    "lesson-04-submission",
+    "workbench",
+    "tests"
+  ],
+  "command": "[\"git\", \"diff\", \"--\", \"lesson-04-submission\", \"workbench\", \"tests\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-27T13:37:37.219895+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-04-submission/04-diff/20260927T133737219895Z-9f956df3/output.txt",
+  "sha256": "0c64fdc92e0f79cf8ced4c9b3cf96d55c96af93cc7c345ba8396e9bc716c214c",
+  "provenance": "local_teaching_capture"
+}

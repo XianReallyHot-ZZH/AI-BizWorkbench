@@ -1,0 +1,153 @@
+test_accepted_task_rerun_invalidates_old_acceptance (test_l04_workbench_v0.WorkbenchV0ContractTest.test_accepted_task_rerun_invalidates_old_acceptance) ... FAIL
+test_code_run_records_manifest_diff_and_waits_for_review (test_l04_workbench_v0.WorkbenchV0ContractTest.test_code_run_records_manifest_diff_and_waits_for_review) ... FAIL
+test_executor_failure_preserves_output_and_diff (test_l04_workbench_v0.WorkbenchV0ContractTest.test_executor_failure_preserves_output_and_diff) ... FAIL
+test_invalid_workspace_rejected_before_process (test_l04_workbench_v0.WorkbenchV0ContractTest.test_invalid_workspace_rejected_before_process) ... FAIL
+test_out_of_scope_stops_before_eval (test_l04_workbench_v0.WorkbenchV0ContractTest.test_out_of_scope_stops_before_eval) ... FAIL
+test_prerequisite_binding_gates_task_creation (test_l04_workbench_v0.WorkbenchV0ContractTest.test_prerequisite_binding_gates_task_creation) ... FAIL
+test_review_named_decision_self_review_rejected (test_l04_workbench_v0.WorkbenchV0ContractTest.test_review_named_decision_self_review_rejected) ... FAIL
+test_review_state_rejects_rerun_and_keeps_state (test_l04_workbench_v0.WorkbenchV0ContractTest.test_review_state_rejects_rerun_and_keeps_state) ... FAIL
+test_status_digest_checks_cover_executions (test_l04_workbench_v0.WorkbenchV0ContractTest.test_status_digest_checks_cover_executions) ... FAIL
+test_task_run_code_mode_requires_write_scope (test_l04_workbench_v0.WorkbenchV0ContractTest.test_task_run_code_mode_requires_write_scope) ... FAIL
+test_task_show_lists_summary_fields (test_l04_workbench_v0.WorkbenchV0ContractTest.test_task_show_lists_summary_fields) ... FAIL
+test_timeout_preserves_partial_output (test_l04_workbench_v0.WorkbenchV0ContractTest.test_timeout_preserves_partial_output) ... FAIL
+test_verify_mode_never_launches_executor (test_l04_workbench_v0.WorkbenchV0ContractTest.test_verify_mode_never_launches_executor) ... FAIL
+
+======================================================================
+FAIL: test_accepted_task_rerun_invalidates_old_acceptance (test_l04_workbench_v0.WorkbenchV0ContractTest.test_accepted_task_rerun_invalidates_old_acceptance)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 362, in test_accepted_task_rerun_invalidates_old_acceptance
+    self.assertEqual(self.run_code().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_code_run_records_manifest_diff_and_waits_for_review (test_l04_workbench_v0.WorkbenchV0ContractTest.test_code_run_records_manifest_diff_and_waits_for_review)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 189, in test_code_run_records_manifest_diff_and_waits_for_review
+    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_executor_failure_preserves_output_and_diff (test_l04_workbench_v0.WorkbenchV0ContractTest.test_executor_failure_preserves_output_and_diff)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 235, in test_executor_failure_preserves_output_and_diff
+    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_invalid_workspace_rejected_before_process (test_l04_workbench_v0.WorkbenchV0ContractTest.test_invalid_workspace_rejected_before_process)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 268, in test_invalid_workspace_rejected_before_process
+    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_out_of_scope_stops_before_eval (test_l04_workbench_v0.WorkbenchV0ContractTest.test_out_of_scope_stops_before_eval)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 217, in test_out_of_scope_stops_before_eval
+    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_prerequisite_binding_gates_task_creation (test_l04_workbench_v0.WorkbenchV0ContractTest.test_prerequisite_binding_gates_task_creation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 313, in test_prerequisite_binding_gates_task_creation
+    self.assertEqual(missing.returncode, 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1
+
+======================================================================
+FAIL: test_review_named_decision_self_review_rejected (test_l04_workbench_v0.WorkbenchV0ContractTest.test_review_named_decision_self_review_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 287, in test_review_named_decision_self_review_rejected
+    self.assertEqual(none.returncode, 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1
+
+======================================================================
+FAIL: test_review_state_rejects_rerun_and_keeps_state (test_l04_workbench_v0.WorkbenchV0ContractTest.test_review_state_rejects_rerun_and_keeps_state)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 276, in test_review_state_rejects_rerun_and_keeps_state
+    self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_status_digest_checks_cover_executions (test_l04_workbench_v0.WorkbenchV0ContractTest.test_status_digest_checks_cover_executions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 334, in test_status_digest_checks_cover_executions
+    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_task_run_code_mode_requires_write_scope (test_l04_workbench_v0.WorkbenchV0ContractTest.test_task_run_code_mode_requires_write_scope)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 165, in test_task_run_code_mode_requires_write_scope
+    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_task_show_lists_summary_fields (test_l04_workbench_v0.WorkbenchV0ContractTest.test_task_show_lists_summary_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 349, in test_task_show_lists_summary_fields
+    self.assertEqual(self.run_code().returncode, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0
+
+======================================================================
+FAIL: test_timeout_preserves_partial_output (test_l04_workbench_v0.WorkbenchV0ContractTest.test_timeout_preserves_partial_output)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 256, in test_timeout_preserves_partial_output
+    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+======================================================================
+FAIL: test_verify_mode_never_launches_executor (test_l04_workbench_v0.WorkbenchV0ContractTest.test_verify_mode_never_launches_executor)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l04_workbench_v0.py", line 177, in test_verify_mode_never_launches_executor
+    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-task-run' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec)
+
+
+----------------------------------------------------------------------
+Ran 13 tests in 6.705s
+
+FAILED (failures=13)

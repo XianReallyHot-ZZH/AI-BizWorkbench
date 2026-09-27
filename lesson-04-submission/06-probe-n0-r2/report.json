@@ -1,0 +1,26 @@
+{
+  "workspace": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L04-delivery/candidate",
+  "scope": "独立教学检查，不代表任务状态或具名验收",
+  "results": [
+    {
+      "case": "normal",
+      "status": "pass"
+    },
+    {
+      "case": "empty",
+      "status": "pass"
+    },
+    {
+      "case": "special",
+      "status": "pass"
+    },
+    {
+      "case": "ordering",
+      "status": "pass"
+    },
+    {
+      "case": "file-failure",
+      "status": "pass"
+    }
+  ]
+}
