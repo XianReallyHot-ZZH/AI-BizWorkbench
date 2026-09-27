@@ -1,0 +1,536 @@
+diff --git a/tests/test_l04_workbench_v0.py b/tests/test_l04_workbench_v0.py
+index 95a5d32..36933de 100644
+--- a/tests/test_l04_workbench_v0.py
++++ b/tests/test_l04_workbench_v0.py
+@@ -14,6 +14,10 @@ C9     → test_prerequisite_binding_gates_task_creation → 前置任务缺失/
+ 内核   → test_status_digest_checks_cover_executions → 篡改执行输出 → status 复核报 execution_digest_mismatch，acceptance 恒待人审
+ C7     → test_task_show_lists_summary_fields → task-show → 修改文件、验证命令、状态、复核记录可查
+ C8     → test_accepted_task_rerun_invalidates_old_acceptance → 接受后再跑 → 回到 review，旧接受不再覆盖当前版本
++复查轮 → test_task_run_requires_explicit_timeout_declaration → code 模式缺 --execution-timeout → execution_timeout_required，拒绝启动（建设合同：三者缺一）
++复查轮 → test_workspace_without_start_commit_rejected → 候选无起点提交 → workspace_invalid（能力信封：起点版本）
++复查轮 → test_eval_timeout_is_distinguishable_from_eval_failure → eval 沉睡超预算 → status=eval_failed 且 eval_timed_out=true（失败不冒充成功）
++复查轮 → test_status_digest_checks_cover_executions（扩展）→ 篡改 change_manifest → execution_digest_mismatch（manifest 自身有摘要）
+ 
+ 替身执行器边界：本文件全部用测试控制的脚本进程充当执行器，证明的是 V0 机制
+ （写集检查、记录保真、状态门），不证明真实 claude -p 行为——后者只在 B 段实跑
+@@ -127,7 +131,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
+ 
+     def run_code(self, task_id: str = "T-A", stub: Path | None = None,
+                  scope: tuple[str, ...] = ("src",), eval_probe: Path | None = None,
+-                 timeout: str = "900", workspace: Path | None = None,
++                 timeout: str | None = "900", workspace: Path | None = None,
+                  marker: Path | None = None) -> subprocess.CompletedProcess:
+         prompt_file = self.tmp / "prompt.txt"
+         prompt_file.write_text(PROMPT_TEXT, encoding="utf-8")
+@@ -141,8 +145,9 @@ class WorkbenchV0ContractTest(unittest.TestCase):
+                 str(self.tmp / "prompt-capture.txt"), str(workspace or self.workspace),
+                 "--executor-prompt-file", str(prompt_file),
+                 "--eval-command", sys.executable, str(eval_probe or self.eval_probe()), str(marker),
+-                "--execution-timeout", timeout,
+                 "--actor", "tester-A"]
++        if timeout is not None:  # None = 故意缺声明，验证预算门
++            args += ["--execution-timeout", timeout]
+         return run_cli(*args)
+ 
+     def approve(self, task_id: str = "T-A", reviewer: str = "reviewer-B",
+@@ -175,7 +180,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
+         proc = run_cli("workbench-task-run", "T-A", "--runtime-dir", str(self.rt),
+                        "--workspace", str(self.workspace), "--mode", "verify",
+                        "--eval-command", sys.executable, str(self.eval_probe()), str(marker),
+-                       "--actor", "tester-A")
++                       "--execution-timeout", "900", "--actor", "tester-A")
+         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+         record = payload(proc)["execution"]
+         self.assertEqual(record["mode"], "verify")
+@@ -212,14 +217,16 @@ class WorkbenchV0ContractTest(unittest.TestCase):
+         rogue = self.write_stub("stub_out_of_scope.py", """
+             import sys, pathlib
+             sys.stdin.read()
+-            pathlib.Path(sys.argv[2] + "/rogue.txt").write_text("越界\\n", encoding="utf-8")
++            nested = pathlib.Path(sys.argv[2] + "/rogue_dir")
++            nested.mkdir()
++            (nested / "nested.txt").write_text("越界\\n", encoding="utf-8")
+         """)
+         marker = self.tmp / "marker-rogue.json"
+         proc = self.run_code(stub=rogue)
+         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+         body = payload(proc)
+         self.assertEqual(body["execution"]["status"], "out_of_scope")
+-        self.assertIn("rogue.txt", body["execution"]["out_of_scope_files"])
++        self.assertIn("rogue_dir/nested.txt", body["execution"]["out_of_scope_files"])  # 新目录不折叠
+         self.assertFalse(marker.exists())  # 越界在 eval 前停止
+         self.assertEqual(body["task_state"], "out_of_scope")
+ 
+@@ -337,6 +344,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
+         db = self.rt / "workbench.db"
+         conn = sqlite3.connect(db)
+         conn.execute("UPDATE executions SET stdout_text = '被篡改的输出'")  # 模拟账本被手改
++        conn.execute("UPDATE executions SET change_manifest = '[]'")  # manifest 本身也有摘要（复查轮）
+         conn.commit()
+         conn.close()
+         status = run_cli("workbench-status", "--runtime-dir", str(self.rt),
+@@ -344,6 +352,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
+         self.assertEqual(status.returncode, 1)
+         body = payload(status)
+         self.assertTrue(any("execution_digest_mismatch" in e for e in body["errors"]))
++        self.assertTrue(any("change_manifest" in e for e in body["errors"]))
+         self.assertEqual(body["acceptance"], "pending_human_review")  # 恒待人签
+ 
+     def test_task_show_lists_summary_fields(self) -> None:
+@@ -370,6 +379,41 @@ class WorkbenchV0ContractTest(unittest.TestCase):
+         show = payload(run_cli("workbench-task-show", "T-A", "--runtime-dir", str(self.rt)))
+         self.assertEqual(len(show["task"]["executions"]), 2)  # 两轮执行记录全保留
+ 
++    # ---- 复查轮（code-review 发现，test-first）--------------------------
++
++    def test_task_run_requires_explicit_timeout_declaration(self) -> None:
++        self.init_task()
++        proc = self.run_code(timeout=None)  # 故意缺预算声明
++        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
++        self.assertIn("execution_timeout_required", proc.stdout)  # 建设合同：三者缺一拒绝启动
++        show = payload(run_cli("workbench-task-show", "T-A", "--runtime-dir", str(self.rt)))
++        self.assertEqual(show.get("task", {}).get("state"), "no_execution")
++
++    def test_workspace_without_start_commit_rejected(self) -> None:
++        self.init_task()
++        bare = self.tmp / "candidate-no-commit"
++        (bare / "src").mkdir(parents=True)
++        git(bare, "init", "-q")  # 有 .git 无起点提交
++        proc = self.run_code(workspace=bare)
++        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
++        self.assertIn("workspace_invalid", proc.stdout)  # 能力信封要求起点版本
++        show = payload(run_cli("workbench-task-show", "T-A", "--runtime-dir", str(self.rt)))
++        self.assertEqual(show.get("task", {}).get("state"), "no_execution")
++
++    def test_eval_timeout_is_distinguishable_from_eval_failure(self) -> None:
++        self.init_task()
++        slow_eval = self.write_stub("eval_slow_probe.py", """
++            import sys, time
++            time.sleep(30)
++        """)
++        marker = self.tmp / "marker-slow-eval.json"
++        proc = self.run_code(eval_probe=slow_eval, timeout="1")
++        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
++        record = payload(proc)["execution"]
++        self.assertEqual(record["status"], "eval_failed")
++        self.assertTrue(record["eval_timed_out"])  # 超时与业务失败可分辨，不冒充
++        self.assertFalse(marker.exists())
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/workbench/bootstrap.py b/workbench/bootstrap.py
+index ef6199f..375aefa 100644
+--- a/workbench/bootstrap.py
++++ b/workbench/bootstrap.py
+@@ -45,6 +45,51 @@ LIMITATIONS = (
+     "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成",
+ )
+ 
++# L04 执行/复核表（只追加）：init 建库与 _ensure_v0_schema 旧账迁移共用同一 DDL。
++_EXECUTION_SCHEMA = """
++CREATE TABLE IF NOT EXISTS executions (
++  execution_id INTEGER PRIMARY KEY AUTOINCREMENT,
++  task_id TEXT NOT NULL,
++  mode TEXT NOT NULL,
++  workspace TEXT NOT NULL,
++  write_scope TEXT NOT NULL DEFAULT '[]',
++  executor_command TEXT,
++  executor_prompt TEXT,
++  returncode INTEGER,
++  timed_out INTEGER NOT NULL DEFAULT 0,
++  stdout_text TEXT NOT NULL DEFAULT '',
++  stderr_text TEXT NOT NULL DEFAULT '',
++  stdout_sha256 TEXT NOT NULL DEFAULT '',
++  stderr_sha256 TEXT NOT NULL DEFAULT '',
++  changed_files TEXT NOT NULL DEFAULT '[]',
++  out_of_scope_files TEXT NOT NULL DEFAULT '[]',
++  change_manifest TEXT NOT NULL DEFAULT '[]',
++  change_manifest_sha256 TEXT NOT NULL DEFAULT '',
++  diff_text TEXT NOT NULL DEFAULT '',
++  diff_sha256 TEXT NOT NULL DEFAULT '',
++  eval_command TEXT NOT NULL DEFAULT '[]',
++  eval_returncode INTEGER,
++  eval_output_text TEXT NOT NULL DEFAULT '',
++  eval_output_sha256 TEXT NOT NULL DEFAULT '',
++  eval_timed_out INTEGER NOT NULL DEFAULT 0,
++  status TEXT NOT NULL,
++  actor TEXT NOT NULL DEFAULT '',
++  observed_at TEXT NOT NULL,
++  recorded_at TEXT NOT NULL
++);
++CREATE INDEX IF NOT EXISTS executions_by_task ON executions (task_id);
++CREATE TABLE IF NOT EXISTS reviews (
++  review_id INTEGER PRIMARY KEY AUTOINCREMENT,
++  task_id TEXT NOT NULL,
++  execution_id INTEGER NOT NULL,
++  reviewer TEXT NOT NULL,
++  decision TEXT NOT NULL,
++  note TEXT NOT NULL DEFAULT '',
++  reviewed_at TEXT NOT NULL
++);
++CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
++"""
++
+ _SCHEMA = """
+ CREATE TABLE IF NOT EXISTS workbench (
+   id INTEGER PRIMARY KEY CHECK (id = 1),
+@@ -86,46 +131,7 @@ CREATE TABLE IF NOT EXISTS evidence (
+   recorded_at TEXT NOT NULL
+ );
+ CREATE INDEX IF NOT EXISTS evidence_by_task ON evidence (task_id);
+-CREATE TABLE IF NOT EXISTS executions (
+-  execution_id INTEGER PRIMARY KEY AUTOINCREMENT,
+-  task_id TEXT NOT NULL,
+-  mode TEXT NOT NULL,
+-  workspace TEXT NOT NULL,
+-  write_scope TEXT NOT NULL DEFAULT '[]',
+-  executor_command TEXT,
+-  executor_prompt TEXT,
+-  returncode INTEGER,
+-  timed_out INTEGER NOT NULL DEFAULT 0,
+-  stdout_text TEXT NOT NULL DEFAULT '',
+-  stderr_text TEXT NOT NULL DEFAULT '',
+-  stdout_sha256 TEXT NOT NULL DEFAULT '',
+-  stderr_sha256 TEXT NOT NULL DEFAULT '',
+-  changed_files TEXT NOT NULL DEFAULT '[]',
+-  out_of_scope_files TEXT NOT NULL DEFAULT '[]',
+-  change_manifest TEXT NOT NULL DEFAULT '[]',
+-  diff_text TEXT NOT NULL DEFAULT '',
+-  diff_sha256 TEXT NOT NULL DEFAULT '',
+-  eval_command TEXT NOT NULL DEFAULT '[]',
+-  eval_returncode INTEGER,
+-  eval_output_text TEXT NOT NULL DEFAULT '',
+-  eval_output_sha256 TEXT NOT NULL DEFAULT '',
+-  status TEXT NOT NULL,
+-  actor TEXT NOT NULL DEFAULT '',
+-  observed_at TEXT NOT NULL,
+-  recorded_at TEXT NOT NULL
+-);
+-CREATE INDEX IF NOT EXISTS executions_by_task ON executions (task_id);
+-CREATE TABLE IF NOT EXISTS reviews (
+-  review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+-  task_id TEXT NOT NULL,
+-  execution_id INTEGER NOT NULL,
+-  reviewer TEXT NOT NULL,
+-  decision TEXT NOT NULL,
+-  note TEXT NOT NULL DEFAULT '',
+-  reviewed_at TEXT NOT NULL
+-);
+-CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
+-"""
++""" + _EXECUTION_SCHEMA  # L04 执行/复核表：单一 DDL 来源，init 与旧账迁移共用（复查轮 S1）
+ 
+ 
+ class LedgerUnavailable(RuntimeError):
+@@ -203,47 +209,13 @@ def _ensure_v0_schema(conn: sqlite3.Connection) -> None:
+     columns = {row[1] for row in conn.execute("PRAGMA table_info(tasks)")}
+     if "prerequisite_task_id" not in columns:
+         conn.execute("ALTER TABLE tasks ADD COLUMN prerequisite_task_id TEXT NOT NULL DEFAULT ''")
+-    conn.executescript("""
+-        CREATE TABLE IF NOT EXISTS executions (
+-          execution_id INTEGER PRIMARY KEY AUTOINCREMENT,
+-          task_id TEXT NOT NULL,
+-          mode TEXT NOT NULL,
+-          workspace TEXT NOT NULL,
+-          write_scope TEXT NOT NULL DEFAULT '[]',
+-          executor_command TEXT,
+-          executor_prompt TEXT,
+-          returncode INTEGER,
+-          timed_out INTEGER NOT NULL DEFAULT 0,
+-          stdout_text TEXT NOT NULL DEFAULT '',
+-          stderr_text TEXT NOT NULL DEFAULT '',
+-          stdout_sha256 TEXT NOT NULL DEFAULT '',
+-          stderr_sha256 TEXT NOT NULL DEFAULT '',
+-          changed_files TEXT NOT NULL DEFAULT '[]',
+-          out_of_scope_files TEXT NOT NULL DEFAULT '[]',
+-          change_manifest TEXT NOT NULL DEFAULT '[]',
+-          diff_text TEXT NOT NULL DEFAULT '',
+-          diff_sha256 TEXT NOT NULL DEFAULT '',
+-          eval_command TEXT NOT NULL DEFAULT '[]',
+-          eval_returncode INTEGER,
+-          eval_output_text TEXT NOT NULL DEFAULT '',
+-          eval_output_sha256 TEXT NOT NULL DEFAULT '',
+-          status TEXT NOT NULL,
+-          actor TEXT NOT NULL DEFAULT '',
+-          observed_at TEXT NOT NULL,
+-          recorded_at TEXT NOT NULL
+-        );
+-        CREATE INDEX IF NOT EXISTS executions_by_task ON executions (task_id);
+-        CREATE TABLE IF NOT EXISTS reviews (
+-          review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+-          task_id TEXT NOT NULL,
+-          execution_id INTEGER NOT NULL,
+-          reviewer TEXT NOT NULL,
+-          decision TEXT NOT NULL,
+-          note TEXT NOT NULL DEFAULT '',
+-          reviewed_at TEXT NOT NULL
+-        );
+-        CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
+-    """)
++    conn.executescript(_EXECUTION_SCHEMA)
++    # 复查轮新增列：commit-2 形状的既有账本补列（只加不改，旧记录保持原样）
++    execution_columns = {row[1] for row in conn.execute("PRAGMA table_info(executions)")}
++    if "change_manifest_sha256" not in execution_columns:
++        conn.execute("ALTER TABLE executions ADD COLUMN change_manifest_sha256 TEXT NOT NULL DEFAULT ''")
++    if "eval_timed_out" not in execution_columns:
++        conn.execute("ALTER TABLE executions ADD COLUMN eval_timed_out INTEGER NOT NULL DEFAULT 0")
+     conn.commit()
+ 
+ 
+@@ -346,10 +318,11 @@ def _digest_problems(projects: list[dict]) -> list[str]:
+                 for text_key, sha_key, label in (
+                     ("stdout_text", "stdout_sha256", "stdout"),
+                     ("stderr_text", "stderr_sha256", "stderr"),
++                    ("change_manifest_json", "change_manifest_sha256", "change_manifest"),
+                     ("diff_text", "diff_sha256", "diff"),
+                     ("eval_output_text", "eval_output_sha256", "eval 输出"),
+                 ):
+-                    if record[sha_key] and _sha256(record[text_key]) != record[sha_key]:
++                    if record.get(sha_key) and _sha256(record[text_key]) != record[sha_key]:
+                         problems.append(
+                             f"execution_digest_mismatch: 任务 {task['task_id']} 执行 "
+                             f"{record['execution_id']} 的 {label} 与摘要不一致")
+@@ -533,7 +506,8 @@ _JSON_COLUMNS = ("write_scope", "executor_command", "changed_files",
+ 
+ 
+ def _execution_payload(record: sqlite3.Row) -> dict:
+-    """执行记录出账形态：JSON 文本列还原为结构化值，timed_out 归一为 bool。"""
++    """执行记录出账形态：JSON 文本列还原为结构化值，timed_out 归一为 bool；
++    change_manifest 同时保留原始 JSON 文本（change_manifest_json），供摘要复核。"""
+     payload = dict(record)
+     for column in _JSON_COLUMNS:
+         try:
+@@ -541,7 +515,9 @@ def _execution_payload(record: sqlite3.Row) -> dict:
+                 None if column == "executor_command" else [])
+         except (TypeError, ValueError):
+             payload[column] = []
++    payload["change_manifest_json"] = record["change_manifest"]
+     payload["timed_out"] = bool(payload["timed_out"])
++    payload["eval_timed_out"] = bool(payload["eval_timed_out"])
+     return payload
+ 
+ 
+diff --git a/workbench/execution.py b/workbench/execution.py
+index dfd316e..bc8e8fd 100644
+--- a/workbench/execution.py
++++ b/workbench/execution.py
+@@ -27,6 +27,7 @@ Eval、停在 review 等人审。执行记录与上游 07-real-codex-executor.js
+ from __future__ import annotations
+ 
+ import argparse
++import hashlib
+ import json
+ import subprocess
+ from dataclasses import dataclass
+@@ -46,6 +47,7 @@ from .bootstrap import (
+     _now,
+     _require_workbench,
+     _reviews_for,
++    _row_value,
+     _sha256,
+     _task_state,
+ )
+@@ -59,6 +61,19 @@ class _ProcessOutcome:
+     stderr_text: str
+ 
+ 
++def _sha256_bytes(data: bytes) -> str:
++    return hashlib.sha256(data).hexdigest()
++
++
++def _connect_workbench(runtime_dir: str):
++    """打开既有运行库并校验工作台身份；不可用时报 UNINITIALIZED 并返回 None（复查轮 S2）。"""
++    conn = _connect(Path(runtime_dir), create=False)
++    if conn is None or _require_workbench(conn) is None:
++        _fail(UNINITIALIZED)
++        return None
++    return conn
++
++
+ # ---- 进程运行器（执行器与 Eval 共用；输出一律按 UTF-8 解码留证）--------------
+ 
+ 
+@@ -94,7 +109,10 @@ def _normalize_scope(entries: list[str]) -> list[str]:
+             continue
+         if path.is_absolute() or ".." in path.parts:
+             continue  # 绝对路径与越出候选的条目不构成有效写集，落写集校验拒绝
+-        scope.append(path.as_posix().lstrip("./") or ".")
++        posix = path.as_posix()
++        while posix.startswith("./"):  # 只剥 "./" 前缀本身，不动 ".hidden" 这类合法名字（复查轮 S6a）
++            posix = posix[2:]
++        scope.append(posix or ".")
+     return list(dict.fromkeys(scope))
+ 
+ 
+@@ -112,12 +130,17 @@ def _workspace_error(workspace: Path) -> str | None:
+         return f"workspace_invalid: 工作目录不存在：{workspace}"
+     if not (workspace / ".git").exists():
+         return f"workspace_invalid: 工作目录不是 git 候选（缺 .git）：{workspace}"
++    head = _git(workspace, "rev-parse", "--verify", "HEAD")
++    if head.returncode != 0:
++        # 能力信封要求"候选绝对路径 + 起点版本"：无起点提交则 Diff/前值摘要无从谈起
++        return f"workspace_invalid: 候选没有起点提交（缺 HEAD）：{workspace}"
+     return None
+ 
+ 
+ def _collect_changes(workspace: Path, scope: list[str]) -> tuple[list[str], list[dict], list[str], str]:
+     """执行后的实测改动：porcelain 列改动、逐文件前后 SHA-256、Diff 正文、越界清单。"""
+-    raw = _git(workspace, "status", "--porcelain", "-z").stdout.decode("utf-8", errors="replace")
++    # -uall：新目录里的未跟踪文件逐个列出，不被折叠成目录条目（复查轮）
++    raw = _git(workspace, "status", "--porcelain", "-z", "-uall").stdout.decode("utf-8", errors="replace")
+     entries = [entry for entry in raw.split("\0") if entry]
+     changed: list[str] = []
+     index = 0
+@@ -135,9 +158,11 @@ def _collect_changes(workspace: Path, scope: list[str]) -> tuple[list[str], list
+     manifest: list[dict] = []
+     for path in changed:
+         head = _git(workspace, "show", f"HEAD:{path}")
+-        before = _sha256(head.stdout.decode("utf-8", errors="replace")) if head.returncode == 0 else None
++        # 前后摘要一律对原始字节（复查轮 S6b）：decode(errors="replace") 同形的改字
++        # 无法逃过 status 的摘要复核；文本字段摘要仍对账本内文本，口径见证据账 §6。
++        before = _sha256_bytes(head.stdout) if head.returncode == 0 else None
+         file = workspace / path
+-        after = _sha256(file.read_bytes().decode("utf-8", errors="replace")) if file.is_file() else None
++        after = _sha256_bytes(file.read_bytes()) if file.is_file() else None
+         change = "added" if before is None else ("deleted" if after is None else "modified")
+         manifest.append({"path": path, "change": change,
+                          "before_sha256": before, "after_sha256": after})
+@@ -149,9 +174,9 @@ def _collect_changes(workspace: Path, scope: list[str]) -> tuple[list[str], list
+ 
+ 
+ def _cmd_task_run(args) -> int:
+-    conn = _connect(Path(args.runtime_dir), create=False)
+-    if conn is None or _require_workbench(conn) is None:
+-        return _fail(UNINITIALIZED)
++    conn = _connect_workbench(args.runtime_dir)
++    if conn is None:
++        return 1
+     try:
+         if not conn.execute("SELECT 1 FROM tasks WHERE task_id = ?", (args.task_id,)).fetchone():
+             return _fail(f"{MISSING_TASK}: 任务不存在：{args.task_id}，记录未追加")
+@@ -169,6 +194,10 @@ def _cmd_task_run(args) -> int:
+                 return _fail("executor_command_required: code 模式必须给出执行器命令，拒绝启动")
+         elif executor_command is not None:
+             return _fail("verify_rejects_executor_command: 仅复验模式不调用执行器进程，拒绝执行器命令")
++        if args.execution_timeout is None:
++            # 建设合同"工作目录、写集、超时三者缺一拒绝启动"；预算是执行器合同的
++            # 组成部分（ADR-0002），verify 模式同样须显式声明（Eval 也受它约束）
++            return _fail("execution_timeout_required: 必须显式声明 --execution-timeout，执行未启动")
+         if args.executor_prompt_file:
+             try:
+                 prompt_text = Path(args.executor_prompt_file).read_text(encoding="utf-8")
+@@ -188,10 +217,11 @@ def _cmd_task_run(args) -> int:
+             "eval_command": list(args.eval_command),
+         }
+         if args.mode == "verify":
+-            eval_rc, eval_text = _run_eval(args, workspace)
++            eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace)
+             record.update(returncode=None, timed_out=False, stdout_text="", stderr_text="",
+                           changed_files=[], out_of_scope_files=[], change_manifest=[],
+                           diff_text="", eval_returncode=eval_rc, eval_output_text=eval_text,
++                          eval_timed_out=eval_timed_out,
+                           status="verify_completed" if eval_rc == 0 else "eval_failed")
+         else:
+             outcome = _run_process(executor_command, cwd=workspace,
+@@ -208,8 +238,9 @@ def _cmd_task_run(args) -> int:
+             elif out_of_scope:
+                 record["status"] = "out_of_scope"  # 越界：Eval 前停止，不自动回滚
+             else:
+-                eval_rc, eval_text = _run_eval(args, workspace)
++                eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace)
+                 record.update(eval_returncode=eval_rc, eval_output_text=eval_text,
++                              eval_timed_out=eval_timed_out,
+                               status="completed" if eval_rc == 0 else "eval_failed")
+ 
+         record["stdout_sha256"] = _sha256(record["stdout_text"])
+@@ -229,41 +260,45 @@ def _cmd_task_run(args) -> int:
+         conn.close()
+ 
+ 
+-def _run_eval(args, workspace: Path) -> tuple[int | None, str]:
++def _run_eval(args, workspace: Path) -> tuple[int | None, bool, str]:
++    """Eval 与执行器共用同一预算声明；超时独立成标志，不与业务失败混淆（复查轮）。"""
+     outcome = _run_process(list(args.eval_command), cwd=workspace,
+                            timeout_s=args.execution_timeout)
+-    return outcome.returncode, outcome.stdout_text + outcome.stderr_text
++    return outcome.returncode, outcome.timed_out, outcome.stdout_text + outcome.stderr_text
+ 
+ 
+ def _insert_execution(conn, record: dict, *, actor: str) -> int:
+     def dumps(value):
+         return json.dumps(value, ensure_ascii=False) if value is not None else None
+ 
++    manifest_json = dumps(record["change_manifest"])
+     cursor = conn.execute(
+         "INSERT INTO executions (task_id, mode, workspace, write_scope, executor_command,"
+         " executor_prompt, returncode, timed_out, stdout_text, stderr_text, stdout_sha256,"
+-        " stderr_sha256, changed_files, out_of_scope_files, change_manifest, diff_text,"
+-        " diff_sha256, eval_command, eval_returncode, eval_output_text, eval_output_sha256,"
+-        " status, actor, observed_at, recorded_at)"
+-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
++        " stderr_sha256, changed_files, out_of_scope_files, change_manifest,"
++        " change_manifest_sha256, diff_text, diff_sha256, eval_command, eval_returncode,"
++        " eval_output_text, eval_output_sha256, eval_timed_out, status, actor, observed_at,"
++        " recorded_at)"
++        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+         (record["task_id"], record["mode"], record["workspace"], dumps(record["write_scope"]),
+          dumps(record["executor_command"]), record["executor_prompt"], record["returncode"],
+          int(record["timed_out"]), record["stdout_text"], record["stderr_text"],
+          record["stdout_sha256"], record["stderr_sha256"],
+          dumps(record["changed_files"]), dumps(record["out_of_scope_files"]),
+-         dumps(record["change_manifest"]), record["diff_text"], record["diff_sha256"],
++         manifest_json, _sha256(manifest_json), record["diff_text"], record["diff_sha256"],
+          dumps(record["eval_command"]), record.get("eval_returncode"),
+          record.get("eval_output_text", ""), record["eval_output_sha256"],
+-         record["status"], actor.strip(), _now(), _now()),
++         int(record.get("eval_timed_out", False)), record["status"], actor.strip(),
++         _now(), _now()),
+     )
+     conn.commit()
+     return cursor.lastrowid
+ 
+ 
+ def _cmd_task_review(args) -> int:
+-    conn = _connect(Path(args.runtime_dir), create=False)
+-    if conn is None or _require_workbench(conn) is None:
+-        return _fail(UNINITIALIZED)
++    conn = _connect_workbench(args.runtime_dir)
++    if conn is None:
++        return 1
+     try:
+         if not conn.execute("SELECT 1 FROM tasks WHERE task_id = ?", (args.task_id,)).fetchone():
+             return _fail(f"{MISSING_TASK}: 任务不存在：{args.task_id}，记录未追加")
+@@ -297,9 +332,9 @@ def _cmd_task_review(args) -> int:
+ 
+ 
+ def _cmd_task_show(args) -> int:
+-    conn = _connect(Path(args.runtime_dir), create=False)
+-    if conn is None or _require_workbench(conn) is None:
+-        return _fail(UNINITIALIZED)
++    conn = _connect_workbench(args.runtime_dir)
++    if conn is None:
++        return 1
+     try:
+         task = conn.execute("SELECT * FROM tasks WHERE task_id = ?", (args.task_id,)).fetchone()
+         if task is None:
+@@ -307,8 +342,7 @@ def _cmd_task_show(args) -> int:
+         _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED,
+                "task": {"task_id": task["task_id"], "request": task["request"],
+                         "requirement_id": task["requirement_id"], "actor": task["actor"],
+-                        "prerequisite_task_id": task["prerequisite_task_id"]
+-                        if "prerequisite_task_id" in task.keys() else "",
++                        "prerequisite_task_id": _row_value(task, "prerequisite_task_id") or "",
+                         "state": _task_state(conn, args.task_id),
+                         "executions": _executions_for(conn, args.task_id),
+                         "reviews": _reviews_for(conn, args.task_id)}})
+@@ -334,7 +368,8 @@ def _register_task_run(subparsers: argparse._SubParsersAction) -> None:
+     parser.add_argument("--executor-prompt-file", default="", help="执行器提示词文件（UTF-8）")
+     parser.add_argument("--eval-command", nargs="+", required=True, metavar="ARG",
+                         help="最小 Eval 命令 argv（在绑定候选目录实跑）")
+-    parser.add_argument("--execution-timeout", type=int, default=900, help="超时秒数（默认 900）")
++    parser.add_argument("--execution-timeout", type=int, default=None, metavar="SECONDS",
++                        help="超时秒数（必须显式声明——执行器合同的预算项；缺声明拒绝启动）")
+     parser.add_argument("--actor", required=True, help="执行发起人具名")
+     parser.set_defaults(handler=_cmd_task_run)
+ 

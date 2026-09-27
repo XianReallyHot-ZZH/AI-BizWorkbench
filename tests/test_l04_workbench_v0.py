@@ -14,6 +14,10 @@ C9     → test_prerequisite_binding_gates_task_creation → 前置任务缺失/
 内核   → test_status_digest_checks_cover_executions → 篡改执行输出 → status 复核报 execution_digest_mismatch，acceptance 恒待人审
 C7     → test_task_show_lists_summary_fields → task-show → 修改文件、验证命令、状态、复核记录可查
 C8     → test_accepted_task_rerun_invalidates_old_acceptance → 接受后再跑 → 回到 review，旧接受不再覆盖当前版本
+复查轮 → test_task_run_requires_explicit_timeout_declaration → code 模式缺 --execution-timeout → execution_timeout_required，拒绝启动（建设合同：三者缺一）
+复查轮 → test_workspace_without_start_commit_rejected → 候选无起点提交 → workspace_invalid（能力信封：起点版本）
+复查轮 → test_eval_timeout_is_distinguishable_from_eval_failure → eval 沉睡超预算 → status=eval_failed 且 eval_timed_out=true（失败不冒充成功）
+复查轮 → test_status_digest_checks_cover_executions（扩展）→ 篡改 change_manifest → execution_digest_mismatch（manifest 自身有摘要）
 
 替身执行器边界：本文件全部用测试控制的脚本进程充当执行器，证明的是 V0 机制
 （写集检查、记录保真、状态门），不证明真实 claude -p 行为——后者只在 B 段实跑
@@ -127,7 +131,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
 
     def run_code(self, task_id: str = "T-A", stub: Path | None = None,
                  scope: tuple[str, ...] = ("src",), eval_probe: Path | None = None,
-                 timeout: str = "900", workspace: Path | None = None,
+                 timeout: str | None = "900", workspace: Path | None = None,
                  marker: Path | None = None) -> subprocess.CompletedProcess:
         prompt_file = self.tmp / "prompt.txt"
         prompt_file.write_text(PROMPT_TEXT, encoding="utf-8")
@@ -141,8 +145,9 @@ class WorkbenchV0ContractTest(unittest.TestCase):
                 str(self.tmp / "prompt-capture.txt"), str(workspace or self.workspace),
                 "--executor-prompt-file", str(prompt_file),
                 "--eval-command", sys.executable, str(eval_probe or self.eval_probe()), str(marker),
-                "--execution-timeout", timeout,
                 "--actor", "tester-A"]
+        if timeout is not None:  # None = 故意缺声明，验证预算门
+            args += ["--execution-timeout", timeout]
         return run_cli(*args)
 
     def approve(self, task_id: str = "T-A", reviewer: str = "reviewer-B",
@@ -175,7 +180,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         proc = run_cli("workbench-task-run", "T-A", "--runtime-dir", str(self.rt),
                        "--workspace", str(self.workspace), "--mode", "verify",
                        "--eval-command", sys.executable, str(self.eval_probe()), str(marker),
-                       "--actor", "tester-A")
+                       "--execution-timeout", "900", "--actor", "tester-A")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         record = payload(proc)["execution"]
         self.assertEqual(record["mode"], "verify")
@@ -212,14 +217,16 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         rogue = self.write_stub("stub_out_of_scope.py", """
             import sys, pathlib
             sys.stdin.read()
-            pathlib.Path(sys.argv[2] + "/rogue.txt").write_text("越界\\n", encoding="utf-8")
+            nested = pathlib.Path(sys.argv[2] + "/rogue_dir")
+            nested.mkdir()
+            (nested / "nested.txt").write_text("越界\\n", encoding="utf-8")
         """)
         marker = self.tmp / "marker-rogue.json"
         proc = self.run_code(stub=rogue)
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
         body = payload(proc)
         self.assertEqual(body["execution"]["status"], "out_of_scope")
-        self.assertIn("rogue.txt", body["execution"]["out_of_scope_files"])
+        self.assertIn("rogue_dir/nested.txt", body["execution"]["out_of_scope_files"])  # 新目录不折叠
         self.assertFalse(marker.exists())  # 越界在 eval 前停止
         self.assertEqual(body["task_state"], "out_of_scope")
 
@@ -337,6 +344,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         db = self.rt / "workbench.db"
         conn = sqlite3.connect(db)
         conn.execute("UPDATE executions SET stdout_text = '被篡改的输出'")  # 模拟账本被手改
+        conn.execute("UPDATE executions SET change_manifest = '[]'")  # manifest 本身也有摘要（复查轮）
         conn.commit()
         conn.close()
         status = run_cli("workbench-status", "--runtime-dir", str(self.rt),
@@ -344,6 +352,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         self.assertEqual(status.returncode, 1)
         body = payload(status)
         self.assertTrue(any("execution_digest_mismatch" in e for e in body["errors"]))
+        self.assertTrue(any("change_manifest" in e for e in body["errors"]))
         self.assertEqual(body["acceptance"], "pending_human_review")  # 恒待人签
 
     def test_task_show_lists_summary_fields(self) -> None:
@@ -369,6 +378,41 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         self.assertEqual(body["task_state"], "review")  # 新执行回到待审，旧接受失效
         show = payload(run_cli("workbench-task-show", "T-A", "--runtime-dir", str(self.rt)))
         self.assertEqual(len(show["task"]["executions"]), 2)  # 两轮执行记录全保留
+
+    # ---- 复查轮（code-review 发现，test-first）--------------------------
+
+    def test_task_run_requires_explicit_timeout_declaration(self) -> None:
+        self.init_task()
+        proc = self.run_code(timeout=None)  # 故意缺预算声明
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("execution_timeout_required", proc.stdout)  # 建设合同：三者缺一拒绝启动
+        show = payload(run_cli("workbench-task-show", "T-A", "--runtime-dir", str(self.rt)))
+        self.assertEqual(show.get("task", {}).get("state"), "no_execution")
+
+    def test_workspace_without_start_commit_rejected(self) -> None:
+        self.init_task()
+        bare = self.tmp / "candidate-no-commit"
+        (bare / "src").mkdir(parents=True)
+        git(bare, "init", "-q")  # 有 .git 无起点提交
+        proc = self.run_code(workspace=bare)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("workspace_invalid", proc.stdout)  # 能力信封要求起点版本
+        show = payload(run_cli("workbench-task-show", "T-A", "--runtime-dir", str(self.rt)))
+        self.assertEqual(show.get("task", {}).get("state"), "no_execution")
+
+    def test_eval_timeout_is_distinguishable_from_eval_failure(self) -> None:
+        self.init_task()
+        slow_eval = self.write_stub("eval_slow_probe.py", """
+            import sys, time
+            time.sleep(30)
+        """)
+        marker = self.tmp / "marker-slow-eval.json"
+        proc = self.run_code(eval_probe=slow_eval, timeout="1")
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        record = payload(proc)["execution"]
+        self.assertEqual(record["status"], "eval_failed")
+        self.assertTrue(record["eval_timed_out"])  # 超时与业务失败可分辨，不冒充
+        self.assertFalse(marker.exists())
 
 
 if __name__ == "__main__":

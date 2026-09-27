@@ -45,6 +45,51 @@ LIMITATIONS = (
     "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成",
 )
 
+# L04 执行/复核表（只追加）：init 建库与 _ensure_v0_schema 旧账迁移共用同一 DDL。
+_EXECUTION_SCHEMA = """
+CREATE TABLE IF NOT EXISTS executions (
+  execution_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  workspace TEXT NOT NULL,
+  write_scope TEXT NOT NULL DEFAULT '[]',
+  executor_command TEXT,
+  executor_prompt TEXT,
+  returncode INTEGER,
+  timed_out INTEGER NOT NULL DEFAULT 0,
+  stdout_text TEXT NOT NULL DEFAULT '',
+  stderr_text TEXT NOT NULL DEFAULT '',
+  stdout_sha256 TEXT NOT NULL DEFAULT '',
+  stderr_sha256 TEXT NOT NULL DEFAULT '',
+  changed_files TEXT NOT NULL DEFAULT '[]',
+  out_of_scope_files TEXT NOT NULL DEFAULT '[]',
+  change_manifest TEXT NOT NULL DEFAULT '[]',
+  change_manifest_sha256 TEXT NOT NULL DEFAULT '',
+  diff_text TEXT NOT NULL DEFAULT '',
+  diff_sha256 TEXT NOT NULL DEFAULT '',
+  eval_command TEXT NOT NULL DEFAULT '[]',
+  eval_returncode INTEGER,
+  eval_output_text TEXT NOT NULL DEFAULT '',
+  eval_output_sha256 TEXT NOT NULL DEFAULT '',
+  eval_timed_out INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL,
+  actor TEXT NOT NULL DEFAULT '',
+  observed_at TEXT NOT NULL,
+  recorded_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS executions_by_task ON executions (task_id);
+CREATE TABLE IF NOT EXISTS reviews (
+  review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id TEXT NOT NULL,
+  execution_id INTEGER NOT NULL,
+  reviewer TEXT NOT NULL,
+  decision TEXT NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  reviewed_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
+"""
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS workbench (
   id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -86,46 +131,7 @@ CREATE TABLE IF NOT EXISTS evidence (
   recorded_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS evidence_by_task ON evidence (task_id);
-CREATE TABLE IF NOT EXISTS executions (
-  execution_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  task_id TEXT NOT NULL,
-  mode TEXT NOT NULL,
-  workspace TEXT NOT NULL,
-  write_scope TEXT NOT NULL DEFAULT '[]',
-  executor_command TEXT,
-  executor_prompt TEXT,
-  returncode INTEGER,
-  timed_out INTEGER NOT NULL DEFAULT 0,
-  stdout_text TEXT NOT NULL DEFAULT '',
-  stderr_text TEXT NOT NULL DEFAULT '',
-  stdout_sha256 TEXT NOT NULL DEFAULT '',
-  stderr_sha256 TEXT NOT NULL DEFAULT '',
-  changed_files TEXT NOT NULL DEFAULT '[]',
-  out_of_scope_files TEXT NOT NULL DEFAULT '[]',
-  change_manifest TEXT NOT NULL DEFAULT '[]',
-  diff_text TEXT NOT NULL DEFAULT '',
-  diff_sha256 TEXT NOT NULL DEFAULT '',
-  eval_command TEXT NOT NULL DEFAULT '[]',
-  eval_returncode INTEGER,
-  eval_output_text TEXT NOT NULL DEFAULT '',
-  eval_output_sha256 TEXT NOT NULL DEFAULT '',
-  status TEXT NOT NULL,
-  actor TEXT NOT NULL DEFAULT '',
-  observed_at TEXT NOT NULL,
-  recorded_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS executions_by_task ON executions (task_id);
-CREATE TABLE IF NOT EXISTS reviews (
-  review_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  task_id TEXT NOT NULL,
-  execution_id INTEGER NOT NULL,
-  reviewer TEXT NOT NULL,
-  decision TEXT NOT NULL,
-  note TEXT NOT NULL DEFAULT '',
-  reviewed_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
-"""
+""" + _EXECUTION_SCHEMA  # L04 执行/复核表：单一 DDL 来源，init 与旧账迁移共用（复查轮 S1）
 
 
 class LedgerUnavailable(RuntimeError):
@@ -203,47 +209,13 @@ def _ensure_v0_schema(conn: sqlite3.Connection) -> None:
     columns = {row[1] for row in conn.execute("PRAGMA table_info(tasks)")}
     if "prerequisite_task_id" not in columns:
         conn.execute("ALTER TABLE tasks ADD COLUMN prerequisite_task_id TEXT NOT NULL DEFAULT ''")
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS executions (
-          execution_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          task_id TEXT NOT NULL,
-          mode TEXT NOT NULL,
-          workspace TEXT NOT NULL,
-          write_scope TEXT NOT NULL DEFAULT '[]',
-          executor_command TEXT,
-          executor_prompt TEXT,
-          returncode INTEGER,
-          timed_out INTEGER NOT NULL DEFAULT 0,
-          stdout_text TEXT NOT NULL DEFAULT '',
-          stderr_text TEXT NOT NULL DEFAULT '',
-          stdout_sha256 TEXT NOT NULL DEFAULT '',
-          stderr_sha256 TEXT NOT NULL DEFAULT '',
-          changed_files TEXT NOT NULL DEFAULT '[]',
-          out_of_scope_files TEXT NOT NULL DEFAULT '[]',
-          change_manifest TEXT NOT NULL DEFAULT '[]',
-          diff_text TEXT NOT NULL DEFAULT '',
-          diff_sha256 TEXT NOT NULL DEFAULT '',
-          eval_command TEXT NOT NULL DEFAULT '[]',
-          eval_returncode INTEGER,
-          eval_output_text TEXT NOT NULL DEFAULT '',
-          eval_output_sha256 TEXT NOT NULL DEFAULT '',
-          status TEXT NOT NULL,
-          actor TEXT NOT NULL DEFAULT '',
-          observed_at TEXT NOT NULL,
-          recorded_at TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS executions_by_task ON executions (task_id);
-        CREATE TABLE IF NOT EXISTS reviews (
-          review_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          task_id TEXT NOT NULL,
-          execution_id INTEGER NOT NULL,
-          reviewer TEXT NOT NULL,
-          decision TEXT NOT NULL,
-          note TEXT NOT NULL DEFAULT '',
-          reviewed_at TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
-    """)
+    conn.executescript(_EXECUTION_SCHEMA)
+    # 复查轮新增列：commit-2 形状的既有账本补列（只加不改，旧记录保持原样）
+    execution_columns = {row[1] for row in conn.execute("PRAGMA table_info(executions)")}
+    if "change_manifest_sha256" not in execution_columns:
+        conn.execute("ALTER TABLE executions ADD COLUMN change_manifest_sha256 TEXT NOT NULL DEFAULT ''")
+    if "eval_timed_out" not in execution_columns:
+        conn.execute("ALTER TABLE executions ADD COLUMN eval_timed_out INTEGER NOT NULL DEFAULT 0")
     conn.commit()
 
 
@@ -346,10 +318,11 @@ def _digest_problems(projects: list[dict]) -> list[str]:
                 for text_key, sha_key, label in (
                     ("stdout_text", "stdout_sha256", "stdout"),
                     ("stderr_text", "stderr_sha256", "stderr"),
+                    ("change_manifest_json", "change_manifest_sha256", "change_manifest"),
                     ("diff_text", "diff_sha256", "diff"),
                     ("eval_output_text", "eval_output_sha256", "eval 输出"),
                 ):
-                    if record[sha_key] and _sha256(record[text_key]) != record[sha_key]:
+                    if record.get(sha_key) and _sha256(record[text_key]) != record[sha_key]:
                         problems.append(
                             f"execution_digest_mismatch: 任务 {task['task_id']} 执行 "
                             f"{record['execution_id']} 的 {label} 与摘要不一致")
@@ -533,7 +506,8 @@ _JSON_COLUMNS = ("write_scope", "executor_command", "changed_files",
 
 
 def _execution_payload(record: sqlite3.Row) -> dict:
-    """执行记录出账形态：JSON 文本列还原为结构化值，timed_out 归一为 bool。"""
+    """执行记录出账形态：JSON 文本列还原为结构化值，timed_out 归一为 bool；
+    change_manifest 同时保留原始 JSON 文本（change_manifest_json），供摘要复核。"""
     payload = dict(record)
     for column in _JSON_COLUMNS:
         try:
@@ -541,7 +515,9 @@ def _execution_payload(record: sqlite3.Row) -> dict:
                 None if column == "executor_command" else [])
         except (TypeError, ValueError):
             payload[column] = []
+    payload["change_manifest_json"] = record["change_manifest"]
     payload["timed_out"] = bool(payload["timed_out"])
+    payload["eval_timed_out"] = bool(payload["eval_timed_out"])
     return payload
 
 

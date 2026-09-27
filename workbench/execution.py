@@ -27,6 +27,7 @@ Eval、停在 review 等人审。执行记录与上游 07-real-codex-executor.js
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 from dataclasses import dataclass
@@ -46,6 +47,7 @@ from .bootstrap import (
     _now,
     _require_workbench,
     _reviews_for,
+    _row_value,
     _sha256,
     _task_state,
 )
@@ -57,6 +59,19 @@ class _ProcessOutcome:
     timed_out: bool
     stdout_text: str
     stderr_text: str
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _connect_workbench(runtime_dir: str):
+    """打开既有运行库并校验工作台身份；不可用时报 UNINITIALIZED 并返回 None（复查轮 S2）。"""
+    conn = _connect(Path(runtime_dir), create=False)
+    if conn is None or _require_workbench(conn) is None:
+        _fail(UNINITIALIZED)
+        return None
+    return conn
 
 
 # ---- 进程运行器（执行器与 Eval 共用；输出一律按 UTF-8 解码留证）--------------
@@ -94,7 +109,10 @@ def _normalize_scope(entries: list[str]) -> list[str]:
             continue
         if path.is_absolute() or ".." in path.parts:
             continue  # 绝对路径与越出候选的条目不构成有效写集，落写集校验拒绝
-        scope.append(path.as_posix().lstrip("./") or ".")
+        posix = path.as_posix()
+        while posix.startswith("./"):  # 只剥 "./" 前缀本身，不动 ".hidden" 这类合法名字（复查轮 S6a）
+            posix = posix[2:]
+        scope.append(posix or ".")
     return list(dict.fromkeys(scope))
 
 
@@ -112,12 +130,17 @@ def _workspace_error(workspace: Path) -> str | None:
         return f"workspace_invalid: 工作目录不存在：{workspace}"
     if not (workspace / ".git").exists():
         return f"workspace_invalid: 工作目录不是 git 候选（缺 .git）：{workspace}"
+    head = _git(workspace, "rev-parse", "--verify", "HEAD")
+    if head.returncode != 0:
+        # 能力信封要求"候选绝对路径 + 起点版本"：无起点提交则 Diff/前值摘要无从谈起
+        return f"workspace_invalid: 候选没有起点提交（缺 HEAD）：{workspace}"
     return None
 
 
 def _collect_changes(workspace: Path, scope: list[str]) -> tuple[list[str], list[dict], list[str], str]:
     """执行后的实测改动：porcelain 列改动、逐文件前后 SHA-256、Diff 正文、越界清单。"""
-    raw = _git(workspace, "status", "--porcelain", "-z").stdout.decode("utf-8", errors="replace")
+    # -uall：新目录里的未跟踪文件逐个列出，不被折叠成目录条目（复查轮）
+    raw = _git(workspace, "status", "--porcelain", "-z", "-uall").stdout.decode("utf-8", errors="replace")
     entries = [entry for entry in raw.split("\0") if entry]
     changed: list[str] = []
     index = 0
@@ -135,9 +158,11 @@ def _collect_changes(workspace: Path, scope: list[str]) -> tuple[list[str], list
     manifest: list[dict] = []
     for path in changed:
         head = _git(workspace, "show", f"HEAD:{path}")
-        before = _sha256(head.stdout.decode("utf-8", errors="replace")) if head.returncode == 0 else None
+        # 前后摘要一律对原始字节（复查轮 S6b）：decode(errors="replace") 同形的改字
+        # 无法逃过 status 的摘要复核；文本字段摘要仍对账本内文本，口径见证据账 §6。
+        before = _sha256_bytes(head.stdout) if head.returncode == 0 else None
         file = workspace / path
-        after = _sha256(file.read_bytes().decode("utf-8", errors="replace")) if file.is_file() else None
+        after = _sha256_bytes(file.read_bytes()) if file.is_file() else None
         change = "added" if before is None else ("deleted" if after is None else "modified")
         manifest.append({"path": path, "change": change,
                          "before_sha256": before, "after_sha256": after})
@@ -149,9 +174,9 @@ def _collect_changes(workspace: Path, scope: list[str]) -> tuple[list[str], list
 
 
 def _cmd_task_run(args) -> int:
-    conn = _connect(Path(args.runtime_dir), create=False)
-    if conn is None or _require_workbench(conn) is None:
-        return _fail(UNINITIALIZED)
+    conn = _connect_workbench(args.runtime_dir)
+    if conn is None:
+        return 1
     try:
         if not conn.execute("SELECT 1 FROM tasks WHERE task_id = ?", (args.task_id,)).fetchone():
             return _fail(f"{MISSING_TASK}: 任务不存在：{args.task_id}，记录未追加")
@@ -169,6 +194,10 @@ def _cmd_task_run(args) -> int:
                 return _fail("executor_command_required: code 模式必须给出执行器命令，拒绝启动")
         elif executor_command is not None:
             return _fail("verify_rejects_executor_command: 仅复验模式不调用执行器进程，拒绝执行器命令")
+        if args.execution_timeout is None:
+            # 建设合同"工作目录、写集、超时三者缺一拒绝启动"；预算是执行器合同的
+            # 组成部分（ADR-0002），verify 模式同样须显式声明（Eval 也受它约束）
+            return _fail("execution_timeout_required: 必须显式声明 --execution-timeout，执行未启动")
         if args.executor_prompt_file:
             try:
                 prompt_text = Path(args.executor_prompt_file).read_text(encoding="utf-8")
@@ -188,10 +217,11 @@ def _cmd_task_run(args) -> int:
             "eval_command": list(args.eval_command),
         }
         if args.mode == "verify":
-            eval_rc, eval_text = _run_eval(args, workspace)
+            eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace)
             record.update(returncode=None, timed_out=False, stdout_text="", stderr_text="",
                           changed_files=[], out_of_scope_files=[], change_manifest=[],
                           diff_text="", eval_returncode=eval_rc, eval_output_text=eval_text,
+                          eval_timed_out=eval_timed_out,
                           status="verify_completed" if eval_rc == 0 else "eval_failed")
         else:
             outcome = _run_process(executor_command, cwd=workspace,
@@ -208,8 +238,9 @@ def _cmd_task_run(args) -> int:
             elif out_of_scope:
                 record["status"] = "out_of_scope"  # 越界：Eval 前停止，不自动回滚
             else:
-                eval_rc, eval_text = _run_eval(args, workspace)
+                eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace)
                 record.update(eval_returncode=eval_rc, eval_output_text=eval_text,
+                              eval_timed_out=eval_timed_out,
                               status="completed" if eval_rc == 0 else "eval_failed")
 
         record["stdout_sha256"] = _sha256(record["stdout_text"])
@@ -229,41 +260,45 @@ def _cmd_task_run(args) -> int:
         conn.close()
 
 
-def _run_eval(args, workspace: Path) -> tuple[int | None, str]:
+def _run_eval(args, workspace: Path) -> tuple[int | None, bool, str]:
+    """Eval 与执行器共用同一预算声明；超时独立成标志，不与业务失败混淆（复查轮）。"""
     outcome = _run_process(list(args.eval_command), cwd=workspace,
                            timeout_s=args.execution_timeout)
-    return outcome.returncode, outcome.stdout_text + outcome.stderr_text
+    return outcome.returncode, outcome.timed_out, outcome.stdout_text + outcome.stderr_text
 
 
 def _insert_execution(conn, record: dict, *, actor: str) -> int:
     def dumps(value):
         return json.dumps(value, ensure_ascii=False) if value is not None else None
 
+    manifest_json = dumps(record["change_manifest"])
     cursor = conn.execute(
         "INSERT INTO executions (task_id, mode, workspace, write_scope, executor_command,"
         " executor_prompt, returncode, timed_out, stdout_text, stderr_text, stdout_sha256,"
-        " stderr_sha256, changed_files, out_of_scope_files, change_manifest, diff_text,"
-        " diff_sha256, eval_command, eval_returncode, eval_output_text, eval_output_sha256,"
-        " status, actor, observed_at, recorded_at)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        " stderr_sha256, changed_files, out_of_scope_files, change_manifest,"
+        " change_manifest_sha256, diff_text, diff_sha256, eval_command, eval_returncode,"
+        " eval_output_text, eval_output_sha256, eval_timed_out, status, actor, observed_at,"
+        " recorded_at)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (record["task_id"], record["mode"], record["workspace"], dumps(record["write_scope"]),
          dumps(record["executor_command"]), record["executor_prompt"], record["returncode"],
          int(record["timed_out"]), record["stdout_text"], record["stderr_text"],
          record["stdout_sha256"], record["stderr_sha256"],
          dumps(record["changed_files"]), dumps(record["out_of_scope_files"]),
-         dumps(record["change_manifest"]), record["diff_text"], record["diff_sha256"],
+         manifest_json, _sha256(manifest_json), record["diff_text"], record["diff_sha256"],
          dumps(record["eval_command"]), record.get("eval_returncode"),
          record.get("eval_output_text", ""), record["eval_output_sha256"],
-         record["status"], actor.strip(), _now(), _now()),
+         int(record.get("eval_timed_out", False)), record["status"], actor.strip(),
+         _now(), _now()),
     )
     conn.commit()
     return cursor.lastrowid
 
 
 def _cmd_task_review(args) -> int:
-    conn = _connect(Path(args.runtime_dir), create=False)
-    if conn is None or _require_workbench(conn) is None:
-        return _fail(UNINITIALIZED)
+    conn = _connect_workbench(args.runtime_dir)
+    if conn is None:
+        return 1
     try:
         if not conn.execute("SELECT 1 FROM tasks WHERE task_id = ?", (args.task_id,)).fetchone():
             return _fail(f"{MISSING_TASK}: 任务不存在：{args.task_id}，记录未追加")
@@ -297,9 +332,9 @@ def _cmd_task_review(args) -> int:
 
 
 def _cmd_task_show(args) -> int:
-    conn = _connect(Path(args.runtime_dir), create=False)
-    if conn is None or _require_workbench(conn) is None:
-        return _fail(UNINITIALIZED)
+    conn = _connect_workbench(args.runtime_dir)
+    if conn is None:
+        return 1
     try:
         task = conn.execute("SELECT * FROM tasks WHERE task_id = ?", (args.task_id,)).fetchone()
         if task is None:
@@ -307,8 +342,7 @@ def _cmd_task_show(args) -> int:
         _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED,
                "task": {"task_id": task["task_id"], "request": task["request"],
                         "requirement_id": task["requirement_id"], "actor": task["actor"],
-                        "prerequisite_task_id": task["prerequisite_task_id"]
-                        if "prerequisite_task_id" in task.keys() else "",
+                        "prerequisite_task_id": _row_value(task, "prerequisite_task_id") or "",
                         "state": _task_state(conn, args.task_id),
                         "executions": _executions_for(conn, args.task_id),
                         "reviews": _reviews_for(conn, args.task_id)}})
@@ -334,7 +368,8 @@ def _register_task_run(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--executor-prompt-file", default="", help="执行器提示词文件（UTF-8）")
     parser.add_argument("--eval-command", nargs="+", required=True, metavar="ARG",
                         help="最小 Eval 命令 argv（在绑定候选目录实跑）")
-    parser.add_argument("--execution-timeout", type=int, default=900, help="超时秒数（默认 900）")
+    parser.add_argument("--execution-timeout", type=int, default=None, metavar="SECONDS",
+                        help="超时秒数（必须显式声明——执行器合同的预算项；缺声明拒绝启动）")
     parser.add_argument("--actor", required=True, help="执行发起人具名")
     parser.set_defaults(handler=_cmd_task_run)
 
