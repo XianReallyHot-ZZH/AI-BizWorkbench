@@ -30,6 +30,7 @@ C8     → test_accepted_task_rerun_invalidates_old_acceptance → 接受后再�
 from __future__ import annotations
 
 import json
+import shlex
 import sqlite3
 import subprocess
 import sys
@@ -136,15 +137,17 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         prompt_file = self.tmp / "prompt.txt"
         prompt_file.write_text(PROMPT_TEXT, encoding="utf-8")
         marker = marker or self.tmp / f"marker-{task_id}.json"
+        stub_args = [str(stub or self.in_scope_stub()),
+                     str(self.tmp / "prompt-capture.txt"), str(workspace or self.workspace)]
         args = ["workbench-task-run", task_id,
                 "--runtime-dir", str(self.rt),
                 "--workspace", str(workspace or self.workspace),
                 "--mode", "code",
                 "--write-scope", *scope,
-                "--executor-command", sys.executable, str(stub or self.in_scope_stub()),
-                str(self.tmp / "prompt-capture.txt"), str(workspace or self.workspace),
+                # shell 形命令串（shlex 解析）：选项形 token（如 -X/-p）不会被误当旗标
+                "--executor-command", shlex.join([sys.executable, *stub_args]),
                 "--executor-prompt-file", str(prompt_file),
-                "--eval-command", sys.executable, str(eval_probe or self.eval_probe()), str(marker),
+                "--eval-command", shlex.join([sys.executable, str(eval_probe or self.eval_probe()), str(marker)]),
                 "--actor", "tester-A"]
         if timeout is not None:  # None = 故意缺声明，验证预算门
             args += ["--execution-timeout", timeout]
@@ -164,10 +167,12 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         prompt_file.write_text(PROMPT_TEXT, encoding="utf-8")
         proc = run_cli("workbench-task-run", "T-A", "--runtime-dir", str(self.rt),
                        "--workspace", str(self.workspace), "--mode", "code",
-                       "--executor-command", sys.executable, str(self.in_scope_stub()),
-                       str(self.tmp / "c.txt"), str(self.workspace),
-                       "--eval-command", sys.executable, str(self.eval_probe()),
-                       str(self.tmp / "m.json"),
+                       "--executor-command",
+                       shlex.join([sys.executable, str(self.in_scope_stub()),
+                                   str(self.tmp / "c.txt"), str(self.workspace)]),
+                       "--eval-command",
+                       shlex.join([sys.executable, str(self.eval_probe()),
+                                   str(self.tmp / "m.json")]),
                        "--actor", "tester-A")
         self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
         self.assertIn("write_scope_required", proc.stdout)
@@ -179,7 +184,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         marker = self.tmp / "marker-verify.json"
         proc = run_cli("workbench-task-run", "T-A", "--runtime-dir", str(self.rt),
                        "--workspace", str(self.workspace), "--mode", "verify",
-                       "--eval-command", sys.executable, str(self.eval_probe()), str(marker),
+                       "--eval-command", shlex.join([sys.executable, str(self.eval_probe()), str(marker)]),
                        "--execution-timeout", "900", "--actor", "tester-A")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         record = payload(proc)["execution"]

@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -185,7 +186,18 @@ def _cmd_task_run(args) -> int:
         if invalid:
             return _fail(invalid)
         scope = _normalize_scope(args.write_scope or [])
-        executor_command = list(args.executor_command) if args.executor_command else None
+        # shell 形命令串经 shlex 解析为 argv（复查轮·A 门实测：nargs='+' 会把 -X/-p
+        # 这类选项形 token 误当旗标终止收集，operator 无法传真实执行器命令行）
+        try:
+            eval_argv = shlex.split(args.eval_command)
+        except ValueError:
+            return _fail("eval_command_unparseable: --eval-command 不是合法的 shell 形命令串，执行未启动")
+        executor_command = None
+        if args.executor_command:
+            try:
+                executor_command = shlex.split(args.executor_command)
+            except ValueError:
+                return _fail("executor_command_unparseable: --executor-command 不是合法的 shell 形命令串，执行未启动")
         prompt_text = ""
         if args.mode == "code":
             if not scope:
@@ -214,10 +226,10 @@ def _cmd_task_run(args) -> int:
             "task_id": args.task_id, "mode": args.mode,
             "workspace": str(workspace.resolve()), "write_scope": scope,
             "executor_command": executor_command, "executor_prompt": prompt_text,
-            "eval_command": list(args.eval_command),
+            "eval_command": eval_argv,
         }
         if args.mode == "verify":
-            eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace)
+            eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace, eval_argv)
             record.update(returncode=None, timed_out=False, stdout_text="", stderr_text="",
                           changed_files=[], out_of_scope_files=[], change_manifest=[],
                           diff_text="", eval_returncode=eval_rc, eval_output_text=eval_text,
@@ -238,7 +250,7 @@ def _cmd_task_run(args) -> int:
             elif out_of_scope:
                 record["status"] = "out_of_scope"  # 越界：Eval 前停止，不自动回滚
             else:
-                eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace)
+                eval_rc, eval_timed_out, eval_text = _run_eval(args, workspace, eval_argv)
                 record.update(eval_returncode=eval_rc, eval_output_text=eval_text,
                               eval_timed_out=eval_timed_out,
                               status="completed" if eval_rc == 0 else "eval_failed")
@@ -260,9 +272,9 @@ def _cmd_task_run(args) -> int:
         conn.close()
 
 
-def _run_eval(args, workspace: Path) -> tuple[int | None, bool, str]:
+def _run_eval(args, workspace: Path, eval_argv: list[str]) -> tuple[int | None, bool, str]:
     """Eval 与执行器共用同一预算声明；超时独立成标志，不与业务失败混淆（复查轮）。"""
-    outcome = _run_process(list(args.eval_command), cwd=workspace,
+    outcome = _run_process(eval_argv, cwd=workspace,
                            timeout_s=args.execution_timeout)
     return outcome.returncode, outcome.timed_out, outcome.stdout_text + outcome.stderr_text
 
@@ -363,11 +375,11 @@ def _register_task_run(subparsers: argparse._SubParsersAction) -> None:
                         help="verify=仅复验（不调用执行器）；code=受控执行")
     parser.add_argument("--write-scope", nargs="+", default=[], metavar="PATH",
                         help="允许写集（相对候选的路径，code 模式必填）")
-    parser.add_argument("--executor-command", nargs="+", default=None, metavar="ARG",
-                        help="执行器命令 argv（提示词经 stdin 送达；code 模式必填）")
+    parser.add_argument("--executor-command", default=None, metavar="CMD",
+                        help="执行器命令（shell 形命令串，shlex 解析；提示词经 stdin 送达；code 模式必填）")
     parser.add_argument("--executor-prompt-file", default="", help="执行器提示词文件（UTF-8）")
-    parser.add_argument("--eval-command", nargs="+", required=True, metavar="ARG",
-                        help="最小 Eval 命令 argv（在绑定候选目录实跑）")
+    parser.add_argument("--eval-command", required=True, metavar="CMD",
+                        help="最小 Eval 命令（shell 形命令串，在绑定候选目录实跑）")
     parser.add_argument("--execution-timeout", type=int, default=None, metavar="SECONDS",
                         help="超时秒数（必须显式声明——执行器合同的预算项；缺声明拒绝启动）")
     parser.add_argument("--actor", required=True, help="执行发起人具名")
