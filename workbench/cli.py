@@ -28,6 +28,10 @@ def build_parser() -> argparse.ArgumentParser:
     from .bootstrap import register_commands
 
     register_commands(REGISTRY)
+    # L03：spec 命令经同一条 REGISTRY 缝注册（适配器在 workbench/spec.py，C9 调用路径同源）。
+    from .spec import register_commands as register_spec_commands
+
+    register_spec_commands(REGISTRY)
     for register in REGISTRY.values():
         register(subparsers)
     return parser

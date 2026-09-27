@@ -1,0 +1,21 @@
+test_c3_full_contract_six_fields_verbatim (test_l03_spec_parser.C3FullContractTest.test_c3_full_contract_six_fields_verbatim) ... ok
+test_c5_template_has_no_inventory_answers (test_l03_spec_parser.C5TemplateTest.test_c5_template_has_no_inventory_answers) ... ok
+test_c6_procurement_draft_reuses_structure (test_l03_spec_parser.C6ProcurementDraftTest.test_c6_procurement_draft_reuses_structure) ... ok
+test_c7_fence_heading_is_body_not_section (test_l03_spec_parser.C7FenceSemanticsTest.test_c7_fence_heading_is_body_not_section) ... ok
+test_c7_parser_module_exists (test_l03_spec_parser.C7ParserModuleTest.test_c7_parser_module_exists) ... ok
+test_c7_reject_duplicate_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_duplicate_section) ... ok
+test_c7_reject_empty_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_empty_section) ... ok
+test_c7_reject_missing_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_missing_section) ... ok
+test_c7_reject_out_of_order (test_l03_spec_parser.C7RejectionTest.test_c7_reject_out_of_order) ... ok
+test_c7_reject_unclosed_fence (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unclosed_fence) ... ok
+test_c7_reject_unknown_heading (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unknown_heading) ... ok
+test_c8_load_spec_leaves_file_unchanged (test_l03_spec_parser.C8ReadonlyTest.test_c8_load_spec_leaves_file_unchanged) ... ok
+test_c8_cli_rejection_leaves_file_unchanged (test_l03_spec_parser.C9CliIntegrationTest.test_c8_cli_rejection_leaves_file_unchanged) ... ok
+test_c9_cli_missing_section_error_same_source (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_missing_section_error_same_source) ... ok
+test_c9_cli_spec_valid_input_exit_zero (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_spec_valid_input_exit_zero) ... ok
+test_d2_capture_tool_submission_root (test_l03_spec_parser.D2CaptureToolTest.test_d2_capture_tool_submission_root) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.483s
+
+OK

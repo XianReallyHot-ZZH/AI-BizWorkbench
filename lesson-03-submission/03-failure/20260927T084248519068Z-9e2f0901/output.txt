@@ -1,0 +1,213 @@
+test_c3_full_contract_six_fields_verbatim (test_l03_spec_parser.C3FullContractTest.test_c3_full_contract_six_fields_verbatim) ... FAIL
+test_c5_template_has_no_inventory_answers (test_l03_spec_parser.C5TemplateTest.test_c5_template_has_no_inventory_answers) ... FAIL
+test_c6_procurement_draft_reuses_structure (test_l03_spec_parser.C6ProcurementDraftTest.test_c6_procurement_draft_reuses_structure) ... FAIL
+test_c7_fence_heading_is_body_not_section (test_l03_spec_parser.C7FenceSemanticsTest.test_c7_fence_heading_is_body_not_section) ... FAIL
+test_c7_parser_module_exists (test_l03_spec_parser.C7ParserModuleTest.test_c7_parser_module_exists) ... FAIL
+test_c7_reject_duplicate_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_duplicate_section) ... FAIL
+test_c7_reject_empty_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_empty_section) ... FAIL
+test_c7_reject_missing_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_missing_section) ... FAIL
+test_c7_reject_out_of_order (test_l03_spec_parser.C7RejectionTest.test_c7_reject_out_of_order) ... FAIL
+test_c7_reject_unclosed_fence (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unclosed_fence) ... FAIL
+test_c7_reject_unknown_heading (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unknown_heading) ... FAIL
+test_c8_load_spec_leaves_file_unchanged (test_l03_spec_parser.C8ReadonlyTest.test_c8_load_spec_leaves_file_unchanged) ... FAIL
+test_c8_cli_rejection_leaves_file_unchanged (test_l03_spec_parser.C9CliIntegrationTest.test_c8_cli_rejection_leaves_file_unchanged) ... FAIL
+test_c9_cli_missing_section_error_same_source (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_missing_section_error_same_source) ... FAIL
+test_c9_cli_spec_valid_input_exit_zero (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_spec_valid_input_exit_zero) ... FAIL
+test_d2_capture_tool_submission_root (test_l03_spec_parser.D2CaptureToolTest.test_d2_capture_tool_submission_root) ... ok
+
+======================================================================
+FAIL: test_c3_full_contract_six_fields_verbatim (test_l03_spec_parser.C3FullContractTest.test_c3_full_contract_six_fields_verbatim)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 140, in test_c3_full_contract_six_fields_verbatim
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c5_template_has_no_inventory_answers (test_l03_spec_parser.C5TemplateTest.test_c5_template_has_no_inventory_answers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 234, in test_c5_template_has_no_inventory_answers
+    self.fail("L03 目标缺口：workbench/templates/SPEC_TEMPLATE.md 尚不存在（模板未抽取）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/templates/SPEC_TEMPLATE.md 尚不存在（模板未抽取）
+
+======================================================================
+FAIL: test_c6_procurement_draft_reuses_structure (test_l03_spec_parser.C6ProcurementDraftTest.test_c6_procurement_draft_reuses_structure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 248, in test_c6_procurement_draft_reuses_structure
+    self.fail("L03 目标缺口：lesson-03-submission/procurement-draft.md 尚不存在（迁移练习未完成）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：lesson-03-submission/procurement-draft.md 尚不存在（迁移练习未完成）
+
+======================================================================
+FAIL: test_c7_fence_heading_is_body_not_section (test_l03_spec_parser.C7FenceSemanticsTest.test_c7_fence_heading_is_body_not_section)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 174, in test_c7_fence_heading_is_body_not_section
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c7_parser_module_exists (test_l03_spec_parser.C7ParserModuleTest.test_c7_parser_module_exists)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 135, in test_c7_parser_module_exists
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c7_reject_duplicate_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_duplicate_section)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 160, in test_c7_reject_duplicate_section
+    self.assert_rejects(DUPLICATE_SECTION_TEXT, "重复章节")
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c7_reject_empty_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_empty_section)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 157, in test_c7_reject_empty_section
+    self.assert_rejects(EMPTY_SECTION_TEXT, "内容不能为空", "目标")
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c7_reject_missing_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_missing_section)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 154, in test_c7_reject_missing_section
+    self.assert_rejects(MISSING_SECTION_TEXT, "缺少必要章节", "非目标")
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c7_reject_out_of_order (test_l03_spec_parser.C7RejectionTest.test_c7_reject_out_of_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 163, in test_c7_reject_out_of_order
+    self.assert_rejects(OUT_OF_ORDER_TEXT, "顺序错误")
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c7_reject_unclosed_fence (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unclosed_fence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 169, in test_c7_reject_unclosed_fence
+    self.assert_rejects(UNCLOSED_FENCE_TEXT, "围栏未闭合")
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c7_reject_unknown_heading (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unknown_heading)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 166, in test_c7_reject_unknown_heading
+    self.assert_rejects(UNKNOWN_HEADING_TEXT, "未知章节", "附录")
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c8_load_spec_leaves_file_unchanged (test_l03_spec_parser.C8ReadonlyTest.test_c8_load_spec_leaves_file_unchanged)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 187, in test_c8_load_spec_leaves_file_unchanged
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c8_cli_rejection_leaves_file_unchanged (test_l03_spec_parser.C9CliIntegrationTest.test_c8_cli_rejection_leaves_file_unchanged)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 223, in test_c8_cli_rejection_leaves_file_unchanged
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c9_cli_missing_section_error_same_source (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_missing_section_error_same_source)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 209, in test_c9_cli_missing_section_error_same_source
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+======================================================================
+FAIL: test_c9_cli_spec_valid_input_exit_zero (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_spec_valid_input_exit_zero)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 198, in test_c9_cli_spec_valid_input_exit_zero
+    self.require_parser_module()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
+    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.150s
+
+FAILED (failures=15)

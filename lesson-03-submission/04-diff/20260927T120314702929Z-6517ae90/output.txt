@@ -1,0 +1,1418 @@
+diff --git a/docs/replication/evidence/L03.md b/docs/replication/evidence/L03.md
+new file mode 100644
+index 0000000..52de46c
+--- /dev/null
++++ b/docs/replication/evidence/L03.md
+@@ -0,0 +1,91 @@
++# L03 证据账 —— 可验收 Spec（候选分支 `lesson-03`）
++
++- 讲义：[docs/lessons/L03-可验收Spec.md](../../lessons/L03-可验收Spec.md)（用户审毕放行 2026-09-27，六个决策点 D1–D6 随讲义通过）
++- 对照基线：`CodexFDE@7f67533`（检查点 0002，2026-09-27 用户裁决升级；冻结合同无变化，辅导资料新增解析器教学节已并入 C7 口径）
++- 任务账：`CASE-WB-L03-001` @ `.runtime/course/L01-workbench/`（沿用 L01 活账本）
++- 采集：本仓库 `tools/capture_evidence.py`（L03 起 `--submission-root` 参数化，默认 `lesson-02-submission/` 不变——L02 封存证据磁盘合同未动，`git status lesson-02-submission/` 恒空）
++
++## 0. 决策记录
++
++- **2026-09-27 配合点 1（to-spec）**：用户 AskUserQuestion 选择"确认降级路径，开始执行"——冻结合同 fixture + 讲义 §2 合同表即 Spec；**本讲降级同意单独取得，L02 同意未延续**。
++- **2026-09-27 讲义决策点 D1–D6**：用户审毕讲义答复"没问题，继续"，六个决策点按推荐口径生效——D1 绑定 Eval 以合同测试承载（harness 待建设如实注明）；D2 采集工具加 `--submission-root`（默认不变）；D3 `claude -p` 降为可选观察（本讲未使用，无行为对照实验）；D4 根 `FDE_SPEC.md` 不建（scope 词面映射 `lesson-03-submission/FDE_SPEC.md`）；D5 只复刻解析半边（`build_delivery_spec` 等生成机器 L04 再定）；D6 上游 `spec-acceptance-review` skill 作四步法方法论参照（不安装）。
++- **2026-09-27 需求八问 + 设计判断（§3.C）**：Claude 列候选表（SJ-1..SJ-4、Q1..Q8，附仓库事实依据 `flowerp/inventory_export.py:15,46`、`inventory.py:56-59`），用户答复"没问题，继续"逐字采纳；候选原文即确认口径，未经改写入 `decisions.md`。
++- **2026-09-27 反例审查 F2/F3/F4（§3.C）**：AskUserQuestion 逐条裁决——F2 CSV 编码 = UTF-8 无 BOM（对齐 `inventory_export.py:36`）；F3 reserved > on_hand 照实输出负数（只读镜像，异常信号由人核查）；F4 A7 收紧为可观察结果（非零退出 + 明确错误 + 无 .tmp 残片，对齐 `inventory_export.py:41-43`）。F1（A6 漏抄已确认 Q5 后半句）无需新裁决，修回确认版。
++- **2026-09-27 任务账具名**：`--actor` = `XianReallyHot-ZZH`（用户 AskUserQuestion 选定）。
++- **2026-09-27 配合点 2（implement）**：用户显式调用 `/mattpocock-skills:implement`；其中自调 `tdd`（红绿循环）、`codebase-design`（REGISTRY 缝挂接与输出包络定案）。
++
++## 1. C 编号逐项结论
++
++| # | 验收项 | 结论 | 证据 |
++|---|---|---|---|
++| C1 | 起始红（commit 1） | ✅ 红有效：16 用例 15 失败，全部为**目标缺口**（解析器模块/CLI 子命令/工件缺失）的 gap 断言，无环境错/零用例/语法错；采集工具脚手架用例同 commit 即绿（1 通过） | 台账 #2，`03-failure/20260927T084248519068Z-9e2f0901` |
++| C2 | 决定记录先行 | ✅ `decisions.md` 八问逐条有来源或待确认；SJ 表区分当前事实/拟新增（export 已存在如实记录）；Q1 标课堂假设；回答原文=确认的候选原文逐字 | `lesson-03-submission/decisions.md`（待人审终核） |
++| C3 | 确认版可解析 + 业务口径完整 | ✅ 解析层：observation #8 退出码 0、六字段 JSON；业务层：八列/公式/不合并/排序/空表头/CSV 保真/写出失败/不变量 + F2/F3 增补（编码、负可用量）逐条在约束与 A1–A8 | `06-observations/20260927T115145605833Z-0a9cfd31` |
++| C4 | 歧义消除可溯源 | ✅ `FDE_SPEC-v1.md` 保留修订前原句（A6 无排序细则、无编码、无负可用量口径）；F1..F4 反例→决定→修订全表在 decisions.md §5 | 台账 #3（cp 副本）+ decisions.md §5 |
++| C5 | 模板无库存残留 | ✅ `test_c5_template_has_no_inventory_answers` 绿（起始红轮即为脚手架外首个独立绿）；六标题在场，available/on_hand/reserved/仓位/批次/在库/预占零命中 | 台账 #6（16/16 绿之一） |
++| C6 | 采购草稿复用不照抄 | ✅ `test_c6_procurement_draft_reuses_structure` 绿：同一解析器接受六段、"待确认"在场、库存词面零命中 | 台账 #6 |
++| C7 | 解析器六类拒绝 + 围栏语义 | ✅ 缺章/空章/重复/乱序/未知标题/未闭合围栏六用例 + 围栏内同名标题不误认用例全绿；错误词面与 vendor `parse_spec()` 逐字同形；含检查点 0002 新教学节口径（围栏正文保留） | 台账 #6（7 用例） |
++| C8 | 只读不变 | ✅ 程序层：`test_c8_*` 两用例绿（tmp 文件 SHA 前后一致）；真实层：三份复验文件 SHA-256 运行前后逐字节一致（见 §3 SHA 对照） | 台账 #7/#11 |
++| C9 | CLI 接线真实 | ✅ `test_c9_cli_missing_section_error_same_source` 绿——CLI 错误词面与 `workbench.spec.parse_spec` 抛出消息逐字相同（同源，非第二套解析）；REGISTRY 缝仅 +2 行注册调用 | `tests/test_l03_spec_parser.py` + diff（cli.py +4 行） |
++| C10 | 三份输入复验 | ✅ 三态齐：确认版 rc=0 / 缺章版 rc=1（词面"Spec 缺少必要章节：非目标"）/ 错误公式版 rc=0。**人工退回结论（在库 8、预占 3 应为 5，错误公式得 8，违反约束与 A2/A8）待验收人具名确认**——程序通过不冒充业务判断 | 台账 #8/#9/#10 |
++| C11 | 绑定 Eval 承载 | ✅ `spec_contract_rejects_ambiguity` 由 C7 缺项拒绝用例 + C3 结构用例承载（测试文件头映射表登记）；eval.harness 待建设如实注明，未冒充已建成 | 测试文件头 + 本行 |
++| C12 | 写集、任务账与验收 | ✅ 程序侧（2026-09-27 终核）：CASE-WB-L03-001 七条记录入账（#19–#25），status `ok:true`/`evidence_complete:true`/`acceptance:pending_human_review`/`flowerp_connected:false`；写集 8 文件（lesson-03-submission/×7、workbench/spec.py、workbench/cli.py、workbench/templates/、tests/×1 行）+ 采集捕获；vendor 双查恒空。**整讲验收待人签** | 台账 #14（下方 status 复验） |
++| C13 | 非目标 | ✅ 未实现库存导出、未改 flowERP（vendor 恒空）、未建 eval.harness、未建需求生成机器、未建根 FDE_SPEC.md；三句话结论入 §3 | `git diff master...lesson-03 --name-only` |
++
++## 2. 命令台账
++
++| # | 命令（字面摘要） | 退出码 | observed_at | meta.json | 说明 |
++|---|---|---|---|---|---|
++| 1 | `git -C vendors/CodexFDE status --short && git -C vendors/flowERP status --short && git checkout -b lesson-03` | 0 | 2026-09-27（会话内） | —（未采集） | vendor 双查恒空；候选分支建立 |
++| 2 | red：`.venv/bin/python -X utf8 -m unittest discover -s tests -v -p "test_l03_*.py"`（经采集工具 `--submission-root lesson-03-submission`） | 1 | `2026-09-27T08:42:48.519068+00:00` | `lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/meta.json` | Ran 16 tests, FAILED (failures=15)；红点全为目标缺口 gap 断言 |
++| 3 | `cp lesson-03-submission/FDE_SPEC.md lesson-03-submission/FDE_SPEC-v1.md`（先 `[ -e ]` 防覆盖） | 0 | 2026-09-27（会话内） | —（未采集） | v1 原歧义副本，永不覆盖 |
++| 4 | `git add -A` + `git diff --cached --stat -- lesson-03-submission workbench tests tools`（经采集工具 diff 相位） | 0 | `2026-09-27T11:51:10.875875+00:00` | `lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/meta.json` | 8 文件 +292/−1。**口径披露**：讲义 §3.F 字面命令为裸 `git diff`，因本讲 commit 2 文件几乎全为新增（未跟踪），裸 diff 仅见 cli.py，故暂存后取 `--cached` 全量——范围内 Diff 更诚实，特此记录 |
++| 5 | green：同 #2 命令逐字 | 0 | `2026-09-27T11:51:21.433163+00:00` | `lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/meta.json` | Ran 16 tests, OK；链序 red(08:42) < diff(11:51:10) < green(11:51:21)，红绿同命令 |
++| 6 | `shasum -a 256`（三份复验文件，运行前） | 0 | 2026-09-27（会话内） | —（未采集） | `f3e81669…` / `e6a0ccfe…` / `d6c65b43…` |
++| 7 | observation：`workbench.cli spec lesson-03-submission/FDE_SPEC.md` | 0 | `2026-09-27T11:51:45.605833+00:00` | `06-observations/20260927T115145605833Z-0a9cfd31/meta.json` | 确认版：六字段 JSON，`ok:true` |
++| 8 | observation：`workbench.cli spec lesson-03-submission/missing-section.md` | 1 | `2026-09-27T11:51:45.766554+00:00` | `06-observations/20260927T115145766554Z-7d3923f8/meta.json` | 缺章版拒绝，词面 `Spec 缺少必要章节：非目标` |
++| 9 | observation：`workbench.cli spec lesson-03-submission/wrong-formula.md` | 0 | `2026-09-27T11:51:45.934860+00:00` | `06-observations/20260927T115145934860Z-9d9d53e7/meta.json` | 错误公式版结构通过（**预期**，解析器不冒充业务裁判）；人工退回结论待验收人确认（C10） |
++| 10 | `shasum -a 256`（同三文件，运行后） | 0 | 2026-09-27（会话内） | —（未采集） | 三摘要与 #6 逐字节一致——真实文件只读成立 |
++| 11 | observation：`unittest discover -s tests -v`（全量） | 0 | `2026-09-27T11:51:59.002560+00:00` | `06-observations/20260927T115159002560Z-80c7b889/meta.json` | Ran 50 tests, OK（L01 12+复查 + L02 5 + L03 16 + 合同 fixture 等 = 50） |
++| 12 | `workbench-task-create … --task-id CASE-WB-L03-001 --actor XianReallyHot-ZZH --spec-file docs/lessons/L03-可验收Spec.md` | 0 | 2026-09-27（会话内） | —（未采集） | 任务入账 |
++| 13 | vendor `import_evidence.py` ×7（red→diff→green→4×observation，chronological；SHA-256 导入时复核） | 0×7 | 2026-09-27（会话内） | —（未采集） | record_id #19–#25 全部 ok |
++| 14 | `workbench-status --require-project PERSONAL-WORKBENCH --require-task CASE-WB-L03-001 --require-red-green-evidence` | 0 | 2026-09-27（会话内） | —（未采集） | `ok:true`、`evidence_complete:true`、`acceptance:pending_human_review`、7 条记录、`flowerp_connected:false` |
++
++## 3. 失败与修正现场
++
++**起始红（保留，台账 #2）**：15 失败清单（gap 断言）——`workbench/spec.py 尚不存在`×12、`SPEC_TEMPLATE.md 尚不存在`×1、`procurement-draft.md 尚不存在`×1、CLI 缺口×1（C6 当轮以文件缺失 gap 呈现）。原始输出完整保留于捕获目录，未删改。
++
++**红绿间唯一 tests/ 变更（主动披露，L02 复查轮体例）**：`test_c7_reject_empty_section` 的夹具 `EMPTY_SECTION_TEXT` 原以字符串替换构造，把"目标"正文误换成 `## 非目标` 标题，与原有非目标节构成**意外重复**，重复检查（vendor 冻结顺序：未知→重复→缺章→乱序→空章）先于空章检查触发，测试报"重复章节：非目标"而非目标词面。修正为 `"## 目标\n\n"`（保留空正文意图、不新增标题）——**断言未动**（`assert_rejects(…, "内容不能为空", "目标")` 逐字不变），仅修正夹具构造。该 1 行变更在 commit 2 内（`git diff 84423dd 1387df8 -- tests/` 可查），错误现场如上留存。
++
++**三句话结论（台账 #7–#9 支撑）**：
++- 解析器能证明：六段结构完整或残缺。
++- 解析器不能证明：库存公式和业务决定正确（wrong-formula 结构通过是**预期**，不是程序故障）。
++- L03 仍未证明：库存导出功能已经实现；该工作留到 L04。
++
++## 4. 状态终核（台账 #14）
++
++```
++ok: True
++evidence_complete: True
++acceptance: pending_human_review
++evidence records: 7
++  #19 red         2026-09-27T08:42:48.519068+00:00  rc=1
++  #20 diff        2026-09-27T11:51:10.875875+00:00  rc=0
++  #21 green       2026-09-27T11:51:21.433163+00:00  rc=0
++  #22 observation 2026-09-27T11:51:45.605833+00:00  rc=0   确认版解析通过
++  #23 observation 2026-09-27T11:51:45.766554+00:00  rc=1   缺章拒绝
++  #24 observation 2026-09-27T11:51:45.934860+00:00  rc=0   错误公式结构通过（人工退回待人签）
++  #25 observation 2026-09-27T11:51:59.002560+00:00  rc=0   全量 50/50 OK
++```
++
++## 5. code-review 复查轮
++
++（待 `/mattpocock-skills:code-review` 双轴复查后补记；发现按 test-first 修复并保留旧证据。）
++
++---
++
++## 具名验收
++
++- 验收人：＿＿＿＿
++- 日期：＿＿＿＿
++- 结论：接受 / 退回（理由：＿＿＿＿）
+diff --git a/lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/meta.json b/lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/meta.json
+new file mode 100644
+index 0000000..d65296f
+--- /dev/null
++++ b/lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/meta.json
+@@ -0,0 +1,23 @@
++{
++  "phase": "red",
++  "argv": [
++    ".venv/bin/python",
++    "-X",
++    "utf8",
++    "-m",
++    "unittest",
++    "discover",
++    "-s",
++    "tests",
++    "-v",
++    "-p",
++    "test_l03_*.py"
++  ],
++  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"unittest\", \"discover\", \"-s\", \"tests\", \"-v\", \"-p\", \"test_l03_*.py\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 1,
++  "observed_at": "2026-09-27T08:42:48.519068+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/output.txt",
++  "sha256": "fff41eb8f091d84522ed0e657b5eb30281f4c9c157c9dba0b4e59767109037c6",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/output.txt b/lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/output.txt
+new file mode 100644
+index 0000000..5800909
+--- /dev/null
++++ b/lesson-03-submission/03-failure/20260927T084248519068Z-9e2f0901/output.txt
+@@ -0,0 +1,213 @@
++test_c3_full_contract_six_fields_verbatim (test_l03_spec_parser.C3FullContractTest.test_c3_full_contract_six_fields_verbatim) ... FAIL
++test_c5_template_has_no_inventory_answers (test_l03_spec_parser.C5TemplateTest.test_c5_template_has_no_inventory_answers) ... FAIL
++test_c6_procurement_draft_reuses_structure (test_l03_spec_parser.C6ProcurementDraftTest.test_c6_procurement_draft_reuses_structure) ... FAIL
++test_c7_fence_heading_is_body_not_section (test_l03_spec_parser.C7FenceSemanticsTest.test_c7_fence_heading_is_body_not_section) ... FAIL
++test_c7_parser_module_exists (test_l03_spec_parser.C7ParserModuleTest.test_c7_parser_module_exists) ... FAIL
++test_c7_reject_duplicate_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_duplicate_section) ... FAIL
++test_c7_reject_empty_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_empty_section) ... FAIL
++test_c7_reject_missing_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_missing_section) ... FAIL
++test_c7_reject_out_of_order (test_l03_spec_parser.C7RejectionTest.test_c7_reject_out_of_order) ... FAIL
++test_c7_reject_unclosed_fence (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unclosed_fence) ... FAIL
++test_c7_reject_unknown_heading (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unknown_heading) ... FAIL
++test_c8_load_spec_leaves_file_unchanged (test_l03_spec_parser.C8ReadonlyTest.test_c8_load_spec_leaves_file_unchanged) ... FAIL
++test_c8_cli_rejection_leaves_file_unchanged (test_l03_spec_parser.C9CliIntegrationTest.test_c8_cli_rejection_leaves_file_unchanged) ... FAIL
++test_c9_cli_missing_section_error_same_source (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_missing_section_error_same_source) ... FAIL
++test_c9_cli_spec_valid_input_exit_zero (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_spec_valid_input_exit_zero) ... FAIL
++test_d2_capture_tool_submission_root (test_l03_spec_parser.D2CaptureToolTest.test_d2_capture_tool_submission_root) ... ok
++
++======================================================================
++FAIL: test_c3_full_contract_six_fields_verbatim (test_l03_spec_parser.C3FullContractTest.test_c3_full_contract_six_fields_verbatim)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 140, in test_c3_full_contract_six_fields_verbatim
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c5_template_has_no_inventory_answers (test_l03_spec_parser.C5TemplateTest.test_c5_template_has_no_inventory_answers)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 234, in test_c5_template_has_no_inventory_answers
++    self.fail("L03 目标缺口：workbench/templates/SPEC_TEMPLATE.md 尚不存在（模板未抽取）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/templates/SPEC_TEMPLATE.md 尚不存在（模板未抽取）
++
++======================================================================
++FAIL: test_c6_procurement_draft_reuses_structure (test_l03_spec_parser.C6ProcurementDraftTest.test_c6_procurement_draft_reuses_structure)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 248, in test_c6_procurement_draft_reuses_structure
++    self.fail("L03 目标缺口：lesson-03-submission/procurement-draft.md 尚不存在（迁移练习未完成）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：lesson-03-submission/procurement-draft.md 尚不存在（迁移练习未完成）
++
++======================================================================
++FAIL: test_c7_fence_heading_is_body_not_section (test_l03_spec_parser.C7FenceSemanticsTest.test_c7_fence_heading_is_body_not_section)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 174, in test_c7_fence_heading_is_body_not_section
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c7_parser_module_exists (test_l03_spec_parser.C7ParserModuleTest.test_c7_parser_module_exists)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 135, in test_c7_parser_module_exists
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c7_reject_duplicate_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_duplicate_section)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 160, in test_c7_reject_duplicate_section
++    self.assert_rejects(DUPLICATE_SECTION_TEXT, "重复章节")
++    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c7_reject_empty_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_empty_section)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 157, in test_c7_reject_empty_section
++    self.assert_rejects(EMPTY_SECTION_TEXT, "内容不能为空", "目标")
++    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c7_reject_missing_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_missing_section)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 154, in test_c7_reject_missing_section
++    self.assert_rejects(MISSING_SECTION_TEXT, "缺少必要章节", "非目标")
++    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c7_reject_out_of_order (test_l03_spec_parser.C7RejectionTest.test_c7_reject_out_of_order)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 163, in test_c7_reject_out_of_order
++    self.assert_rejects(OUT_OF_ORDER_TEXT, "顺序错误")
++    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c7_reject_unclosed_fence (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unclosed_fence)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 169, in test_c7_reject_unclosed_fence
++    self.assert_rejects(UNCLOSED_FENCE_TEXT, "围栏未闭合")
++    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c7_reject_unknown_heading (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unknown_heading)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 166, in test_c7_reject_unknown_heading
++    self.assert_rejects(UNKNOWN_HEADING_TEXT, "未知章节", "附录")
++    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 147, in assert_rejects
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c8_load_spec_leaves_file_unchanged (test_l03_spec_parser.C8ReadonlyTest.test_c8_load_spec_leaves_file_unchanged)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 187, in test_c8_load_spec_leaves_file_unchanged
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c8_cli_rejection_leaves_file_unchanged (test_l03_spec_parser.C9CliIntegrationTest.test_c8_cli_rejection_leaves_file_unchanged)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 223, in test_c8_cli_rejection_leaves_file_unchanged
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c9_cli_missing_section_error_same_source (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_missing_section_error_same_source)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 209, in test_c9_cli_missing_section_error_same_source
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++======================================================================
++FAIL: test_c9_cli_spec_valid_input_exit_zero (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_spec_valid_input_exit_zero)
++----------------------------------------------------------------------
++Traceback (most recent call last):
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 198, in test_c9_cli_spec_valid_input_exit_zero
++    self.require_parser_module()
++    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
++  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l03_spec_parser.py", line 120, in require_parser_module
++    self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）
++
++----------------------------------------------------------------------
++Ran 16 tests in 0.150s
++
++FAILED (failures=15)
+diff --git a/lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/meta.json b/lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/meta.json
+new file mode 100644
+index 0000000..b80bd0d
+--- /dev/null
++++ b/lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/meta.json
+@@ -0,0 +1,21 @@
++{
++  "phase": "diff",
++  "argv": [
++    "git",
++    "diff",
++    "--cached",
++    "--stat",
++    "--",
++    "lesson-03-submission",
++    "workbench",
++    "tests",
++    "tools"
++  ],
++  "command": "[\"git\", \"diff\", \"--cached\", \"--stat\", \"--\", \"lesson-03-submission\", \"workbench\", \"tests\", \"tools\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-09-27T11:51:10.875875+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/output.txt",
++  "sha256": "cc42285e0f0b74b23d4d2e1ff24ad016bbf39320b8e9e4fccc4b6ac76e34c692",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/output.txt b/lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/output.txt
+new file mode 100644
+index 0000000..7a7eaf9
+--- /dev/null
++++ b/lesson-03-submission/04-diff/20260927T115110875875Z-31a5469d/output.txt
+@@ -0,0 +1,9 @@
++ lesson-03-submission/FDE_SPEC-v1.md       |  25 ++++++
++ lesson-03-submission/FDE_SPEC.md          |  28 +++++++
++ lesson-03-submission/decisions.md         |  61 ++++++++++++++
++ lesson-03-submission/procurement-draft.md |  19 +++++
++ tests/test_l03_spec_parser.py             |   2 +-
++ workbench/cli.py                          |   4 +
++ workbench/spec.py                         | 132 ++++++++++++++++++++++++++++++
++ workbench/templates/SPEC_TEMPLATE.md      |  22 +++++
++ 8 files changed, 292 insertions(+), 1 deletion(-)
+diff --git a/lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/meta.json b/lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/meta.json
+new file mode 100644
+index 0000000..9571c9c
+--- /dev/null
++++ b/lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/meta.json
+@@ -0,0 +1,23 @@
++{
++  "phase": "green",
++  "argv": [
++    ".venv/bin/python",
++    "-X",
++    "utf8",
++    "-m",
++    "unittest",
++    "discover",
++    "-s",
++    "tests",
++    "-v",
++    "-p",
++    "test_l03_*.py"
++  ],
++  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"unittest\", \"discover\", \"-s\", \"tests\", \"-v\", \"-p\", \"test_l03_*.py\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-09-27T11:51:21.433163+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/output.txt",
++  "sha256": "c0d50ea29eff26aa0fef7111d7e537ab257de5eb62160f897480bc05f38b769c",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/output.txt b/lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/output.txt
+new file mode 100644
+index 0000000..9a7c21c
+--- /dev/null
++++ b/lesson-03-submission/05-green/20260927T115121433163Z-bcdc2376/output.txt
+@@ -0,0 +1,21 @@
++test_c3_full_contract_six_fields_verbatim (test_l03_spec_parser.C3FullContractTest.test_c3_full_contract_six_fields_verbatim) ... ok
++test_c5_template_has_no_inventory_answers (test_l03_spec_parser.C5TemplateTest.test_c5_template_has_no_inventory_answers) ... ok
++test_c6_procurement_draft_reuses_structure (test_l03_spec_parser.C6ProcurementDraftTest.test_c6_procurement_draft_reuses_structure) ... ok
++test_c7_fence_heading_is_body_not_section (test_l03_spec_parser.C7FenceSemanticsTest.test_c7_fence_heading_is_body_not_section) ... ok
++test_c7_parser_module_exists (test_l03_spec_parser.C7ParserModuleTest.test_c7_parser_module_exists) ... ok
++test_c7_reject_duplicate_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_duplicate_section) ... ok
++test_c7_reject_empty_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_empty_section) ... ok
++test_c7_reject_missing_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_missing_section) ... ok
++test_c7_reject_out_of_order (test_l03_spec_parser.C7RejectionTest.test_c7_reject_out_of_order) ... ok
++test_c7_reject_unclosed_fence (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unclosed_fence) ... ok
++test_c7_reject_unknown_heading (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unknown_heading) ... ok
++test_c8_load_spec_leaves_file_unchanged (test_l03_spec_parser.C8ReadonlyTest.test_c8_load_spec_leaves_file_unchanged) ... ok
++test_c8_cli_rejection_leaves_file_unchanged (test_l03_spec_parser.C9CliIntegrationTest.test_c8_cli_rejection_leaves_file_unchanged) ... ok
++test_c9_cli_missing_section_error_same_source (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_missing_section_error_same_source) ... ok
++test_c9_cli_spec_valid_input_exit_zero (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_spec_valid_input_exit_zero) ... ok
++test_d2_capture_tool_submission_root (test_l03_spec_parser.D2CaptureToolTest.test_d2_capture_tool_submission_root) ... ok
++
++----------------------------------------------------------------------
++Ran 16 tests in 0.483s
++
++OK
+diff --git a/lesson-03-submission/06-observations/20260927T115145605833Z-0a9cfd31/meta.json b/lesson-03-submission/06-observations/20260927T115145605833Z-0a9cfd31/meta.json
+new file mode 100644
+index 0000000..645a9ac
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115145605833Z-0a9cfd31/meta.json
+@@ -0,0 +1,19 @@
++{
++  "phase": "observation",
++  "argv": [
++    ".venv/bin/python",
++    "-X",
++    "utf8",
++    "-m",
++    "workbench.cli",
++    "spec",
++    "lesson-03-submission/FDE_SPEC.md"
++  ],
++  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"workbench.cli\", \"spec\", \"lesson-03-submission/FDE_SPEC.md\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-09-27T11:51:45.605833+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/06-observations/20260927T115145605833Z-0a9cfd31/output.txt",
++  "sha256": "4e801a1dc6cb199625273a0b491e21914ee35e07e1c706be9c3a349ea1d2201e",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-03-submission/06-observations/20260927T115145605833Z-0a9cfd31/output.txt b/lesson-03-submission/06-observations/20260927T115145605833Z-0a9cfd31/output.txt
+new file mode 100644
+index 0000000..f7eaee7
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115145605833Z-0a9cfd31/output.txt
+@@ -0,0 +1,12 @@
++{
++  "ok": true,
++  "flowerp_connected": false,
++  "spec": {
++    "source": "课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。\n决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。\n确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。",
++    "goal": "提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。",
++    "non_goals": "本次不发送邮件、不自动补货、不修改库存与库存流水、不实现导出程序（导出程序由 L04 按本合同交付）。",
++    "constraints": "只读导出；可用量 available = on_hand - reserved。\n导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。\n按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。\n复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。\nCSV 以 UTF-8（无 BOM）写入。\n数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。\n导出成功或失败，库存与库存变动记录都不变。",
++    "acceptance": "A1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。\nA2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。\nA3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。\nA4：没有库存记录时仍生成八列表头，无数据行。\nA5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。\nA6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。\nA7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。\nA8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。",
++    "done": "L03 完成需求审查、版本确认与合同结构检查。\nL04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。"
++  }
++}
+diff --git a/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/meta.json b/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/meta.json
+new file mode 100644
+index 0000000..ba532c4
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/meta.json
+@@ -0,0 +1,19 @@
++{
++  "phase": "observation",
++  "argv": [
++    ".venv/bin/python",
++    "-X",
++    "utf8",
++    "-m",
++    "workbench.cli",
++    "spec",
++    "lesson-03-submission/missing-section.md"
++  ],
++  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"workbench.cli\", \"spec\", \"lesson-03-submission/missing-section.md\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 1,
++  "observed_at": "2026-09-27T11:51:45.766554+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/output.txt",
++  "sha256": "ee4d380d196e2a27872dfee12e6d8c2f06dcb33fbc4fc398468dac45eda88897",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/output.txt b/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/output.txt
+new file mode 100644
+index 0000000..f454a65
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/output.txt
+@@ -0,0 +1,5 @@
++{
++  "ok": false,
++  "flowerp_connected": false,
++  "error": "Spec 缺少必要章节：非目标"
++}
+diff --git a/lesson-03-submission/06-observations/20260927T115145934860Z-9d9d53e7/meta.json b/lesson-03-submission/06-observations/20260927T115145934860Z-9d9d53e7/meta.json
+new file mode 100644
+index 0000000..296071f
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115145934860Z-9d9d53e7/meta.json
+@@ -0,0 +1,19 @@
++{
++  "phase": "observation",
++  "argv": [
++    ".venv/bin/python",
++    "-X",
++    "utf8",
++    "-m",
++    "workbench.cli",
++    "spec",
++    "lesson-03-submission/wrong-formula.md"
++  ],
++  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"workbench.cli\", \"spec\", \"lesson-03-submission/wrong-formula.md\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-09-27T11:51:45.934860+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/06-observations/20260927T115145934860Z-9d9d53e7/output.txt",
++  "sha256": "65fccfa242a9a901abcbf336123217ba0c25ece002c738a8b398b3ecd1b35929",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-03-submission/06-observations/20260927T115145934860Z-9d9d53e7/output.txt b/lesson-03-submission/06-observations/20260927T115145934860Z-9d9d53e7/output.txt
+new file mode 100644
+index 0000000..ae783f2
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115145934860Z-9d9d53e7/output.txt
+@@ -0,0 +1,12 @@
++{
++  "ok": true,
++  "flowerp_connected": false,
++  "spec": {
++    "source": "课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。\n决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。\n确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。",
++    "goal": "提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。",
++    "non_goals": "本次不发送邮件、不自动补货、不修改库存与库存流水、不实现导出程序（导出程序由 L04 按本合同交付）。",
++    "constraints": "只读导出；可用量 available = on_hand。\n导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。\n按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。\n复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。\nCSV 以 UTF-8（无 BOM）写入。\n数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。\n导出成功或失败，库存与库存变动记录都不变。",
++    "acceptance": "A1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。\nA2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。\nA3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。\nA4：没有库存记录时仍生成八列表头，无数据行。\nA5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。\nA6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。\nA7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。\nA8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。",
++    "done": "L03 完成需求审查、版本确认与合同结构检查。\nL04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。"
++  }
++}
+diff --git a/lesson-03-submission/06-observations/20260927T115159002560Z-80c7b889/meta.json b/lesson-03-submission/06-observations/20260927T115159002560Z-80c7b889/meta.json
+new file mode 100644
+index 0000000..2f8bbc2
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115159002560Z-80c7b889/meta.json
+@@ -0,0 +1,21 @@
++{
++  "phase": "observation",
++  "argv": [
++    ".venv/bin/python",
++    "-X",
++    "utf8",
++    "-m",
++    "unittest",
++    "discover",
++    "-s",
++    "tests",
++    "-v"
++  ],
++  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"unittest\", \"discover\", \"-s\", \"tests\", \"-v\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-09-27T11:51:59.002560+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/06-observations/20260927T115159002560Z-80c7b889/output.txt",
++  "sha256": "06b66b723418800ea2854df96bfe6bf4d00cc8dfbabe4c3a47bee9855f80c1ac",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-03-submission/06-observations/20260927T115159002560Z-80c7b889/output.txt b/lesson-03-submission/06-observations/20260927T115159002560Z-80c7b889/output.txt
+new file mode 100644
+index 0000000..facce67
+--- /dev/null
++++ b/lesson-03-submission/06-observations/20260927T115159002560Z-80c7b889/output.txt
+@@ -0,0 +1,55 @@
++test_l01_contract_is_frozen_baseline (test_course_contracts.CourseContractFixtureTest.test_l01_contract_is_frozen_baseline) ... ok
++test_l01_story_fields_present (test_course_contracts.CourseContractFixtureTest.test_l01_story_fields_present) ... ok
++test_lessons_cover_l01_to_l16 (test_course_contracts.CourseContractFixtureTest.test_lessons_cover_l01_to_l16) ... ok
++test_out_of_range_lesson_rejected (test_course_contracts.CourseContractFixtureTest.test_out_of_range_lesson_rejected) ... ok
++test_chain_any_matching_red_with_diff_between (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_chain_any_matching_red_with_diff_between) ... ok
++test_evidence_add_rejects_naive_time_and_empty_output (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_evidence_add_rejects_naive_time_and_empty_output) ... ok
++test_evidence_add_returns_record_id (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_evidence_add_returns_record_id) ... ok
++test_foreign_db_file_reports_uninitialized (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_foreign_db_file_reports_uninitialized) ... ok
++test_infra_failure_returns_json_error (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_infra_failure_returns_json_error) ... ok
++test_init_name_optional_and_requirement_id_fallback (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_init_name_optional_and_requirement_id_fallback) ... ok
++test_observed_at_z_suffix_accepted (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_observed_at_z_suffix_accepted) ... ok
++test_same_owner_reinit_idempotent (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_same_owner_reinit_idempotent) ... ok
++test_stale_green_global_across_commands (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_stale_green_global_across_commands) ... ok
++test_status_flags_digest_mismatch (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_status_flags_digest_mismatch) ... ok
++test_task_create_accepts_title (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_task_create_accepts_title) ... ok
++test_unreadable_spec_file_reports_clean_error (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_unreadable_spec_file_reports_clean_error) ... ok
++test_wb01_init_persists_and_cannot_be_overwritten (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb01_init_persists_and_cannot_be_overwritten) ... ok
++test_wb02_project_and_task_with_snapshots (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb02_project_and_task_with_snapshots) ... ok
++test_wb03_task_requires_registered_project (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb03_task_requires_registered_project) ... ok
++test_wb04_duplicate_task_id_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb04_duplicate_task_id_rejected) ... ok
++test_wb05_snapshots_survive_source_changes (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb05_snapshots_survive_source_changes) ... ok
++test_wb06_missing_chain_reported (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb06_missing_chain_reported) ... ok
++test_wb07_same_command_red_diff_green_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07_same_command_red_diff_green_chain) ... ok
++test_wb07b_diff_record_may_use_diff_command (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07b_diff_record_may_use_diff_command) ... ok
++test_wb08_different_command_breaks_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb08_different_command_breaks_chain) ... ok
++test_wb09_ordering_and_stale_green_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb09_ordering_and_stale_green_rejected) ... ok
++test_wb10_queries_never_create_data (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb10_queries_never_create_data) ... ok
++test_wb11_recovery_after_supplement (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb11_recovery_after_supplement) ... ok
++test_wb12_isolated_runtime_and_no_flowerp (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb12_isolated_runtime_and_no_flowerp) ... ok
++test_definition_of_done_present (test_l02_workbench_rules.DefinitionOfDone.test_definition_of_done_present) ... ok
++test_five_business_invariants_present (test_l02_workbench_rules.FiveBusinessInvariants.test_five_business_invariants_present) ... ok
++test_invariants_carry_applicability (test_l02_workbench_rules.FiveBusinessInvariants.test_invariants_carry_applicability) ... ok
++test_referenced_commands_are_real (test_l02_workbench_rules.ReferencedCommandsAreReal.test_referenced_commands_are_real) ... ok
++test_structure_convention_present (test_l02_workbench_rules.StructureConvention.test_structure_convention_present) ... ok
++test_c3_full_contract_six_fields_verbatim (test_l03_spec_parser.C3FullContractTest.test_c3_full_contract_six_fields_verbatim) ... ok
++test_c5_template_has_no_inventory_answers (test_l03_spec_parser.C5TemplateTest.test_c5_template_has_no_inventory_answers) ... ok
++test_c6_procurement_draft_reuses_structure (test_l03_spec_parser.C6ProcurementDraftTest.test_c6_procurement_draft_reuses_structure) ... ok
++test_c7_fence_heading_is_body_not_section (test_l03_spec_parser.C7FenceSemanticsTest.test_c7_fence_heading_is_body_not_section) ... ok
++test_c7_parser_module_exists (test_l03_spec_parser.C7ParserModuleTest.test_c7_parser_module_exists) ... ok
++test_c7_reject_duplicate_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_duplicate_section) ... ok
++test_c7_reject_empty_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_empty_section) ... ok
++test_c7_reject_missing_section (test_l03_spec_parser.C7RejectionTest.test_c7_reject_missing_section) ... ok
++test_c7_reject_out_of_order (test_l03_spec_parser.C7RejectionTest.test_c7_reject_out_of_order) ... ok
++test_c7_reject_unclosed_fence (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unclosed_fence) ... ok
++test_c7_reject_unknown_heading (test_l03_spec_parser.C7RejectionTest.test_c7_reject_unknown_heading) ... ok
++test_c8_load_spec_leaves_file_unchanged (test_l03_spec_parser.C8ReadonlyTest.test_c8_load_spec_leaves_file_unchanged) ... ok
++test_c8_cli_rejection_leaves_file_unchanged (test_l03_spec_parser.C9CliIntegrationTest.test_c8_cli_rejection_leaves_file_unchanged) ... ok
++test_c9_cli_missing_section_error_same_source (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_missing_section_error_same_source) ... ok
++test_c9_cli_spec_valid_input_exit_zero (test_l03_spec_parser.C9CliIntegrationTest.test_c9_cli_spec_valid_input_exit_zero) ... ok
++test_d2_capture_tool_submission_root (test_l03_spec_parser.D2CaptureToolTest.test_d2_capture_tool_submission_root) ... ok
++
++----------------------------------------------------------------------
++Ran 50 tests in 13.233s
++
++OK
+diff --git a/lesson-03-submission/FDE_SPEC-v1.md b/lesson-03-submission/FDE_SPEC-v1.md
+new file mode 100644
+index 0000000..a7936d3
+--- /dev/null
++++ b/lesson-03-submission/FDE_SPEC-v1.md
+@@ -0,0 +1,25 @@
++## 来源
++课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。
++决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8，2026-09-27 用户确认）。
++状态：v1 初稿，尚未经反例审查与最终确认。
++## 目标
++提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。
++## 非目标
++本次不发送邮件、不自动补货、不修改库存与库存流水、不实现导出程序（导出程序由 L04 按本合同交付）。
++## 约束
++只读导出；可用量 available = on_hand - reserved。
++导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。
++按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。
++复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。
++导出成功或失败，库存与库存变动记录都不变。
++## 验收用例
++A1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。
++A2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。
++A3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。
++A4：没有库存记录时仍生成八列表头，无数据行。
++A5：名称含中文、逗号、引号或换行时，CSV 工具读回后文字保持完整。
++A6：导出结果按 sku、site、location、lot_id 升序排列。
++A7：模拟写出失败时返回明确错误；已有有效目标文件保持原样，无旧文件时不留下半成品。
++## 完成定义
++L03 完成需求审查、版本确认与合同结构检查。
++L04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。
+diff --git a/lesson-03-submission/FDE_SPEC.md b/lesson-03-submission/FDE_SPEC.md
+new file mode 100644
+index 0000000..eba17a4
+--- /dev/null
++++ b/lesson-03-submission/FDE_SPEC.md
+@@ -0,0 +1,28 @@
++## 来源
++课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。
++决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。
++确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。
++## 目标
++提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。
++## 非目标
++本次不发送邮件、不自动补货、不修改库存与库存流水、不实现导出程序（导出程序由 L04 按本合同交付）。
++## 约束
++只读导出；可用量 available = on_hand - reserved。
++导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。
++按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。
++复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。
++CSV 以 UTF-8（无 BOM）写入。
++数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。
++导出成功或失败，库存与库存变动记录都不变。
++## 验收用例
++A1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。
++A2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。
++A3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。
++A4：没有库存记录时仍生成八列表头，无数据行。
++A5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。
++A6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。
++A7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。
++A8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。
++## 完成定义
++L03 完成需求审查、版本确认与合同结构检查。
++L04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。
+diff --git a/lesson-03-submission/decisions.md b/lesson-03-submission/decisions.md
+new file mode 100644
+index 0000000..46c4dd0
+--- /dev/null
++++ b/lesson-03-submission/decisions.md
+@@ -0,0 +1,66 @@
++# L03 库存导出：判断与决定记录
++
++记录人：XianReallyHot-ZZH
++记录日期：2026-09-27
++业务确认人：角色练习（课堂设定；真实客户需求未验证）
++整理方式：Claude 起草候选表（设计判断 SJ-1..SJ-4、需求八问 Q1..Q8），用户 2026-09-27 以"没问题，继续"逐条确认；候选表原文即确认口径，逐字未改。
++
++## 1. 我对本次建设的理解
++
++- 工作台保存和传递需求、任务及证据，组织受控交付；本讲交付需求入口：确认版 Spec + 结构解析器。
++- Claude 协助澄清、起草与实现候选；用户负责业务判断、确认与验收。
++- FlowERP 是客户项目（`vendors/flowERP` 只读 submodule）。本讲不实现导出功能；L04 才按本 Spec 驱动交付。
++
++## 2. 设计判断（上游手册 3.0 同形）
++
++只读调查 2026-09-27：`vendors/flowERP@e0088d3`、`vendors/CodexFDE@7f67533`。未修改任何 vendor 文件。
++
++| 设计问题 | 当前依据或待确认项 | 我的选择与理由 | L04 怎样验证 |
++|---|---|---|---|
++| SJ-1 模块职责与允许修改范围 | `flowerp/inventory.py` `InventoryService` 已承载库存业务（入库/预占/释放/盘点） | 导出功能属 `flowerp/`（客户项目）；工作台只保存/传递 Spec 与证据，不复制库存业务逻辑 | 以 flowERP 自身 eval 复验导出行为（客户真理，ADR-0005） |
++| SJ-2 入口→查询→输出的调用关系 | `flowerp/inventory_export.py:15,46`（`export_inventory_file`/`main`：临时文件+fsync+`os.replace` 原子替换）；`ImportExportService.export_csv`；`ERPStore`（sqlite）；`inventory.py:56-59`（`available = on_hand - reserved`） | 复用既有链：入口（CLI+文件输出）→ 查询（export_csv / InventoryService）→ 存储（ERPStore）；不新写库存算法 | L04 沿同一链做变更并留范围内 Diff |
++| SJ-3 数据归属、权限与失败不变状态 | `inventory_export.py` docstring："Export the local course ledger without changing stock or the old report" | 库存与库存流水归 flowERP；导出只读，成功或失败都不改库存 | 导出前后库存与流水快照对照 |
++| SJ-4 复用的命名、接口与 L04 验证方式 | export 能力在当前 flowERP **已存在**（上游"已有能力如实记录"口径） | L04 按本 Spec 驱动交付，以 flowERP 自身 eval 为业务权威；完成定义写"独立复验"，不写"从零实现" | flowERP eval 全绿 + 工作台证据账 + 具名验收 |
++
++拟新增/待验证：本仓库侧 L04 之前无导出交付记录；flowERP 现行导出与本 Spec 八列、排序、空结果、错误输入预期的**逐项符合性未验证**（标待复验，不当作已验收）。
++
++## 3. 需求八问（用户 2026-09-27 逐条确认）
++
++| 必须决定的问题 | 来源或事实 | 我的决定 | 理由 | 状态 |
++|---|---|---|---|---|
++| Q1 谁使用导出结果，用它作什么决定？ | 课堂设定 | 运营人员：核对可售数量并定位库存位置 | 决定保留明细还是汇总 | 课堂假设（真实客户未验证） |
++| Q2 一行代表商品、仓库、仓位还是批次？ | 上游样稿 v2（A6 反例驱动） | 一条库存记录（SKU×仓库×仓位×批次），不跨仓库、仓位或批次合并 | 合并丢位置，不符合 Q1 用途 | 已确认 |
++| Q3 可用量怎样计算？ | 上游样稿约定；flowERP 现行代码同口径（`inventory.py:56-59`） | `available = on_hand - reserved`（在库 8、预占 3 时可用量为 5） | 预占不可卖 | 已确认 |
++| Q4 导出哪些列，顺序是什么？ | 上游样稿 v1/v2 一致 | `sku,name,site,location,lot_id,on_hand,reserved,available` 八列 | 数量口径 + 位置缺一不可 | 已确认 |
++| Q5 多行按什么顺序排列？ | 上游样稿 v2 | 依次按 `sku → site → location → lot_id` 升序；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序 | 稳定可复验的输出 | 已确认 |
++| Q6 没有库存时输出什么？ | 上游样稿 D02 | 仍生成八列表头，无数据行 | 区分"没有库存记录"与"导出失败" | 已确认 |
++| Q7 写出失败后怎样处理旧文件和半成品？ | 上游样稿 A5；flowERP 现行实现同款（临时文件+`os.replace`） | 明确报错；已有有效目标文件保持原样；无旧文件时不留下半成品 | 失败不毁有效数据 | 已确认 |
++| Q8 成功或失败后，哪些业务数据不能改变？ | 上游样稿 A4；FlowERP 边界 1 同源 | 库存与库存变动记录（流水）一律不变 | 只读导出 | 已确认 |
++
++## 4. 待确认（不虚构）
++
++- 真实业务确认人：无（课堂练习，Q1 为课堂假设；确认行按角色练习记录）。
++- flowERP 现行导出与本 Spec 的逐项符合性：待 L04 复验，本讲不预写结论。
++
++## 5. 反例审查与修订记录
++
++审查 2026-09-27：Claude 按 D6 四步法（结构 / 来源与语义 / 验收可推翻性 / 边界）只读审查 `FDE_SPEC-v1.md`，只指认不代决；用户经 AskUserQuestion 逐条裁决（均为推荐口径）。
++
++**固定反例（讲义 §3.C，2026-09-27 提出，用户确认）**：
++
++> 问：同一 SKU 分布在两个仓库、三个仓位、两个批次时，合同究竟要求输出几行？
++> 答：按库存记录展开，一行对应一条库存记录（SKU×仓库×仓位×批次），即最多 2×3×2 = 12 行，不合并（依据 Q2 已确认口径）；确认版以 A3（东仓 8、3，西仓 4、1 → 两行，可用量 5、3）承载该口径的可检查例子。V1 中可产生两种实现的句子是 A6 仅写"升序"而无行粒度约束——经 F1 修回 Q5 后半句、A3 反例数据落实。
++
++| # | V1 原句/缺口 | 反例或两种实现 | 用户决定（2026-09-27） | 修订 |
++|---|---|---|---|---|
++| F1 | A6 只写"升序" | 起草遗漏已确认 Q5 后半句 | 无需新裁决（Q5 已确认在案） | A6 补全：空文本按空串比较；完全相同排序键不承诺额外次序 |
++| F2 | 全文无 CSV 编码约定 | UTF-8 无 BOM vs 带 BOM：表格软件双击直开行为不同 | UTF-8（无 BOM）；以 Python 标准 csv 模块 UTF-8 解码读回逐字段相等（对齐 `inventory_export.py:36` 现行口径） | 约束加编码行；A5 重写 |
++| F3 | 公式未定义 reserved > on_hand 时的行为 | 照实输出负数 vs 拒绝导出 | 照实输出负数：导出是只读镜像，不修正不拒绝；负值是异常信号，由人核查 | 约束加行为行；新增 A8（在库 2、预占 5 → 照实输出 -3，不阻断） |
++| F4 | A7"明确错误"无可观察结果；.tmp 残片未约定 | "明确"各自解读；残片清理 vs 遗留 | 收紧为：非零退出码 + 明确错误信息；有效旧文件原样；目标位置与 .tmp 均不残留（对齐 `inventory_export.py:41-43` finally 清理） | A7 重写 |
++
++审查未发现越界内容（无通知/审批/界面附加），未发现结构问题。V1 原歧义保留于 `FDE_SPEC-v1.md`，修订理由以本表为据。
++
++## 6. 下一步
++
++- 反例审查 V1（只指认歧义，不代决）→ 用户决定 → 修订为确认版。
++- 确认版经 `workbench.cli spec` 结构复验；三份输入留真实输出与退出码。
+diff --git a/lesson-03-submission/missing-section.md b/lesson-03-submission/missing-section.md
+new file mode 100644
+index 0000000..be3f47b
+--- /dev/null
++++ b/lesson-03-submission/missing-section.md
+@@ -0,0 +1,26 @@
++## 来源
++课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。
++决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。
++确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。
++## 目标
++提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。
++## 约束
++只读导出；可用量 available = on_hand - reserved。
++导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。
++按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。
++复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。
++CSV 以 UTF-8（无 BOM）写入。
++数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。
++导出成功或失败，库存与库存变动记录都不变。
++## 验收用例
++A1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。
++A2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。
++A3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。
++A4：没有库存记录时仍生成八列表头，无数据行。
++A5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。
++A6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。
++A7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。
++A8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。
++## 完成定义
++L03 完成需求审查、版本确认与合同结构检查。
++L04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。
+diff --git a/lesson-03-submission/procurement-draft.md b/lesson-03-submission/procurement-draft.md
+new file mode 100644
+index 0000000..caac733
+--- /dev/null
++++ b/lesson-03-submission/procurement-draft.md
+@@ -0,0 +1,19 @@
++## 来源
++课堂迁移练习：用通用模板起草"采购申请导出"，证明模板可复用、业务口径须重新确认。
++采购对象、审批状态与字段清单均无独立来源，一律标"待确认"；不复制库存需求的答案。
++状态：草稿（结构复验用，业务口径未确认）。
++## 目标
++提供采购申请明细文件，供（待确认：使用者角色）核对（待确认：核对目的）。
++## 非目标
++本次不发送邮件、不自动触发任何后续业务流程、不修改任何业务数据；不实现导出程序。
++## 约束
++只读导出；复用（待确认：既有查询与输出链及其位置）。
++字段清单与顺序：（待确认）。
++排序规则：（待确认）。
++导出成功或失败，业务数据都不变。
++## 验收用例
++A1：列与顺序按确认后的字段清单逐项核对（字段待确认）。
++A2：没有记录时仍输出表头、无数据行（待确认：本需求是否适用同一口径）。
++A3：写出失败时明确报错，旧文件与半成品的处理按确认后的口径复验（待确认）。
++## 完成定义
++结构经同一解析器复验通过；业务口径逐项确认后才能升级为确认版，未确认前不得进入实现。
+diff --git a/lesson-03-submission/wrong-formula.md b/lesson-03-submission/wrong-formula.md
+new file mode 100644
+index 0000000..a1a0334
+--- /dev/null
++++ b/lesson-03-submission/wrong-formula.md
+@@ -0,0 +1,28 @@
++## 来源
++课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。
++决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。
++确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。
++## 目标
++提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。
++## 非目标
++本次不发送邮件、不自动补货、不修改库存与库存流水、不实现导出程序（导出程序由 L04 按本合同交付）。
++## 约束
++只读导出；可用量 available = on_hand。
++导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。
++按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。
++复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。
++CSV 以 UTF-8（无 BOM）写入。
++数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。
++导出成功或失败，库存与库存变动记录都不变。
++## 验收用例
++A1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。
++A2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。
++A3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。
++A4：没有库存记录时仍生成八列表头，无数据行。
++A5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。
++A6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。
++A7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。
++A8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。
++## 完成定义
++L03 完成需求审查、版本确认与合同结构检查。
++L04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。
+diff --git a/tests/test_l03_spec_parser.py b/tests/test_l03_spec_parser.py
+new file mode 100644
+index 0000000..8bd6ac1
+--- /dev/null
++++ b/tests/test_l03_spec_parser.py
+@@ -0,0 +1,283 @@
++"""L03 合同测试：验收项 C1..C13 → 用例映射（Spec = docs/lessons/L03-可验收Spec.md §2）。
++
++映射表（验收项 → 测试名 → 实际操作 → 比较什么）：
++C1   →（本文件整体：commit 1 时解析器模块/CLI 子命令/工件文件均缺失，目标断言全部失败 = 起始红）
++C7   → test_c7_parser_module_exists → 探测 workbench.spec 可导入 → 模块在场（其余 C7 用例的前置闸）
++C3   → test_c3_full_contract_six_fields_verbatim → 六段完整文本经 parse_spec → 六字段保留原文
++C7   → test_c7_reject_missing_section → 删"非目标"整节 → 拒绝且错误指认缺项
++C7   → test_c7_reject_empty_section → 目标仅剩标题 → 拒绝且错误指认空章
++C7   → test_c7_reject_duplicate_section → 目标出现两次 → 拒绝且不悄悄选一份
++C7   → test_c7_reject_out_of_order → 约束与验收用例对调 → 拒绝并给出应有序
++C7   → test_c7_reject_unknown_heading → 出现"附录"节 → 拒绝并指认未知标题
++C7   → test_c7_reject_unclosed_fence → 代码围栏不闭合 → 拒绝，不吞掉后续正式章节
++C7   → test_c7_fence_heading_is_body_not_section → 验收用例内放含 ## 目标 的围栏示例 → 解析通过且示例保留为正文
++C8   → test_c8_load_spec_leaves_file_unchanged → load_spec 前后对同一文件算 SHA-256 → 摘要一致
++C9   → test_c9_cli_spec_valid_input_exit_zero → 真实子进程 workbench.cli spec <完整合同> → 退出码 0 + 六字段 JSON
++C9   → test_c9_cli_missing_section_error_same_source → CLI 拒绝缺章合同的错误词面与 parse_spec 抛出的一致 → 同源，非第二套解析
++C8   → test_c8_cli_rejection_leaves_file_unchanged → CLI 拒绝缺章合同前后 SHA-256 → 摘要一致
++C5   → test_c5_template_has_no_inventory_answers → 检查 SPEC_TEMPLATE.md → 六标题在场且无库存专属答案
++C6   → test_c6_procurement_draft_reuses_structure → 检查 procurement-draft.md → 同一解析器接受 + 待确认在场 + 无库存答案照搬
++D2   → test_d2_capture_tool_submission_root → 采集工具带 --submission-root 运行 → 捕获落指定根且 meta.json 九字段同形
++
++诚实声明（L02 三层分检同形）：本文件断言的是程序结构与 CLI 行为。
++C2/C4（决定记录、歧义保留）、C10（三份输入复验）、C11（eval 名登记）、C12/C13（写集、
++非目标）由流程与人审承载；C11 的绑定 Eval spec_contract_rejects_ambiguity 以本文件
++C7/C3 缺项拒绝用例 discharge，eval.harness 待建设（讲义 D1 裁决），不冒充已建成。
++--submission-root 默认值向后兼容（lesson-02-submission/）由代码复查核对，
++不用真实执行验证——避免向 L02 封存目录写入。
++
++所有 CLI 用例经真实子进程（sys.executable -X utf8 -m workbench.cli）驱动，
++不绕开命令入口直调内部函数；解析器行为在公开函数 parse_spec/load_spec/
++ParsedSpec.as_dict() 上断言（vendor 同形冻结接口）。
++"""
++
++from __future__ import annotations
++
++import hashlib
++import importlib.util
++import json
++import subprocess
++import sys
++import tempfile
++import unittest
++from pathlib import Path
++
++REPO_ROOT = Path(__file__).resolve().parents[1]
++
++# 独立来源的期望字面量（非由被测代码重算，避免同义反复）。
++FULL_SPEC_TEXT = (
++    "## 来源\n"
++    "测试夹具：运营需要核对可售数量，来源为课堂需求。\n"
++    "## 目标\n"
++    "提供库存明细文件，供运营核对当前可售数量。\n"
++    "## 非目标\n"
++    "不发送邮件，不自动补货，不修改库存。\n"
++    "## 约束\n"
++    "只读；available = on_hand - reserved。\n"
++    "## 验收用例\n"
++    "在库 8、预占 3 时可用量为 5；导出前后库存不变。\n"
++    "## 完成定义\n"
++    "结构可解析，业务验收由人确认。\n"
++)
++EXPECTED_SIX_FIELDS = {
++    "source": "测试夹具：运营需要核对可售数量，来源为课堂需求。",
++    "goal": "提供库存明细文件，供运营核对当前可售数量。",
++    "non_goals": "不发送邮件，不自动补货，不修改库存。",
++    "constraints": "只读；available = on_hand - reserved。",
++    "acceptance": "在库 8、预占 3 时可用量为 5；导出前后库存不变。",
++    "done": "结构可解析，业务验收由人确认。",
++}
++
++FENCE_EXAMPLE = (
++    "正文中的示例（围栏内，不是正式章节）：\n"
++    "```markdown\n"
++    "## 目标\n"
++    "这是示例正文，不应被当成第二个目标章节。\n"
++    "```\n"
++)
++FENCED_SPEC_TEXT = FULL_SPEC_TEXT.replace(
++    "## 验收用例\n在库 8、预占 3 时可用量为 5；导出前后库存不变。\n",
++    "## 验收用例\nA1：在库 8、预占 3 时可用量为 5。\n" + FENCE_EXAMPLE + "A2：导出前后库存不变。\n",
++)
++UNCLOSED_FENCE_TEXT = FENCED_SPEC_TEXT.replace(FENCE_EXAMPLE, FENCE_EXAMPLE.replace("```\n", ""))
++
++MISSING_SECTION_TEXT = FULL_SPEC_TEXT.replace("## 非目标\n不发送邮件，不自动补货，不修改库存。\n", "")
++EMPTY_SECTION_TEXT = FULL_SPEC_TEXT.replace(
++    "## 目标\n提供库存明细文件，供运营核对当前可售数量。\n", "## 目标\n\n")
++DUPLICATE_SECTION_TEXT = FULL_SPEC_TEXT.replace(
++    "## 约束\n", "## 目标\n重复出现的目标正文。\n## 约束\n")
++OUT_OF_ORDER_TEXT = FULL_SPEC_TEXT.replace(
++    "## 约束\n只读；available = on_hand - reserved。\n## 验收用例\n在库 8、预占 3 时可用量为 5；导出前后库存不变。\n",
++    "## 验收用例\n在库 8、预占 3 时可用量为 5；导出前后库存不变。\n## 约束\n只读；available = on_hand - reserved。\n")
++UNKNOWN_HEADING_TEXT = FULL_SPEC_TEXT.replace("## 完成定义\n", "## 附录\n额外章节。\n## 完成定义\n")
++
++# 库存专属答案词面：模板与采购稿不得照抄（讲义 C5/C6）。
++INVENTORY_ANSWER_TOKENS = ("available", "on_hand", "reserved", "仓位", "批次", "在库", "预占")
++SIX_HEADINGS = ("## 来源", "## 目标", "## 非目标", "## 约束", "## 验收用例", "## 完成定义")
++CAPTURE_META_FIELDS = {"phase", "argv", "command", "cwd", "returncode",
++                       "observed_at", "output_file", "sha256", "provenance"}
++
++
++def run_cli(*args: str) -> subprocess.CompletedProcess:
++    return subprocess.run(
++        [sys.executable, "-X", "utf8", "-m", "workbench.cli", *args],
++        cwd=str(REPO_ROOT), capture_output=True, text=True,
++    )
++
++
++def sha256_of(path: Path) -> str:
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
++
++class L03ContractTest(unittest.TestCase):
++    def setUp(self) -> None:
++        tmp = tempfile.TemporaryDirectory()
++        self.addCleanup(tmp.cleanup)
++        self.tmp = Path(tmp.name)
++
++    def require_parser_module(self) -> None:
++        if importlib.util.find_spec("workbench.spec") is None:
++            self.fail("L03 目标缺口：workbench/spec.py 尚不存在（解析器模块未实现）")
++
++    def write_tmp_spec(self, name: str, text: str) -> Path:
++        path = self.tmp / name
++        path.write_text(text, encoding="utf-8")
++        return path
++
++    def parse(self, text: str):
++        from workbench.spec import parse_spec
++
++        return parse_spec(text)
++
++
++class C7ParserModuleTest(L03ContractTest):
++    def test_c7_parser_module_exists(self) -> None:
++        self.require_parser_module()
++
++
++class C3FullContractTest(L03ContractTest):
++    def test_c3_full_contract_six_fields_verbatim(self) -> None:
++        self.require_parser_module()
++        parsed = self.parse(FULL_SPEC_TEXT)
++        self.assertEqual(parsed.as_dict(), EXPECTED_SIX_FIELDS)
++
++
++class C7RejectionTest(L03ContractTest):
++    def assert_rejects(self, text: str, *word_faces: str) -> None:
++        self.require_parser_module()
++        with self.assertRaises(ValueError) as ctx:
++            self.parse(text)
++        for word_face in word_faces:
++            self.assertIn(word_face, str(ctx.exception))
++
++    def test_c7_reject_missing_section(self) -> None:
++        self.assert_rejects(MISSING_SECTION_TEXT, "缺少必要章节", "非目标")
++
++    def test_c7_reject_empty_section(self) -> None:
++        self.assert_rejects(EMPTY_SECTION_TEXT, "内容不能为空", "目标")
++
++    def test_c7_reject_duplicate_section(self) -> None:
++        self.assert_rejects(DUPLICATE_SECTION_TEXT, "重复章节")
++
++    def test_c7_reject_out_of_order(self) -> None:
++        self.assert_rejects(OUT_OF_ORDER_TEXT, "顺序错误")
++
++    def test_c7_reject_unknown_heading(self) -> None:
++        self.assert_rejects(UNKNOWN_HEADING_TEXT, "未知章节", "附录")
++
++    def test_c7_reject_unclosed_fence(self) -> None:
++        self.assert_rejects(UNCLOSED_FENCE_TEXT, "围栏未闭合")
++
++
++class C7FenceSemanticsTest(L03ContractTest):
++    def test_c7_fence_heading_is_body_not_section(self) -> None:
++        self.require_parser_module()
++        parsed = self.parse(FENCED_SPEC_TEXT)
++        fields = parsed.as_dict()
++        # 围栏内同名标题不制造重复章节：六个字段仍是原六节，目标字段未被示例覆盖。
++        self.assertEqual(fields["goal"], EXPECTED_SIX_FIELDS["goal"])
++        # 示例原文保留为验收用例正文。
++        self.assertIn("## 目标", fields["acceptance"])
++        self.assertIn("这是示例正文，不应被当成第二个目标章节。", fields["acceptance"])
++        self.assertIn("A2：导出前后库存不变。", fields["acceptance"])
++
++
++class C8ReadonlyTest(L03ContractTest):
++    def test_c8_load_spec_leaves_file_unchanged(self) -> None:
++        self.require_parser_module()
++        from workbench.spec import load_spec
++
++        path = self.write_tmp_spec("full.md", FULL_SPEC_TEXT)
++        before = sha256_of(path)
++        load_spec(path)
++        self.assertEqual(sha256_of(path), before)
++
++    def test_c8_cli_rejection_leaves_file_unchanged(self) -> None:
++        self.require_parser_module()
++        path = self.write_tmp_spec("missing.md", MISSING_SECTION_TEXT)
++        before = sha256_of(path)
++        run_cli("spec", str(path))
++        self.assertEqual(sha256_of(path), before)
++
++
++class C9CliIntegrationTest(L03ContractTest):
++    def test_c9_cli_spec_valid_input_exit_zero(self) -> None:
++        self.require_parser_module()
++        path = self.write_tmp_spec("full.md", FULL_SPEC_TEXT)
++        proc = run_cli("spec", str(path))
++        self.assertEqual(proc.returncode, 0,
++                         f"完整合同应解析通过；实际输出：{proc.stdout}{proc.stderr}")
++        payload = json.loads(proc.stdout)
++        self.assertTrue(payload["ok"])
++        for field, expected in EXPECTED_SIX_FIELDS.items():
++            self.assertEqual(payload["spec"][field], expected)
++
++    def test_c9_cli_missing_section_error_same_source(self) -> None:
++        self.require_parser_module()
++        from workbench.spec import parse_spec
++
++        with self.assertRaises(ValueError) as ctx:
++            parse_spec(MISSING_SECTION_TEXT)
++        expected_word_face = str(ctx.exception)
++        path = self.write_tmp_spec("missing.md", MISSING_SECTION_TEXT)
++        proc = run_cli("spec", str(path))
++        self.assertNotEqual(proc.returncode, 0, "缺章合同应被 CLI 拒绝")
++        # 错误词面同源：CLI 输出包含 parse_spec 抛出的同一条消息（非第二套解析逻辑）。
++        self.assertIn(expected_word_face, proc.stdout,
++                      f"CLI 错误词面与 workbench.spec 不同源；实际输出：{proc.stdout}{proc.stderr}")
++
++
++class C5TemplateTest(L03ContractTest):
++    def test_c5_template_has_no_inventory_answers(self) -> None:
++        path = REPO_ROOT / "workbench" / "templates" / "SPEC_TEMPLATE.md"
++        if not path.exists():
++            self.fail("L03 目标缺口：workbench/templates/SPEC_TEMPLATE.md 尚不存在（模板未抽取）")
++        text = path.read_text(encoding="utf-8")
++        for heading in SIX_HEADINGS:
++            self.assertIn(heading, text)
++        lowered = text.lower()
++        for token in INVENTORY_ANSWER_TOKENS:
++            self.assertNotIn(token.lower(), lowered,
++                             f"模板不得残留库存专属答案：{token}")
++
++
++class C6ProcurementDraftTest(L03ContractTest):
++    def test_c6_procurement_draft_reuses_structure(self) -> None:
++        path = REPO_ROOT / "lesson-03-submission" / "procurement-draft.md"
++        if not path.exists():
++            self.fail("L03 目标缺口：lesson-03-submission/procurement-draft.md 尚不存在（迁移练习未完成）")
++        text = path.read_text(encoding="utf-8")
++        parsed = self.parse(text)
++        self.assertEqual(len(parsed.as_dict()), 6, "采购草稿应被同一解析器接受为六段结构")
++        self.assertIn("待确认", text, "无来源的采购字段应保持待确认，不得虚构")
++        lowered = text.lower()
++        for token in INVENTORY_ANSWER_TOKENS:
++            self.assertNotIn(token.lower(), lowered,
++                             f"采购草稿不得照抄库存答案：{token}")
++
++
++class D2CaptureToolTest(L03ContractTest):
++    def test_d2_capture_tool_submission_root(self) -> None:
++        submission_root = self.tmp / "capture-root"
++        proc = subprocess.run(
++            [sys.executable, "-X", "utf8", "tools/capture_evidence.py",
++             "--submission-root", str(submission_root),
++             "observation", "--", sys.executable, "-c", "print('probe')"],
++            cwd=str(REPO_ROOT), capture_output=True, text=True,
++        )
++        self.assertEqual(proc.returncode, 0,
++                         f"采集工具应真实执行并返回命令退出码；实际输出：{proc.stdout}{proc.stderr}")
++        phase_dirs = list((submission_root / "06-observations").iterdir())
++        self.assertEqual(len(phase_dirs), 1, "每次捕获应有独立新目录")
++        meta = json.loads((phase_dirs[0] / "meta.json").read_text(encoding="utf-8"))
++        self.assertEqual(set(meta.keys()), CAPTURE_META_FIELDS, "meta.json 九字段磁盘合同不得漂移")
++        self.assertEqual(meta["phase"], "observation")
++        self.assertEqual(meta["provenance"], "local_teaching_capture")
++        self.assertEqual(meta["returncode"], 0)
++        output_bytes = (phase_dirs[0] / "output.txt").read_bytes()
++        self.assertEqual(meta["sha256"], hashlib.sha256(output_bytes).hexdigest())
++        self.assertNotIn("acceptance", meta, "采集工具永不签验收")
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tools/capture_evidence.py b/tools/capture_evidence.py
+index 1da2d87..01f6556 100644
+--- a/tools/capture_evidence.py
++++ b/tools/capture_evidence.py
+@@ -1,10 +1,12 @@
+ """L02+ teaching aid: execute commands and retain observations, never sign acceptance.
+ 
+ 磁盘合同与 vendors/CodexFDE/docs/courses/L01/tools/evidence.py 的 capture() 逐字段同形
+-（phase/argv/command/cwd/returncode/observed_at/output_file/sha256/provenance），
+-差异仅在捕获根：vendor 工具硬编码 lesson-01-submission/（docs/replication/evidence/L01.md
+-附记裁决），本工具写 lesson-02-submission/。导入仍用 vendor import_evidence.py
+-（只依赖 meta.json 字段 + 导入时 SHA-256 复核）。捕获目录随 Git 提交且永不移动。
++（phase/argv/command/cwd/returncode/observed_at/output_file/sha256/provenance）。
++vendor 工具硬编码 lesson-01-submission/（docs/replication/evidence/L01.md 附记裁决）；
++本工具自 L03 起以 --submission-root 参数化（L02 复查轮 S3 尾巴，讲义 D2 裁决），
++默认值保持 lesson-02-submission/——L02 已封存证据的磁盘合同不变。
++导入仍用 vendor import_evidence.py（只依赖 meta.json 字段 + 导入时 SHA-256 复核）。
++捕获目录随 Git 提交且永不移动。
+ """
+ from __future__ import annotations
+ 
+@@ -19,12 +21,14 @@ import uuid
+ 
+ 
+ PHASES = {"red": "03-failure", "diff": "04-diff", "green": "05-green", "observation": "06-observations"}
++# 捕获根下的子目录名（相对 root 解析；传绝对路径时经 pathlib / 语义以绝对路径为准）。
++DEFAULT_SUBMISSION_ROOT = "lesson-02-submission"  # 向后兼容：L02 封存证据磁盘合同不变（讲义 D2）
+ 
+ 
+-def capture(root: Path, phase: str, command: list[str]) -> tuple[Path, int]:
++def capture(root: Path, phase: str, command: list[str], submission_root: str = DEFAULT_SUBMISSION_ROOT) -> tuple[Path, int]:
+     """Each attempt gets a new directory, including failures and missing executables."""
+     now = datetime.now(timezone.utc)
+-    directory = root / "lesson-02-submission" / PHASES[phase] / (now.strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8])
++    directory = root / submission_root / PHASES[phase] / (now.strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8])
+     directory.mkdir(parents=True, exist_ok=False)
+     try:
+         result = subprocess.run(command, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+@@ -44,6 +48,8 @@ def capture(root: Path, phase: str, command: list[str]) -> tuple[Path, int]:
+ 
+ def main() -> int:
+     parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--submission-root", default=DEFAULT_SUBMISSION_ROOT,
++                        help="捕获根目录名（默认 lesson-02-submission，向后兼容 L02 封存证据）")
+     parser.add_argument("phase", choices=list(PHASES))
+     parser.add_argument("command", nargs=argparse.REMAINDER)
+     args = parser.parse_args()
+@@ -55,7 +61,7 @@ def main() -> int:
+     # Use the same virtual environment; a restarted shell cannot silently change Python.
+     if command[0] == "python":
+         command[0] = sys.executable
+-    _, code = capture(Path.cwd(), args.phase, command)
++    _, code = capture(Path.cwd(), args.phase, command, submission_root=args.submission_root)
+     return code
+ 
+ 
+diff --git a/workbench/cli.py b/workbench/cli.py
+index a22efb0..41ec084 100644
+--- a/workbench/cli.py
++++ b/workbench/cli.py
+@@ -28,6 +28,10 @@ def build_parser() -> argparse.ArgumentParser:
+     from .bootstrap import register_commands
+ 
+     register_commands(REGISTRY)
++    # L03：spec 命令经同一条 REGISTRY 缝注册（适配器在 workbench/spec.py，C9 调用路径同源）。
++    from .spec import register_commands as register_spec_commands
++
++    register_spec_commands(REGISTRY)
+     for register in REGISTRY.values():
+         register(subparsers)
+     return parser
+diff --git a/workbench/spec.py b/workbench/spec.py
+new file mode 100644
+index 0000000..c19836c
+--- /dev/null
++++ b/workbench/spec.py
+@@ -0,0 +1,136 @@
++"""六段式 Spec 结构解析器与 CLI 适配器（L03 合同，docs/lessons/L03-可验收Spec.md §2）。
++
++只回答一个问题：合同的六段结构是否完整。缺章、空章、重复、乱序、未知标题、
++未闭合代码围栏各给可指导修订的原因；不判断业务语义——结构通过 ≠ 业务正确，
++业务取舍由人检查（上游辅导资料 §5 分层纪律，讲义 C7/C10）。
++
++接口与错误词面同 vendors/CodexFDE workbench/spec.py 解析半边（讲义 D5：
++``build_delivery_spec`` 等需求生成机器属上游 L04 消费面，本讲不复刻）。
++CLI 适配器经 REGISTRY 缝注册（workbench/cli.py 只加注册调用，缝位置不变）：
++成功输出 ``{"ok": true, "spec": {六字段}}`` + 退出码 0；结构错误在 handler 层
++接住 ValueError（不走顶层异常边界，避免合同拒绝被误标"内部错误"），
++输出 ``{"ok": false, "error": "<parse_spec 原词面>"}`` + 退出码 1。
++"""
++
++from __future__ import annotations
++
++import argparse
++import json
++import re
++import sys
++from dataclasses import dataclass
++from pathlib import Path
++
++from .bootstrap import FLOWERP_CONNECTED  # 冻结边界单一来源：L04 换挡点只改 bootstrap 一处
++
++
++REQUIRED_SECTIONS = ("来源", "目标", "非目标", "约束", "验收用例", "完成定义")
++
++
++@dataclass(frozen=True)
++class ParsedSpec:
++    source: str
++    goal: str
++    non_goals: str
++    constraints: str
++    acceptance: str
++    done: str
++
++    def as_dict(self) -> dict[str, str]:
++        return {
++            "source": self.source,
++            "goal": self.goal,
++            "non_goals": self.non_goals,
++            "constraints": self.constraints,
++            "acceptance": self.acceptance,
++            "done": self.done,
++        }
++
++
++def _contract_headings(text: str) -> list[re.Match]:
++    """Ignore headings in fenced examples while preserving original text offsets.
++
++    This handles the subset used by our six-section contract, not arbitrary
++    Markdown. Unclosed examples are rejected instead of hiding later sections.
++    """
++    masked: list[str] = []
++    fence: tuple[str, int] | None = None
++    for line in text.splitlines(keepends=True):
++        match = re.match(r"^[ ]{0,3}(`{3,}|~{3,})([^\r\n]*)", line)
++        if fence:
++            if match and match[1][0] == fence[0] and len(match[1]) >= fence[1] and not match[2].strip():
++                fence = None
++            masked.append("".join(char if char in "\r\n" else " " for char in line))
++        elif match and not (match[1][0] == "`" and "`" in match[2]):
++            fence = (match[1][0], len(match[1]))
++            masked.append("".join(char if char in "\r\n" else " " for char in line))
++        else:
++            masked.append(line)
++    if fence:
++        raise ValueError("Spec 代码围栏未闭合，请补齐示例的结束标记")
++    return list(re.finditer(r"^##[ \t]+([^\r\n]+?)[ \t]*\r?$", "".join(masked), flags=re.MULTILINE))
++
++
++def parse_spec(text: str) -> ParsedSpec:
++    matches = _contract_headings(text)
++    names = [match.group(1).strip() for match in matches]
++    unknown = list(dict.fromkeys(name for name in names if name not in REQUIRED_SECTIONS))
++    if unknown:
++        raise ValueError(f"Spec 包含未知章节：{', '.join(unknown)}")
++    duplicates = list(dict.fromkeys(name for name in names if names.count(name) > 1))
++    if duplicates:
++        raise ValueError(f"Spec 包含重复章节：{', '.join(duplicates)}")
++    missing = [name for name in REQUIRED_SECTIONS if name not in names]
++    if missing:
++        raise ValueError(f"Spec 缺少必要章节：{', '.join(missing)}")
++    if tuple(names) != REQUIRED_SECTIONS:
++        expected = " → ".join(REQUIRED_SECTIONS)
++        actual = " → ".join(names)
++        raise ValueError(f"Spec 章节顺序错误；应为：{expected}；实际为：{actual}")
++
++    sections: dict[str, str] = {}
++    for index, match in enumerate(matches):
++        name = match.group(1).strip()
++        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
++        sections[name] = text[match.end():end].strip()
++    empty = [name for name in REQUIRED_SECTIONS if not sections[name]]
++    if empty:
++        raise ValueError(f"Spec 章节内容不能为空：{', '.join(empty)}")
++    return ParsedSpec(
++        source=sections["来源"], goal=sections["目标"], non_goals=sections["非目标"],
++        constraints=sections["约束"], acceptance=sections["验收用例"], done=sections["完成定义"],
++    )
++
++
++def load_spec(path: str | Path = "FDE_SPEC.md") -> ParsedSpec:
++    # 默认值系 vendor 冻结接口继承（上游根 FDE_SPEC.md 为 REQ 级交付主合同）；
++    # 本讲不建根文件（讲义 D4），调用方一律显式传路径。
++    return parse_spec(Path(path).read_text(encoding="utf-8"))
++
++
++def _cmd_spec(args: argparse.Namespace) -> int:
++    try:
++        parsed = load_spec(args.spec_path)
++    except (ValueError, OSError) as error:  # UnicodeDecodeError ⊂ ValueError：非 UTF-8 输入同形拒绝
++        print(json.dumps({"ok": False, "flowerp_connected": FLOWERP_CONNECTED, "error": str(error)},
++                         ensure_ascii=False, indent=2))
++        return 1
++    print(json.dumps({"ok": True, "flowerp_connected": FLOWERP_CONNECTED, "spec": parsed.as_dict()},
++                     ensure_ascii=False, indent=2))
++    return 0
++
++
++def _register_spec(subparsers: argparse._SubParsersAction) -> None:
++    parser = subparsers.add_parser("spec", help="解析六段式 Spec，输出六字段 JSON；结构错误非零退出")
++    parser.add_argument("spec_path", help="Spec 文件路径（UTF-8，只读不修改）")
++    parser.set_defaults(handler=_cmd_spec)
++
++
++def register_commands(registry: dict) -> None:
++    """REGISTRY 缝注册入口（与 bootstrap.register_commands 同形）。"""
++    registry["spec"] = _register_spec
++
++
++if __name__ == "__main__":  # pragma: no cover - 模块以 workbench.cli 为唯一入口
++    print("请经 python -X utf8 -m workbench.cli spec <文件> 调用", file=sys.stderr)
++    raise SystemExit(2)
+diff --git a/workbench/templates/SPEC_TEMPLATE.md b/workbench/templates/SPEC_TEMPLATE.md
+new file mode 100644
+index 0000000..e2a14ea
+--- /dev/null
++++ b/workbench/templates/SPEC_TEMPLATE.md
+@@ -0,0 +1,22 @@
++# SPEC_TEMPLATE｜六段式需求合同模板
++
++> 用法：复制本模板，按各节提示填写；没有来源的内容写"待确认"，不虚构确认人或日期。
++> 模板只承载结构，不携带任何一次需求的具体答案。
++
++## 来源
++（谁提出这个需求？哪些内容已经由谁确认？原始诉求与决定记录各在哪个文件？）
++
++## 目标
++（做成之后，使用者能做什么？可观察的结果是什么？）
++
++## 非目标
++（这次明确不做什么？容易蔓延的方向逐条列出。）
++
++## 约束
++（必须遵守什么规则与边界？复用哪些既有能力？成功或失败之后，什么状态不能改变？）
++
++## 验收用例
++（每条写：给定条件、执行操作、可观察结果；关键行为要有能推翻错误实现的具体例子。）
++
++## 完成定义
++（交接时检查什么？本阶段与下一阶段的分工是什么？）

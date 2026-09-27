@@ -1,0 +1,16 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "diff",
+    "--cached",
+    "master...lesson-03"
+  ],
+  "command": "[\"git\", \"diff\", \"--cached\", \"master...lesson-03\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 129,
+  "observed_at": "2026-09-27T12:02:43.143658+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/04-diff/20260927T120243143658Z-cb1c2382/output.txt",
+  "sha256": "98d3f0422c653182f050b4b60921ce719a67645300a37ebdbb5be4b7af531b7f",
+  "provenance": "local_teaching_capture"
+}
