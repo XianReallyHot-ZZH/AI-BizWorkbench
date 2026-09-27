@@ -21,6 +21,16 @@
 - [L01 讲义](../../docs/lessons/L01-工作台自举.md)（复刻口径）与
   [ADR-0001..0005](../../docs/adr/)
   复刻决策（全新实现 / Claude 执行器 / 候选分支 / 客户真理）的依据。用于：理解"为什么和上游不一样"。
+- [上游 L03 辅导资料](../../vendors/CodexFDE/docs/courses/L03/辅导资料.md)
+  Spec 讲"为什么"的权威：§5 三份输入定边界；「从一段文本看懂解析器怎样工作」节（检查点 0002 新增）是围栏语义与字段映射的终审依据。
+- [本仓库 workbench/spec.py](../../workbench/spec.py)
+  L03 学习对象本体：`_contract_headings()` 围栏屏蔽、`parse_spec()` 六类拒绝与检查顺序（未知→重复→缺章→乱序→空章）、`load_spec()` 只读。
+- [本仓库合同测试 test_l03_spec_parser.py](../../tests/test_l03_spec_parser.py)
+  16 用例 = 16 条行为规则，文件头验收项映射表；`test_c9_cli_missing_section_error_same_source` 钉"CLI 与解析器同源"。
+- [L03 证据账](../../docs/replication/evidence/L03.md)
+  真实复验样本：三份输入退出码、夹具修正现场、验收追认两条（handler 层接 ValueError、包络含 flowerp_connected）。
+- [L03 讲义](../../docs/lessons/L03-可验收Spec.md)（复刻口径）
+  C1..C13 合同表与六个决策点（D1 eval 承载 / D4 根 FDE_SPEC 不建 / D5 只复刻解析半边）——闸门语义的本仓库口径。
 - [Python sqlite3 文档](https://docs.python.org/3/library/sqlite3.html)
   账本存储层。用于：事务、行工厂、schema 语义。
 - [Python datetime.fromisoformat 文档](https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat)

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0002 · 六段闸门：解析器只管结构，谁来裁决业务？</title>
+<link rel="stylesheet" href="../assets/course.css">
+<script defer src="../assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="kicker">Lesson 0002 · L03 复盘</div>
+  <h1>六段闸门：解析器只管结构，谁来裁决业务？</h1>
+  <div class="subtitle">L03 的意图、机制与代码实现 —— 为 L04 的受控执行备好判断力</div>
+</header>
+
+<h2 id="why">为什么从这一课开始</h2>
+<p>你刚以验收人身份签收了 L03（<a href="../../docs/replication/evidence/L03.md">证据账</a>）。下一讲 L04 是换挡点：执行器第一次<strong>吃着 Spec 干活</strong>——需求以六段合同的形式进入工作台，残缺合同应当在闸门处被程序拒绝，而不是流到执行里变成事故。届时你验收的对象不再是"测试绿不绿"，还包括<strong>"这道闸门的语义是否被正确理解与使用"</strong>。本课把三件事建成能脱口而出的心智模型：意图（为什么要有闸门）、机制（它怎么判断）、实现（屏蔽算法的那十几行）。</p>
+<div class="marginnote">前置：L01 的链判定与数据模型你已过关（见 <a href="../learning-records/0001-workbench-kernel-mental-model.md">学习记录 0001</a>），本课不再重复。相邻课：<a href="0001-evidence-chain-judgement.html">0001 证据链判定</a>。</div>
+
+<h2 id="intent">意图：一句话怎么变成合同，闸门为什么存在</h2>
+<p>L03 的起点是客户的一句话："给我导出一份库存，我要知道还有多少货能卖。"这句话没法开工——列、行粒度、空库存、失败行为全是未知数。本讲把它做了三层转化：</p>
+<pre><code>模糊需求
+   ↓ 回答八个业务问题（谁用 / 一行是什么 / 公式 / 列 / 排序 / 空结果 / 失败 / 不变量）
+决定记录 decisions.md
+   ↓ 起草 V1 → 反例审查抓歧义 → 逐条裁决
+可验收合同 FDE_SPEC.md（六段确认版）
+   ↓ 建设读取工具 + 用三份输入证明它的边界
+工作台结构闸门（workbench.spec）</code></pre>
+<p><strong>分层纪律</strong>是全讲的魂，一句话版本：<strong>解析器只回答"六段结构是否完整"，绝不冒充业务裁判。</strong>结构通过 ≠ 业务正确；把公式写错的合同照样通过解析，退回它的是人。这条边界在 L04 尤其要紧——执行器见到"解析通过"只能得出"合同可读"，永远不能得出"需求正确"。</p>
+<div class="callout"><span class="label">为什么这值得做成闸门</span>没有它，残缺需求会流进执行，事故在业务现场才暴露；有了它，缺章节的合同在 <code>workbench.cli spec</code> 一步就被拒，错误词面直接指认缺哪一节——修复成本从"执行后返工"降到"进门前退回"。</div>
+
+<h2 id="mechanism">机制：六类拒绝与一个屏蔽器</h2>
+<p>解析器公开接口只有三个（vendor 冻结同形）：<code>parse_spec(text)</code>、<code>load_spec(path)</code>、<code>ParsedSpec.as_dict()</code>。成功返回六字段对象：<code>source / goal / non_goals / constraints / acceptance / done</code>——中文标题映射为程序字段，后续程序按字段读取，不用重新猜标题含义。失败时，六类错误各有<strong>可指导修订</strong>的词面：</p>
+<table>
+  <tr><th>错误类别</th><th>实际错误词面</th><th>指导什么修订</th></tr>
+  <tr><td>缺章</td><td><code>Spec 缺少必要章节：非目标</code></td><td>补哪一节</td></tr>
+  <tr><td>空章</td><td><code>Spec 章节内容不能为空：目标</code></td><td>哪节只剩标题</td></tr>
+  <tr><td>重复</td><td><code>Spec 包含重复章节：目标</code></td><td>不许悄悄选一份</td></tr>
+  <tr><td>乱序</td><td><code>Spec 章节顺序错误；应为：…；实际为：…</code></td><td>调到应有序</td></tr>
+  <tr><td>未知标题</td><td><code>Spec 包含未知章节：附录</code></td><td>删掉或并入正段</td></tr>
+  <tr><td>围栏未闭合</td><td><code>Spec 代码围栏未闭合，请补齐示例的结束标记</code></td><td>补结束标记</td></tr>
+</table>
+<p>第六类牵出最精的机制——<strong>代码围栏屏蔽</strong>。验收用例里常要放 Markdown 示例，示例自己也写着 <code>## 目标</code>。它位于围栏内，是<strong>正文</strong>，不是第二个正式章节：读取时必须认出围栏的开始与结束，只在围栏外识别章节，提取正文时仍保留示例原文；围栏没闭合就直接报错，不能把后面的正式章节全吞进示例。这条口径来自上游检查点 0002 新增的教学节（<a href="../../vendors/CodexFDE/docs/courses/L03/辅导资料.md">辅导资料·从一段文本看懂解析器怎样工作</a>），并已写进本仓库实现。</p>
+
+<h2 id="code">代码走读：屏蔽算法的十几行</h2>
+<p>心脏在 <a href="../../workbench/spec.py"><code>workbench/spec.py</code> 的 <code>_contract_headings()</code></a>（L33 起）。逐行读懂它，围栏语义就再不会含糊：</p>
+<pre><code>for line in text.splitlines(keepends=True):        # 逐行，保留换行
+    match = re.match(r"^[ ]{0,3}(`{3,}|~{3,})", line)
+    if fence:                                      # 已在围栏内
+        if 匹配同字符且更长且无尾注: fence = None    # ← 围栏在此结束
+        masked.append(本行非换行字符全部替换为空格)  # ← 屏蔽，但保留换行
+    elif 匹配围栏开始且行内无反引号:                # 围栏开始（```markdown 等）
+        fence = (字符, 长度)                        # 记住用哪种围栏、多长
+        masked.append(空白化)
+    else:
+        masked.append(line)                        # 围栏外，原样保留
+if fence: raise ValueError("Spec 代码围栏未闭合…")  # 走到文件尾还开着 → 拒绝</code></pre>
+<p>三个容易忽略的设计点：</p>
+<div class="marginnote">① <strong>屏蔽是替换成空格，不是删除</strong>——保留字符偏移量，后面才能用 <code>match.start()/end()</code> 在原文上精确切分正文（docstring 说的 "preserving original text offsets"）。② <strong>闭合要求同字符且不少于开始长度</strong>——用 <code>```</code> 开的不能拿 <code>~</code> 收。③ 屏蔽之后，<code>parse_spec()</code> 对屏蔽文本做 <code>^## 标题</code> 的多行匹配——围栏内的 <code>##</code> 在物理上已被抹平，<strong>结构上不可能</strong>被误认。</div>
+<p>随后 <code>parse_spec()</code> 按固定顺序检查：<strong>未知 → 重复 → 缺章 → 乱序 → 空章</strong>。顺序不是装饰——L03 的合同测试夹具就因此暴露过一个真 bug：构造"空目标"的字符串替换意外多造了一个「非目标」节，重复检查先触发，报的是"重复章节"而非目标词面（<a href="../../docs/replication/evidence/L03.md">证据账 §3</a> 夹具修正现场）。顺序错一个，错误提示就指错方向。</p>
+
+<h2 id="hands-on">亲手复验：先写预测，再跑命令</h2>
+<p>确认过的循环：讲解 → 亲手复验。下面三份文件就在 <code>lesson-03-submission/</code>（L03 真实产物）。<strong>先在纸上写出你预测的退出码（0 / 非 0）和理由</strong>，然后逐条运行对照：</p>
+<pre><code>cd 仓库根目录
+.venv/bin/python -m workbench.cli spec lesson-03-submission/FDE_SPEC.md;        echo "rc=$?"
+.venv/bin/python -m workbench.cli spec lesson-03-submission/missing-section.md; echo "rc=$?"
+.venv/bin/python -m workbench.cli spec lesson-03-submission/wrong-formula.md;   echo "rc=$?"</code></pre>
+<table>
+  <tr><th>输入</th><th>这份文件被做了什么</th><th>我的预测（先填）</th><th>实际</th></tr>
+  <tr><td><code>FDE_SPEC.md</code></td><td>确认版，未动</td><td>rc=＿＿，因为＿＿</td><td>＿＿</td></tr>
+  <tr><td><code>missing-section.md</code></td><td>删去「非目标」整节</td><td>rc=＿＿，因为＿＿</td><td>＿＿</td></tr>
+  <tr><td><code>wrong-formula.md</code></td><td>公式改成 可用量 = on_hand</td><td>rc=＿＿，因为＿＿</td><td>＿＿</td></tr>
+</table>
+<p>第三份是本课的试金石：<strong>解析器放行它是设计，不是 bug</strong>。人工退回的结论是——在库 8、预占 3 应为 5，错误公式得 8，违反约束与 A2/A8。程序与人的职责边界，就用这三行退出码钉死。</p>
+
+<h2 id="quiz">测验：谁裁决？</h2>
+<p>每题只有一个正确动作。点选即判分。</p>
+<div id="quiz-root"></div>
+<script defer>
+window.addEventListener("load", () => mountQuiz("quiz-root", [
+  { scenario: "提交给 <code>workbench.cli spec</code> 的文件缺少「非目标」整节。正确的裁决是？",
+    options: [
+      { text: "解析器拒绝，词面指认缺章", correct: true,
+        why: "对。缺章属结构错误，parse_spec 在闸门处拒绝（rc≠0），错误词面直接指认缺哪一节——修复停在进门前。" },
+      { text: "业务审核人检查后作退回", correct: false,
+        why: "错。业务人裁决的是含义（公式、取舍）；缺章连结构都不完整，不该消耗人的注意力。" },
+      { text: "顶层异常边界拦截并报告", correct: false,
+        why: "错。结构错误在 _cmd_spec 的 handler 层接住，避免被顶层边界误标为\"内部错误\"（L03 验收追认条目 2）。" } ] },
+  { scenario: "六段齐全、顺序正确，但「约束」里的公式写成了 可用量 = 在库量。正确的裁决是？",
+    options: [
+      { text: "解析器通过，人工复核退回", correct: true,
+        why: "对。结构完整即放行；公式正确性属业务语义，只能由人用具体数字（8−3 应为 5）裁决——正是 wrong-formula 实验。" },
+      { text: "解析器拒绝，公式不合法报错", correct: false,
+        why: "错。这会让解析器越权当业务裁判，把\"可用量\"这类含义硬编码进通用结构检查——L03 明令禁止。" },
+      { text: "CLI 拒绝并输出定位错误词", correct: false,
+        why: "错。CLI 与解析器同源同判；结构上无错误可报，谁拒绝谁就在越权。" } ] },
+  { scenario: "「验收用例」的代码围栏里放着示例，示例也写了「## 目标」。解析器应当：",
+    options: [
+      { text: "视作正文，示例原文保留", correct: true,
+        why: "对。围栏内一切被空白化屏蔽（保留偏移量），## 物理上不可能被认成章节；正文切分时示例原样保留。" },
+      { text: "识别为章节，报出重复错误", correct: false,
+        why: "错。这是屏蔽算法要防的正误认——示例里的标题不是合同结构，报重复说明屏蔽没做对。" },
+      { text: "忽略该行，正文丢失示例文", correct: false,
+        why: "错。忽略会破坏偏移量且丢示例正文；正确做法是空白化屏蔽，正文原样保留。" } ] },
+  { scenario: "文件里只写了 ```markdown 围栏开始，没有结束标记，后面还有正式章节。解析器应当：",
+    options: [
+      { text: "报错围栏未闭合并拒绝", correct: true,
+        why: "对。围栏未闭合时后续章节都会被吞进示例——必须报错（rc≠0），词面提示补结束标记。" },
+      { text: "视作正文，继续读后面章节", correct: false,
+        why: "错。那等于把后面所有正式章节吞进示例，缺章检查全乱——宁可拒绝不可猜。" },
+      { text: "报错章节顺序错误并提示", correct: false,
+        why: "错。乱序检查的前提是标题清单可信；围栏未闭合时清单本身已失真，报乱序会误导修订方向。" } ] },
+]));
+</script>
+
+<h2 id="l04">这一课对应的下一讲</h2>
+<p>L04 起调用链是：<code>业务原话 → decisions.md → FDE_SPEC.md → workbench.spec → workbench.cli spec → 执行入口</code>。你在闸门处只需记住两句话：<strong>程序证明结构完整或残缺；人证明业务正确与否。</strong>解析通过时，执行器拿到的只是"合同可读"，业务验收仍要过 flowERP 自身的 eval（客户真理，ADR-0005）。另外，绑定 Eval <code>spec_contract_rejects_ambiguity</code> 目前由合同测试承载，L05/L06 的 Harness 建成后归位——届时别把现在的合同测试误认为 harness。</p>
+
+<h2 id="sources">主要原始资料</h2>
+<ul>
+  <li><strong>首选精读</strong>：<a href="../../vendors/CodexFDE/docs/courses/L03/辅导资料.md">上游 L03 辅导资料</a>——§5 三份输入定边界 + 「从一段文本看懂解析器怎样工作」是本课"为什么"的终审依据。</li>
+  <li><a href="../../workbench/spec.py">本仓库 workbench/spec.py</a>——学习对象本体；<code>_contract_headings</code> 与 <code>parse_spec</code> 的检查顺序直接可读。</li>
+  <li><a href="../../tests/test_l03_spec_parser.py">合同测试 test_l03_spec_parser.py</a>——每条行为规则一个测试；文件头有验收项映射表。</li>
+  <li><a href="../../docs/replication/evidence/L03.md">L03 证据账</a>——三份输入的真实退出码、夹具修正现场、验收追认两条（handler 层接错、包络含 flowerp_connected）。</li>
+  <li><a href="../reference/0001-workbench-cheatsheet.html">速查：Workbench 内核</a>——五命令与链判定（L01 侧，配合本课读全链）。</li>
+</ul>
+
+<footer class="colophon">
+  <p>卡住了？任何时候把问题丢给你的老师（Claude 会话）——围栏屏蔽、检查顺序、追认条目，都值得追问。下一课预告：L04 换挡点，执行器合同（写集 / Diff 摘要 / 客户真理）。</p>
+</footer>
+
+</body>
+</html>
