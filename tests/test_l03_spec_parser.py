@@ -83,7 +83,7 @@ UNCLOSED_FENCE_TEXT = FENCED_SPEC_TEXT.replace(FENCE_EXAMPLE, FENCE_EXAMPLE.repl
 
 MISSING_SECTION_TEXT = FULL_SPEC_TEXT.replace("## 非目标\n不发送邮件，不自动补货，不修改库存。\n", "")
 EMPTY_SECTION_TEXT = FULL_SPEC_TEXT.replace(
-    "## 目标\n提供库存明细文件，供运营核对当前可售数量。\n", "## 目标\n## 非目标\n")
+    "## 目标\n提供库存明细文件，供运营核对当前可售数量。\n", "## 目标\n\n")
 DUPLICATE_SECTION_TEXT = FULL_SPEC_TEXT.replace(
     "## 约束\n", "## 目标\n重复出现的目标正文。\n## 约束\n")
 OUT_OF_ORDER_TEXT = FULL_SPEC_TEXT.replace(

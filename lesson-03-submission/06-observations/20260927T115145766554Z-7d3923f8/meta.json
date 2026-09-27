@@ -1,0 +1,19 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "-m",
+    "workbench.cli",
+    "spec",
+    "lesson-03-submission/missing-section.md"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"workbench.cli\", \"spec\", \"lesson-03-submission/missing-section.md\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-27T11:51:45.766554+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/06-observations/20260927T115145766554Z-7d3923f8/output.txt",
+  "sha256": "ee4d380d196e2a27872dfee12e6d8c2f06dcb33fbc4fc398468dac45eda88897",
+  "provenance": "local_teaching_capture"
+}

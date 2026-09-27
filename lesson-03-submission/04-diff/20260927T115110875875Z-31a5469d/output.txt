@@ -1,0 +1,9 @@
+ lesson-03-submission/FDE_SPEC-v1.md       |  25 ++++++
+ lesson-03-submission/FDE_SPEC.md          |  28 +++++++
+ lesson-03-submission/decisions.md         |  61 ++++++++++++++
+ lesson-03-submission/procurement-draft.md |  19 +++++
+ tests/test_l03_spec_parser.py             |   2 +-
+ workbench/cli.py                          |   4 +
+ workbench/spec.py                         | 132 ++++++++++++++++++++++++++++++
+ workbench/templates/SPEC_TEMPLATE.md      |  22 +++++
+ 8 files changed, 292 insertions(+), 1 deletion(-)
