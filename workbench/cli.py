@@ -32,6 +32,10 @@ def build_parser() -> argparse.ArgumentParser:
     from .spec import register_commands as register_spec_commands
 
     register_spec_commands(REGISTRY)
+    # L04：受控执行三命令经同一条缝注册（适配器在 workbench/execution.py，复用 bootstrap 存储入口）。
+    from .execution import register_commands as register_execution_commands
+
+    register_execution_commands(REGISTRY)
     for register in REGISTRY.values():
         register(subparsers)
     return parser

@@ -1,0 +1,11 @@
+# Ticket A 实施证据（Workbench V0）
+
+- **实际执行者**：Claude（实现授权：用户显式调用 `/mattpocock-skills:implement`，2026-09-27）；复核门见任务账 review 记录与证据账具名验收行
+- **修改前的失败或能力缺口**：起始红 13/13 失败（`lesson-04-submission/03-failure/20260927T131701504967Z-efadee03/`，真实退出码 1），失败形状全部为 `invalid choice: 'workbench-task-run'`——受控执行、写集检查、最小 Eval、摘要与复核门五类能力整体缺失
+- **实际修改文件**：`workbench/execution.py`（新增：task-run / task-review / task-show 三命令 + 写集检查器 + change_manifest/Diff 采集）、`workbench/bootstrap.py`（executions/reviews 表 + tasks.prerequisite_task_id + `_ensure_v0_schema` 迁移 + `_task_state` 状态推导 + status 完整性复核扩展）、`workbench/cli.py`（REGISTRY 缝第二批注册，+4 行）、`tests/test_l04_workbench_v0.py`（13 用例）
+- **验证命令与退出码**：红/绿同命令 `.venv/bin/python -X utf8 -m unittest discover -s tests -v -p "test_l04_*.py"`——红退出码 1（13 失败）→ 绿退出码 0（13 通过，`05-green/20260927T133737340965Z-5700d87b/`）；全量回归 63/63 通过、退出码 0（`06-observations/20260927T133759926561Z-1a91eed8/`）；活账本读路径复验 ok:true / evidence_complete:true / acceptance:pending_human_review；迁移路径在活账本副本上验证（前置门正确拒绝未走 V0 复核的旧任务）
+- **Diff 摘要**：`lesson-04-submission/04-diff/20260927T133737219895Z-9f956df3/`（全文）；要点——执行记录与上游 `07-real-codex-executor.json` 同形（invocation/write_scope/change_manifest 逐文件前后 SHA-256/diff/returncode/timed_out）；verify 模式不调执行器进程；code 模式缺写集/坏候选拒绝启动；越界与失败/超时在 Eval 前停止、不自动回滚、旧记录保留；review 态拒绝重跑；复核人≠最近执行者强制；前置门要求已具名接受
+- **越界、失败、超时如何处理**：各有专用用例——`test_out_of_scope_stops_before_eval`（退出码 0 但越界 → status=out_of_scope、Eval 未运行、越界文件留证）、`test_executor_failure_preserves_output_and_diff`（stderr 与已发生改动保留、不冒充成功）、`test_timeout_preserves_partial_output`（timed_out=true、部分输出保留）
+- **替身执行器证明边界（讲义 D7）**：本票合同测试以测试控制的脚本进程充当执行器，**证明的是 V0 机制**（写集正反、记录保真、状态门、自验拒绝、前置绑定）；**不证明真实 `claude -p` 行为**（提示词送达、stream-json 事件流、真实超时形状）——后者在 Ticket B 受控执行实跑中出现并以执行记录留证
+- **实现期间修正记录（红→绿循环内，先于绿存在）**：①测试侧 `assertIn("allowed.txt", changed_files)` 误写列表成员断言（意图为"改动留证"），改为全路径 `src/allowed.txt` 成员断言；②测试侧同运行目录第二张任务单重复 project-add（L01 幂等拒绝语义），加 `with_project=False`；③测试侧 `run_code()` 内部 marker 路径与断言读取路径不一致，显式传参；④实现侧真缺陷：`_task_state` 曾以秒级时间戳跨表比较"最新"，同秒内 review 与新执行并列时旧接受误判有效——改为复核按 `execution_id` 只覆盖其引用的执行，新执行即失效。四处均在绿出现前修正，无断言放宽
+- **仍未证明的事项**：真实 `claude -p` 执行器行为（见证明边界）；六场景库存复验（Ticket B，probe 实跑）；候选 clone 与 B 段执行记录；A 尚未具名验收——**待审核 ≠ 已接受**

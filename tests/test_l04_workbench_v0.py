@@ -113,11 +113,12 @@ class WorkbenchV0ContractTest(unittest.TestCase):
             raise SystemExit(3)
         """.replace("import os, sys", "import json, os, sys"))
 
-    def init_task(self, task_id: str = "T-A") -> None:
+    def init_task(self, task_id: str = "T-A", *, with_project: bool = True) -> None:
         self.assertEqual(run_cli("workbench-init", "--runtime-dir", str(self.rt),
                                  "--owner", "tester-A").returncode, 0)
-        self.assertEqual(run_cli("workbench-project-add", "--runtime-dir", str(self.rt),
-                                 "--project-id", "P-1", "--name", "测试项目").returncode, 0)
+        if with_project:  # 同一运行目录内第二张任务单复用已登记项目（L01：编号已存在则拒绝，不覆盖）
+            self.assertEqual(run_cli("workbench-project-add", "--runtime-dir", str(self.rt),
+                                     "--project-id", "P-1", "--name", "测试项目").returncode, 0)
         proc = run_cli("workbench-task-create", "--runtime-dir", str(self.rt),
                        "--project-id", "P-1", "--task-id", task_id,
                        "--requirement-id", task_id, "--request", "V0 行为验证",
@@ -126,10 +127,11 @@ class WorkbenchV0ContractTest(unittest.TestCase):
 
     def run_code(self, task_id: str = "T-A", stub: Path | None = None,
                  scope: tuple[str, ...] = ("src",), eval_probe: Path | None = None,
-                 timeout: str = "900", workspace: Path | None = None) -> subprocess.CompletedProcess:
+                 timeout: str = "900", workspace: Path | None = None,
+                 marker: Path | None = None) -> subprocess.CompletedProcess:
         prompt_file = self.tmp / "prompt.txt"
         prompt_file.write_text(PROMPT_TEXT, encoding="utf-8")
-        marker = self.tmp / f"marker-{task_id}.json"
+        marker = marker or self.tmp / f"marker-{task_id}.json"
         args = ["workbench-task-run", task_id,
                 "--runtime-dir", str(self.rt),
                 "--workspace", str(workspace or self.workspace),
@@ -185,7 +187,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
     def test_code_run_records_manifest_diff_and_waits_for_review(self) -> None:
         self.init_task()
         marker = self.tmp / "marker-code.json"
-        proc = self.run_code(eval_probe=self.eval_probe())
+        proc = self.run_code(eval_probe=self.eval_probe(), marker=marker)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         body = payload(proc)
         record = body["execution"]
@@ -238,7 +240,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         self.assertEqual(record["status"], "failed")
         self.assertEqual(record["returncode"], 4)
         self.assertIn("工具失败", record["stderr_text"])  # 输出保留
-        self.assertIn("allowed.txt", record["changed_files"])  # 已发生改动留证，不回滚不隐瞒
+        self.assertIn("src/allowed.txt", record["changed_files"])  # 已发生改动留证，不回滚不隐瞒
         self.assertFalse(marker.exists())
         self.assertEqual(body["task_state"], "failed")  # 失败不冒充成功
 
@@ -297,7 +299,7 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         self.assertEqual(show["task"]["state"], "accepted")
         self.assertEqual(show["task"]["reviews"][-1]["reviewer"], "reviewer-B")
         # 打回路径：另一任务 reject 后允许返工（review 态才可复核，reject 落账）
-        self.init_task("T-B")
+        self.init_task("T-B", with_project=False)
         self.run_code("T-B")
         reject = self.approve("T-B", reviewer="reviewer-B", decision="reject")
         self.assertEqual(reject.returncode, 0, reject.stdout + reject.stderr)
