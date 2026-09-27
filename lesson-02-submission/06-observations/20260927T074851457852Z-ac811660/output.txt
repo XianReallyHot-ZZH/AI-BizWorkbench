@@ -1,0 +1,25 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash[1m]","query_source":"sdk"}
+We're changing auto mode to no longer charge for classifier requests in Claude Code. However, this session isn't eligible because your requests go through open.bigmodel.cn, which isn't compatible with this update. Nothing breaks: auto mode keeps working, and its classifier requests are billed as before. To fix it and access the new version of auto mode, ask your gateway to implement: https://code.claude.com/docs/en/auto-mode-classifier-billing
+## 结论：可以继续设计
+
+该方案不越任何一条边界，且与仓库既有纪律同向——它正是 L02 合同验收项 C9 预期“被允许继续设计”的合法维护对照方案。逐条依据如下：
+
+**1. “保留所有原始失败记录” —— 直接对齐铁律 3 与信用内核**
+铁律 3 要求失败记录一律保留、不删不改凑通过；信用内核钉死账本只追加、失败不可抹。这条主张不是妥协，是现行纪律的复述。
+
+**2. “页面默认折叠详情，但提供完整历史入口” —— 展示层选择，不动账本**
+折叠只改变呈现密度，不改变任何记录的存在与内容；与 N0 固定请求中第 5 条越界项（“evidence_complete 为 true 就显示‘人工验收通过’”）有本质区别——那条让展示层篡改状态含义，本方案没有。“完整历史入口”恰好对应不可变快照 + SHA-256 复核链的查证通道。
+
+**3. “自动检查与具名人工审核分别显示，不改变业务状态含义” —— 正是边界 4/5 要求的形态**
+FlowERP 边界 5：自动检查不冒充人工接受；边界 4：自动检查通过只推进到“待批准”，不构成批准；信用内核：`acceptance: pending_human_review` 恒待人签，待审核 ≠ 已接受。**分列恰是防止两类结论混装的正确设计**，“不改变任何业务状态含义”把方案牢牢限制在展示层。
+
+## 继续设计时要钉住的约束
+
+1. **折叠摘要必须携带真值**——失败/待审核状态在未展开层就须可见。检验法：用户不展开任何细节时，能否误读出“全部通过/已验收”？能则越界。
+2. **完整历史入口是硬承诺**——指向只追加账本与不可变快照，不能是可被后续编辑覆盖的页面缓存或重新渲染的副本。
+3. **分列不发明新状态词**——只显示既有状态（`pending_human_review` 逐字出现），措辞继承 CONTEXT.md（具名验收、待审核 ≠ 已接受）。
+4. **展示层纯读**——折叠/分组/过滤不得反向影响账本写入与链判定三规则。
+5. **涉及 flowERP 业务状态时过客户真理**——工作台绿灯不证明客户业务通过，页面不得把工作台自动检查显示成客户业务结论。
+
+一点如实说明：本仓库当前口径是 CLI + JSON，尚无“页面”，此方案属前瞻设计；设计与分析不动代码，不触发 C12 非目标。本次评审全程只读，未修改任何仓库文件。

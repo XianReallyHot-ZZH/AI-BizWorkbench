@@ -1,0 +1,10 @@
+test_definition_of_done_present (test_l02_workbench_rules.DefinitionOfDone.test_definition_of_done_present) ... ok
+test_five_business_invariants_present (test_l02_workbench_rules.FiveBusinessInvariants.test_five_business_invariants_present) ... ok
+test_invariants_carry_applicability (test_l02_workbench_rules.FiveBusinessInvariants.test_invariants_carry_applicability) ... ok
+test_referenced_commands_are_real (test_l02_workbench_rules.ReferencedCommandsAreReal.test_referenced_commands_are_real) ... ok
+test_structure_convention_present (test_l02_workbench_rules.StructureConvention.test_structure_convention_present) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
