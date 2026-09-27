@@ -1,10 +1,12 @@
 """L02+ teaching aid: execute commands and retain observations, never sign acceptance.
 
 磁盘合同与 vendors/CodexFDE/docs/courses/L01/tools/evidence.py 的 capture() 逐字段同形
-（phase/argv/command/cwd/returncode/observed_at/output_file/sha256/provenance），
-差异仅在捕获根：vendor 工具硬编码 lesson-01-submission/（docs/replication/evidence/L01.md
-附记裁决），本工具写 lesson-02-submission/。导入仍用 vendor import_evidence.py
-（只依赖 meta.json 字段 + 导入时 SHA-256 复核）。捕获目录随 Git 提交且永不移动。
+（phase/argv/command/cwd/returncode/observed_at/output_file/sha256/provenance）。
+vendor 工具硬编码 lesson-01-submission/（docs/replication/evidence/L01.md 附记裁决）；
+本工具自 L03 起以 --submission-root 参数化（L02 复查轮 S3 尾巴，讲义 D2 裁决），
+默认值保持 lesson-02-submission/——L02 已封存证据的磁盘合同不变。
+导入仍用 vendor import_evidence.py（只依赖 meta.json 字段 + 导入时 SHA-256 复核）。
+捕获目录随 Git 提交且永不移动。
 """
 from __future__ import annotations
 
@@ -21,10 +23,10 @@ import uuid
 PHASES = {"red": "03-failure", "diff": "04-diff", "green": "05-green", "observation": "06-observations"}
 
 
-def capture(root: Path, phase: str, command: list[str]) -> tuple[Path, int]:
+def capture(root: Path, phase: str, command: list[str], submission_root: str = "lesson-02-submission") -> tuple[Path, int]:
     """Each attempt gets a new directory, including failures and missing executables."""
     now = datetime.now(timezone.utc)
-    directory = root / "lesson-02-submission" / PHASES[phase] / (now.strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8])
+    directory = root / submission_root / PHASES[phase] / (now.strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8])
     directory.mkdir(parents=True, exist_ok=False)
     try:
         result = subprocess.run(command, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
@@ -44,6 +46,8 @@ def capture(root: Path, phase: str, command: list[str]) -> tuple[Path, int]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--submission-root", default="lesson-02-submission",
+                        help="捕获根目录名（默认 lesson-02-submission，向后兼容 L02 封存证据）")
     parser.add_argument("phase", choices=list(PHASES))
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
@@ -55,7 +59,7 @@ def main() -> int:
     # Use the same virtual environment; a restarted shell cannot silently change Python.
     if command[0] == "python":
         command[0] = sys.executable
-    _, code = capture(Path.cwd(), args.phase, command)
+    _, code = capture(Path.cwd(), args.phase, command, submission_root=args.submission_root)
     return code
 
 
