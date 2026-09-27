@@ -92,6 +92,13 @@ def _run_process(command: list[str], *, cwd: Path, timeout_s: int,
             stdout_text=(expired.stdout or b"").decode("utf-8", errors="replace"),
             stderr_text=(expired.stderr or b"").decode("utf-8", errors="replace"),
         )
+    except OSError as error:
+        # 启动失败（二进制不存在等）必须落账而非裸崩——B 门实跑教训：
+        # 崩在插入前会把执行器已发生的工作记录尽失（上游 V0 同形：launch error preserved）
+        return _ProcessOutcome(
+            returncode=None, timed_out=False, stdout_text="",
+            stderr_text=f"启动失败：{type(error).__name__}: {error}",
+        )
     return _ProcessOutcome(
         returncode=proc.returncode, timed_out=False,
         stdout_text=proc.stdout.decode("utf-8", errors="replace"),

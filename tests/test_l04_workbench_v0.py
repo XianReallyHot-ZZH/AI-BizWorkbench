@@ -18,6 +18,7 @@ C8     → test_accepted_task_rerun_invalidates_old_acceptance → 接受后再�
 复查轮 → test_workspace_without_start_commit_rejected → 候选无起点提交 → workspace_invalid（能力信封：起点版本）
 复查轮 → test_eval_timeout_is_distinguishable_from_eval_failure → eval 沉睡超预算 → status=eval_failed 且 eval_timed_out=true（失败不冒充成功）
 复查轮 → test_status_digest_checks_cover_executions（扩展）→ 篡改 change_manifest → execution_digest_mismatch（manifest 自身有摘要）
+A 门实测 → test_launch_error_preserved_as_failed_record → 执行器二进制不存在 → status=failed、stderr 含启动失败、记录仍落账（B 门实跑发现：裸崩丢记录）
 
 替身执行器边界：本文件全部用测试控制的脚本进程充当执行器，证明的是 V0 机制
 （写集检查、记录保真、状态门），不证明真实 claude -p 行为——后者只在 B 段实跑
@@ -418,6 +419,29 @@ class WorkbenchV0ContractTest(unittest.TestCase):
         self.assertEqual(record["status"], "eval_failed")
         self.assertTrue(record["eval_timed_out"])  # 超时与业务失败可分辨，不冒充
         self.assertFalse(marker.exists())
+
+    def test_launch_error_preserved_as_failed_record(self) -> None:
+        """B 门实跑发现：spawn 失败曾裸崩成"内部错误"，执行器已跑完的工作记录尽失。"""
+        self.init_task()
+        prompt_file = self.tmp / "prompt.txt"
+        prompt_file.write_text(PROMPT_TEXT, encoding="utf-8")
+        proc = run_cli("workbench-task-run", "T-A", "--runtime-dir", str(self.rt),
+                       "--workspace", str(self.workspace), "--mode", "code",
+                       "--write-scope", "src",
+                       "--executor-command", "/no/such/ghost-binary --flag",
+                       "--executor-prompt-file", str(prompt_file),
+                       "--eval-command", shlex.join([sys.executable, str(self.eval_probe()),
+                                                     str(self.tmp / "m-launch.json")]),
+                       "--execution-timeout", "900", "--actor", "tester-A")
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        body = payload(proc)
+        self.assertIn("execution", body)  # 记录仍落账，不裸崩
+        record = body["execution"]
+        self.assertEqual(record["status"], "failed")
+        self.assertIn("启动失败", record["stderr_text"])
+        self.assertFalse((self.tmp / "m-launch.json").exists())  # eval 未运行
+        show = payload(run_cli("workbench-task-show", "T-A", "--runtime-dir", str(self.rt)))
+        self.assertEqual(show["task"]["state"], "failed")  # 失败如实入状态，不消失
 
 
 if __name__ == "__main__":
