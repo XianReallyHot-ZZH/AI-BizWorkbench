@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 本仓库是什么
 
-CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：以 `vendors/` 下两个 submodule 为只读对照，逐讲（L00–L16）重建属于自己的、日常可用的工作台。课程逐讲是路径，不是终点。对照基线与升级记录以 [docs/research/codexfde-orientation.md](docs/research/codexfde-orientation.md) §10 检查点 changelog 为唯一事实源，上游变更只在检查点显式采纳（ADR-0003），不自动同步。
+CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：以 `vendors/` 下两个 submodule 为只读对照，逐讲（L00–L16）重建属于自己的、日常可用的工作台。课程逐讲是路径，不是终点。对照基线冻结于 `CodexFDE@58f4612`，上游变更只在检查点显式采纳（ADR-0003），不自动同步。
 
 词汇表在根目录 [CONTEXT.md](CONTEXT.md)——**措辞必须继承它**（复刻/上游/候选分支/起始红/具名验收/证据/合同 fixture），避免各词条的 _Avoid_ 替代词。
 
@@ -16,18 +16,6 @@ CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：�
 4. **冻结合同 fixture**（`workbench/course_contracts.py`）是上游 LESSONS 数据的逐字拷贝，不许"修好"它——发现与上游分歧走检查点显式采纳。
 5. **用户显式技能**（`/mattpocock-skills:to-spec`、`:implement`、`:handoff`、`:teach`）到点必须停下提醒用户调用；降级路径仅在用户明确同意后走（见 docs/lessons/README.md 技能编排表）。
 6. 换会话用 `/mattpocock-skills:handoff` 生成交接文档，不以裸 `/clear` 为默认。
-
-## FlowERP 业务边界（L02 固化）
-
-以下边界在涉及 FlowERP 业务实现时适用（`vendors/flowERP` 对照、L04+ 候选内业务代码），纯文档改动不受约束：
-
-1. 可用库存不能为负，预占必须原子化；缺货在创建时拒绝，不做"先记账后修正"。
-2. 同一个入库幂等键只能生效一次；再次入库用新幂等键，而不是让键失效。
-3. 订单只能按状态机迁移，取消时释放预占；释放是取消的后件义务，不可省略。
-4. 采购补货必须经具名审批后才能入库；自动检查通过只推进到"待批准"，不构成批准。
-5. 任务、Eval 和反馈必须可追溯，失败不能显示成成功（铁律 2/3 的业务面：自动检查不冒充人工接受，失败记录一律保留）。
-
-越界请求明确判拒，拒绝后原数据不变；方案确需放宽某条边界时，走候选分支 + 具名验收，不走默认放行。
 
 ## 常用命令
 
@@ -62,12 +50,6 @@ sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
 4. **验收与合并**：用户按讲义 §4 清单核对后，验收行入证据账，`git merge --no-ff lesson-NN`（合并信息含验收人与结论），更新 roadmap 状态。
 5. 验收前 Claude 自调 `code-review` 复查整条候选分支；发现按 test-first 修复并保留旧证据。
 
-## 完成定义（Definition of Done）
-
-- 每条新业务规则至少一个正常路径 + 一个失败路径用例；纯文档改动不触发完整业务检查。
-- 交付交回三样：范围内 Diff、实际检查结果与真实退出码、未解决问题清单。
-- 未实现不得写成已实现；缺口标"待建设"，与上游口径一致。
-
 ## 架构大图
 
 ```
@@ -87,13 +69,6 @@ sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
 vendors/CodexFDE          只读：课程合同、参考实现、讲义、L01 证据工具
 vendors/flowERP           只读：客户项目，L04 才由工作台首次驱动（客户真理：其自身 eval 才是业务权威）
 ```
-
-**结构约定**：
-
-- 调用方向：命令入口（`workbench/cli.py`，REGISTRY 注册缝 + 顶层异常边界）→ 任务/证据逻辑（`workbench/bootstrap.py`）→ sqlite 存储（`.runtime/` 运行库；读命令不建库不建目录）。
-- 新增命令：沿 REGISTRY 注册并复用既有存储入口；错误词面对齐上游（`required_task_missing` 等）。
-- 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可。
-- 待建设清单：`eval.harness`（L05+）、`course-status` 等上游命令——引用时如实说明尚未复刻。
 
 **信用内核**（L01 钉死，后续讲次全部踩在上面）：账本只追加、失败不可抹、快照不随原文件变、`status` 每次重算 SHA-256 复核、链判定三规则（同命令红绿 / Diff 严格居间 / 全局最新须为成功绿）、`acceptance: pending_human_review` 恒待人签。改动任何一处都要意识到全链信用随之变动。
 

@@ -1,0 +1,39 @@
+test_l01_contract_is_frozen_baseline (test_course_contracts.CourseContractFixtureTest.test_l01_contract_is_frozen_baseline) ... ok
+test_l01_story_fields_present (test_course_contracts.CourseContractFixtureTest.test_l01_story_fields_present) ... ok
+test_lessons_cover_l01_to_l16 (test_course_contracts.CourseContractFixtureTest.test_lessons_cover_l01_to_l16) ... ok
+test_out_of_range_lesson_rejected (test_course_contracts.CourseContractFixtureTest.test_out_of_range_lesson_rejected) ... ok
+test_chain_any_matching_red_with_diff_between (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_chain_any_matching_red_with_diff_between) ... ok
+test_evidence_add_rejects_naive_time_and_empty_output (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_evidence_add_rejects_naive_time_and_empty_output) ... ok
+test_evidence_add_returns_record_id (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_evidence_add_returns_record_id) ... ok
+test_foreign_db_file_reports_uninitialized (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_foreign_db_file_reports_uninitialized) ... ok
+test_infra_failure_returns_json_error (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_infra_failure_returns_json_error) ... ok
+test_init_name_optional_and_requirement_id_fallback (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_init_name_optional_and_requirement_id_fallback) ... ok
+test_observed_at_z_suffix_accepted (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_observed_at_z_suffix_accepted) ... ok
+test_same_owner_reinit_idempotent (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_same_owner_reinit_idempotent) ... ok
+test_stale_green_global_across_commands (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_stale_green_global_across_commands) ... ok
+test_status_flags_digest_mismatch (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_status_flags_digest_mismatch) ... ok
+test_task_create_accepts_title (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_task_create_accepts_title) ... ok
+test_unreadable_spec_file_reports_clean_error (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_unreadable_spec_file_reports_clean_error) ... ok
+test_wb01_init_persists_and_cannot_be_overwritten (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb01_init_persists_and_cannot_be_overwritten) ... ok
+test_wb02_project_and_task_with_snapshots (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb02_project_and_task_with_snapshots) ... ok
+test_wb03_task_requires_registered_project (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb03_task_requires_registered_project) ... ok
+test_wb04_duplicate_task_id_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb04_duplicate_task_id_rejected) ... ok
+test_wb05_snapshots_survive_source_changes (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb05_snapshots_survive_source_changes) ... ok
+test_wb06_missing_chain_reported (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb06_missing_chain_reported) ... ok
+test_wb07_same_command_red_diff_green_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07_same_command_red_diff_green_chain) ... ok
+test_wb07b_diff_record_may_use_diff_command (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb07b_diff_record_may_use_diff_command) ... ok
+test_wb08_different_command_breaks_chain (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb08_different_command_breaks_chain) ... ok
+test_wb09_ordering_and_stale_green_rejected (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb09_ordering_and_stale_green_rejected) ... ok
+test_wb10_queries_never_create_data (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb10_queries_never_create_data) ... ok
+test_wb11_recovery_after_supplement (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb11_recovery_after_supplement) ... ok
+test_wb12_isolated_runtime_and_no_flowerp (test_l01_workbench_bootstrap.WorkbenchBootstrapContractTest.test_wb12_isolated_runtime_and_no_flowerp) ... ok
+test_definition_of_done_present (test_l02_workbench_rules.DefinitionOfDone.test_definition_of_done_present) ... ok
+test_five_business_invariants_present (test_l02_workbench_rules.FiveBusinessInvariants.test_five_business_invariants_present) ... ok
+test_invariants_carry_applicability (test_l02_workbench_rules.FiveBusinessInvariants.test_invariants_carry_applicability) ... ok
+test_referenced_commands_are_real (test_l02_workbench_rules.ReferencedCommandsAreReal.test_referenced_commands_are_real) ... ok
+test_structure_convention_present (test_l02_workbench_rules.StructureConvention.test_structure_convention_present) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 14.030s
+
+OK

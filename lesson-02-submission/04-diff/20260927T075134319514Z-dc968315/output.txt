@@ -1,0 +1,22 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index df3c754..3eaa7f7 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
+ 
+ ## 本仓库是什么
+ 
+-CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：以 `vendors/` 下两个 submodule 为只读对照，逐讲（L00–L16）重建属于自己的、日常可用的工作台。课程逐讲是路径，不是终点。对照基线冻结于 `CodexFDE@58f4612`，上游变更只在检查点显式采纳（ADR-0003），不自动同步。
++CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：以 `vendors/` 下两个 submodule 为只读对照，逐讲（L00–L16）重建属于自己的、日常可用的工作台。课程逐讲是路径，不是终点。对照基线与升级记录以 [docs/research/codexfde-orientation.md](docs/research/codexfde-orientation.md) §10 检查点 changelog 为唯一事实源，上游变更只在检查点显式采纳（ADR-0003），不自动同步。
+ 
+ 词汇表在根目录 [CONTEXT.md](CONTEXT.md)——**措辞必须继承它**（复刻/上游/候选分支/起始红/具名验收/证据/合同 fixture），避免各词条的 _Avoid_ 替代词。
+ 
+@@ -92,7 +92,7 @@ vendors/flowERP           只读：客户项目，L04 才由工作台首次驱
+ 
+ - 调用方向：命令入口（`workbench/cli.py`，REGISTRY 注册缝 + 顶层异常边界）→ 任务/证据逻辑（`workbench/bootstrap.py`）→ sqlite 存储（`.runtime/` 运行库；读命令不建库不建目录）。
+ - 新增命令：沿 REGISTRY 注册并复用既有存储入口；错误词面对齐上游（`required_task_missing` 等）。
+-- 测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数。
++- 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可。
+ - 待建设清单：`eval.harness`（L05+）、`course-status` 等上游命令——引用时如实说明尚未复刻。
+ 
+ **信用内核**（L01 钉死，后续讲次全部踩在上面）：账本只追加、失败不可抹、快照不随原文件变、`status` 每次重算 SHA-256 复核、链判定三规则（同命令红绿 / Diff 严格居间 / 全局最新须为成功绿）、`acceptance: pending_human_review` 恒待人签。改动任何一处都要意识到全链信用随之变动。

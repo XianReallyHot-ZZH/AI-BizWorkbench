@@ -2,7 +2,7 @@
 
 本仓库渐进式复刻 [CodexFDE](../../vendors/CodexFDE)（个人研发工作台 + 课程仓库），目标是建成**自己日常可用的工作台**；课程逐讲内容是路径，不是终点。词汇表见根目录 [CONTEXT.md](../../CONTEXT.md)，关键决策见 [docs/adr/](../adr/)。
 
-- **对照基线**：`replicated against CodexFDE@58f4612`（冻结基线，上游变更走检查点显式采纳，见 ADR-0003）
+- **对照基线**：以 [docs/research/codexfde-orientation.md](../research/codexfde-orientation.md) §10 检查点 changelog 为唯一事实源（当前 `a74445a`，检查点 0001）；上游变更走检查点显式采纳，见 ADR-0003
 - **推进单位**：讲（L00-L16）。每讲一篇复刻版讲义：[docs/lessons/](../lessons/)
 - **交付机制**：候选分支 + 具名验收（ADR-0004）。待审核 ≠ 已接受。
 

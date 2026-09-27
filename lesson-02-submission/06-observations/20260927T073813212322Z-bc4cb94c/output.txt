@@ -1,0 +1,32 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash[1m]","query_source":"sdk"}
+We're changing auto mode to no longer charge for classifier requests in Claude Code. However, this session isn't eligible because your requests go through open.bigmodel.cn, which isn't compatible with this update. Nothing breaks: auto mode keeps working, and its classifier requests are billed as before. To fix it and access the new version of auto mode, ask your gateway to implement: https://code.claude.com/docs/en/auto-mode-classifier-billing
+读取了根目录 `CLAUDE.md`，判断直接依据其中「FlowERP 业务边界（L02 固化）」第 4 条：**“采购补货必须经具名审批后才能入库；自动检查通过只推进到‘待批准’，不构成批准。”**
+
+**总判断：不能。** 申请建好 ≠ 批准。先加库存、明天补审批是越界方案，明确判拒；拒绝后原数据不变。
+
+## 1. 申请与批准的区别
+
+- **申请**是意向记录：自动检查（如库存、字段校验）通过后，采购单只推进到“待批准”状态——它是为审批准备的材料，不是授权。
+- **批准**是具名人员的显式人工决定，是入库的唯一前置条件。
+- 两者不可互替，时点也不可挪移：明天补审批不能追溯豁免今天的入库，**顺序本身是规则的一部分**。这与铁律“待审核 ≠ 已接受”同构——自动检查再全也只是待审核，不冒充人工接受。
+
+## 2. 现在允许做什么
+
+- **允许**：采购单停在“待批准”；补全材料、核对数量、提交给具名人员审批。审批通过后再入库——届时入库用**新的幂等键**（同一个入库幂等键只能生效一次，边界 2）。
+- **不允许**：现在加库存的任何变体，包括“先记账、审批后修正”。缺货在创建时即拒绝，不做“先记账后修正”（边界 1）。
+- 如果业务确实需要放宽这条边界（例如“紧急先入库”），不走默认放行：走候选分支 + 具名验收，先改规则、再改行为。
+
+## 3. 怎样检查库存没有被误改
+
+方法层面（遵你指示，此刻未运行任何命令）：
+
+1. **快照对比**：判拒后原数据不变——逐 SKU 对比申请创建前的库存快照与当前值，可用库存（在库 − 预占）应完全相等，且不为负。
+2. **查入库流水**：不存在以本申请为依据的入库记录；若曾有被拒的尝试，失败记录原样保留、不被改写成“成功”（边界 5：失败不能显示成成功）。
+3. **查预占**：审批前不应有任何新增预占记录。
+4. **查采购单状态**：仍停在“待批准”，没有发生状态机外的迁移（边界 3）。
+5. **可追溯性兜底**：所有记录只追加、可回放——任何对历史的改写都会在“账本回放 vs 快照”对比中暴露。
+
+---
+
+附注：这正是 L02 讲义 §3.E 的迁移练习。若要留证，可按讲义用 `tools/capture_evidence.py observation` 采集本次回答——但你已指示不运行命令，故未执行。
