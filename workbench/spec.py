@@ -21,6 +21,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from .bootstrap import FLOWERP_CONNECTED  # 冻结边界单一来源：L04 换挡点只改 bootstrap 一处
+
 
 REQUIRED_SECTIONS = ("来源", "目标", "非目标", "约束", "验收用例", "完成定义")
 
@@ -101,6 +103,8 @@ def parse_spec(text: str) -> ParsedSpec:
 
 
 def load_spec(path: str | Path = "FDE_SPEC.md") -> ParsedSpec:
+    # 默认值系 vendor 冻结接口继承（上游根 FDE_SPEC.md 为 REQ 级交付主合同）；
+    # 本讲不建根文件（讲义 D4），调用方一律显式传路径。
     return parse_spec(Path(path).read_text(encoding="utf-8"))
 
 
@@ -108,10 +112,10 @@ def _cmd_spec(args: argparse.Namespace) -> int:
     try:
         parsed = load_spec(args.spec_path)
     except (ValueError, OSError) as error:  # UnicodeDecodeError ⊂ ValueError：非 UTF-8 输入同形拒绝
-        print(json.dumps({"ok": False, "flowerp_connected": False, "error": str(error)},
+        print(json.dumps({"ok": False, "flowerp_connected": FLOWERP_CONNECTED, "error": str(error)},
                          ensure_ascii=False, indent=2))
         return 1
-    print(json.dumps({"ok": True, "flowerp_connected": False, "spec": parsed.as_dict()},
+    print(json.dumps({"ok": True, "flowerp_connected": FLOWERP_CONNECTED, "spec": parsed.as_dict()},
                      ensure_ascii=False, indent=2))
     return 0
 

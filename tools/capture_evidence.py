@@ -21,9 +21,11 @@ import uuid
 
 
 PHASES = {"red": "03-failure", "diff": "04-diff", "green": "05-green", "observation": "06-observations"}
+# 捕获根下的子目录名（相对 root 解析；传绝对路径时经 pathlib / 语义以绝对路径为准）。
+DEFAULT_SUBMISSION_ROOT = "lesson-02-submission"  # 向后兼容：L02 封存证据磁盘合同不变（讲义 D2）
 
 
-def capture(root: Path, phase: str, command: list[str], submission_root: str = "lesson-02-submission") -> tuple[Path, int]:
+def capture(root: Path, phase: str, command: list[str], submission_root: str = DEFAULT_SUBMISSION_ROOT) -> tuple[Path, int]:
     """Each attempt gets a new directory, including failures and missing executables."""
     now = datetime.now(timezone.utc)
     directory = root / submission_root / PHASES[phase] / (now.strftime("%Y%m%dT%H%M%S%fZ") + "-" + uuid.uuid4().hex[:8])
@@ -46,7 +48,7 @@ def capture(root: Path, phase: str, command: list[str], submission_root: str = "
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--submission-root", default="lesson-02-submission",
+    parser.add_argument("--submission-root", default=DEFAULT_SUBMISSION_ROOT,
                         help="捕获根目录名（默认 lesson-02-submission，向后兼容 L02 封存证据）")
     parser.add_argument("phase", choices=list(PHASES))
     parser.add_argument("command", nargs=argparse.REMAINDER)

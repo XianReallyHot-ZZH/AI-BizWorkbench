@@ -192,6 +192,13 @@ class C8ReadonlyTest(L03ContractTest):
         load_spec(path)
         self.assertEqual(sha256_of(path), before)
 
+    def test_c8_cli_rejection_leaves_file_unchanged(self) -> None:
+        self.require_parser_module()
+        path = self.write_tmp_spec("missing.md", MISSING_SECTION_TEXT)
+        before = sha256_of(path)
+        run_cli("spec", str(path))
+        self.assertEqual(sha256_of(path), before)
+
 
 class C9CliIntegrationTest(L03ContractTest):
     def test_c9_cli_spec_valid_input_exit_zero(self) -> None:
@@ -218,13 +225,6 @@ class C9CliIntegrationTest(L03ContractTest):
         # 错误词面同源：CLI 输出包含 parse_spec 抛出的同一条消息（非第二套解析逻辑）。
         self.assertIn(expected_word_face, proc.stdout,
                       f"CLI 错误词面与 workbench.spec 不同源；实际输出：{proc.stdout}{proc.stderr}")
-
-    def test_c8_cli_rejection_leaves_file_unchanged(self) -> None:
-        self.require_parser_module()
-        path = self.write_tmp_spec("missing.md", MISSING_SECTION_TEXT)
-        before = sha256_of(path)
-        run_cli("spec", str(path))
-        self.assertEqual(sha256_of(path), before)
 
 
 class C5TemplateTest(L03ContractTest):
