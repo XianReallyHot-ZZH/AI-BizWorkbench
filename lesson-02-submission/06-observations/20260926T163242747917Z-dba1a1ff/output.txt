@@ -1,0 +1,54 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash[1m]","query_source":"sdk"}
+We're changing auto mode to no longer charge for classifier requests in Claude Code. However, this session isn't eligible because your requests go through open.bigmodel.cn, which isn't compatible with this update. Nothing breaks: auto mode keeps working, and its classifier requests are billed as before. To fix it and access the new version of auto mode, ask your gateway to implement: https://code.claude.com/docs/en/auto-mode-classifier-billing
+评审结论：**五条全部不可接受**。未修改任何仓库文件、未运行任何命令；依据全部来自只读勘察（flowERP 自身合同与 eval、CodexFDE 课程合同、本仓库工作台代码）。
+
+先说一个定位：这五条正是 `docs/lessons/L02-仓库规则.md` §3.C 的 N0 固定练习原文。注意本次评审依据**不是**根 CLAUDE.md——它尚未写入五条业务边界（那正是 lesson-02 当前起始红要补的），而是 vendors 合同 + 讲义 + `course_contracts.py`。
+
+---
+
+### 1. 库存不足仍允许创建预占，稍后再修正负库存 — ❌
+
+- **依据**：`vendors/flowERP/AGENTS.md:9`「可用库存不得为负，预占原子化」；flowERP eval `stock_never_negative`（`eval/cases.py:33-43`）期望「缺货请求被拒绝，库存未发生部分写入」；`FDE_SPEC.md` 用例要求失败时报告 SKU 与缺口、库存不变。
+- 「稍后再修正」没有合同：何时修、谁修、修不了怎么办都未定义——本质是先把已知非法状态写进账本，再指望事后抹平，与本仓库「失败不可抹」同一性质。
+- **类别：自动检查**（不变量）。系统必须在创建时硬性拒绝，无人工裁量空间。若业务确要欠货/超卖，须显式建模并走候选分支 + 具名验收，不是默认放行。
+
+### 2. 相同入库幂等键重复提交时再次增加库存 — ❌（无条件错误）
+
+- **依据**：`AGENTS.md:9`「同一入库幂等键只生效一次」；eval `receiving_is_idempotent`（`cases.py:46-51`）断言同键两次入库后 `on_hand` 不变且标记 `idempotent_replay`；`FDE_SPEC.md:24,35` 同文。
+- 再次增加库存直接摧毁幂等合同，库存虚增。想要多次入库的正确做法是每次用新幂等键，而不是让键失效。
+- **类别：自动检查**（键去重），纯系统职责，与人工决定无关。
+
+### 3. 订单取消后保留原预占 — ❌
+
+- **依据**：`vendors/CodexFDE/AGENTS.md:90`「订单状态只能按定义的状态机迁移；取消要释放预占」；eval `cancellation_releases_reservation`（`cases.py:78-86`）；`course_contracts.py` L9 验收项「取消已预占订单会完整释放预占」。
+- 保留预占 = 库存泄漏：这部分库存永远不可售，可用量单调缩水直至系统性缺货。
+- **类别：自动一致性检查**（状态机后件）。人工决定只存在于「是否取消」那一步；取消后的释放是系统义务，不可省略。
+
+### 4. 采购申请通过自动检查后直接入库，不等待人工批准 — ❌（措辞最强）
+
+- **依据**：`FDE_SPEC.md:9`「采购建议必须经电商运营**人工批准**，批准后才能用幂等键执行入库」，非目标明写「**不自动批准采购**」；eval `purchase_requires_approval`（`cases.py:98-108`）断言未审批入库必须 raise；`course_contracts.py` L12 causal_link：「质量全绿仍不能替代采购具名审批，**模型不得自批**」。
+- 这正是铁律 2「待审核 ≠ 已接受」的业务镜像：自动检查（格式、预算、供应商等）通过只是把申请推进到**待人工批准**，不构成批准。
+- **类别：核心是人工决定**——买不买、何时买、预算花不花，是自动检查覆盖不了的业务判断。自动检查该保留，错在越过人工门。就算未来要给低值采购开免批通道，也是需显式记录并经具名验收的政策变更，不是默认路径。
+
+### 5. 只要 evidence_complete 为 true 就显示「人工验收通过」 — ❌
+
+- **依据（本仓库代码可直接反证）**：`workbench/bootstrap.py:396-403` 中 `evidence_complete` 独立计算，而 `"acceptance"` **恒为** `"pending_human_review"`——两个字段本就是分开的；L01 讲义 C7 同时要求 `evidence_complete:true` **且** `pending_human_review`，并存本身即证明前者不蕴含后者；L02 讲义红旗清单「程序或 AI 代签验收」即退回；`flowERP/AGENTS.md:7` 亦写明「不能以测试通过代替人工业务验收」。
+- `evidence_complete` 是**自动检查**（证据链完整性，且 `status` 每次重算 SHA-256 复核）；「人工验收通过」是**具名验收**的人工决定。把前者显示为后者 = 机器代签。
+- **正确做法**：两种状态并存显示——`evidence_complete` → 「证据齐全（自动检查通过）」；验收状态恒显「待人工验收」，具名验收后才变。
+
+---
+
+### 自动检查 vs 人工决定
+
+| # | 触及机制 | 类别 |
+|---|---|---|
+| 1 | 库存非负 + 预占原子化 | 自动检查（不变量） |
+| 2 | 幂等键去重 | 自动检查 |
+| 3 | 状态机：取消释放预占 | 自动检查（一致性） |
+| 4 | 采购人工批准 | 人工决定（自动检查 ≠ 批准） |
+| 5 | 具名验收显示 | 人工决定（证据齐全 ≠ 人签） |
+
+五条在做同一件事：**把本该阻断的状态放行，再把放行后的状态说成合规**。第 1–3 条没有裁量空间，系统必须硬性执行；第 4–5 条即使自动检查全绿，人工决定仍不可省——且按客户真理，flowERP 自己的 eval 就是业务权威，工作台绿灯也替代不了。
+
+评审已落盘至计划文件（`.claude/plans/1-2-stateless-knuth.md`）。若你认可这五条逐项判拒的口径，它可直接作为 L02 N1（C8）的行为层演示；后续推进 lesson-02（根 CLAUDE.md 写入五条边界、转绿、证据采集）是独立一步，等你指令。
