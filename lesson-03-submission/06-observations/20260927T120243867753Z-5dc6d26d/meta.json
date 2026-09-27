@@ -1,0 +1,20 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"unittest\", \"discover\", \"-s\", \"tests\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-27T12:02:43.867753+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/06-observations/20260927T120243867753Z-5dc6d26d/output.txt",
+  "sha256": "e1e5f2cfe9786ecdb6ab38d12284d0ac1811d2f6e0d04f4555562e255a2cbcfb",
+  "provenance": "local_teaching_capture"
+}
