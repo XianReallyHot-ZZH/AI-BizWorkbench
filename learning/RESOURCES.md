@@ -21,6 +21,8 @@
 - [L01 讲义](../../docs/lessons/L01-工作台自举.md)（复刻口径）与
   [ADR-0001..0005](../../docs/adr/)
   复刻决策（全新实现 / Claude 执行器 / 候选分支 / 客户真理）的依据。用于：理解"为什么和上游不一样"。
+- [上游 L02 辅导资料](../../vendors/CodexFDE/docs/courses/L02/辅导资料.md)
+  规则讲"为什么"的权威：三层分检（§5）原始出处——规则进入会话 / 回答遵守规则 / 程序检查结果，三层互不替代。
 - [上游 L03 辅导资料](../../vendors/CodexFDE/docs/courses/L03/辅导资料.md)
   Spec 讲"为什么"的权威：§5 三份输入定边界；「从一段文本看懂解析器怎样工作」节（检查点 0002 新增）是围栏语义与字段映射的终审依据。
 - [本仓库 workbench/spec.py](../../workbench/spec.py)
@@ -31,6 +33,8 @@
   真实复验样本：三份输入退出码、夹具修正现场、验收追认两条（handler 层接 ValueError、包络含 flowerp_connected）。
 - [L03 讲义](../../docs/lessons/L03-可验收Spec.md)（复刻口径）
   C1..C13 合同表与六个决策点（D1 eval 承载 / D4 根 FDE_SPEC 不建 / D5 只复刻解析半边）——闸门语义的本仓库口径。
+- [L02 讲义](../../docs/lessons/L02-仓库规则.md)（复刻口径）与 [L02 证据账](../../docs/replication/evidence/L02.md)
+  N0/N1 对照实验设计与红旗清单；证据账含复查修复轮（P1 请求逐字教训）与行为层证据索引（lesson-02-submission/ 四件套）。
 - [Python sqlite3 文档](https://docs.python.org/3/library/sqlite3.html)
   账本存储层。用于：事务、行工厂、schema 语义。
 - [Python datetime.fromisoformat 文档](https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat)

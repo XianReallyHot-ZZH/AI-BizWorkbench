@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0003 · 规则生效的证明：N0/N1 对照与三层分检</title>
+<link rel="stylesheet" href="../assets/course.css">
+<script defer src="../assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="kicker">Lesson 0003 · L02 复盘</div>
+  <h1>规则生效的证明：N0/N1 对照与三层分检</h1>
+  <div class="subtitle">L02 的意图、机制与"代码"实现 —— 为什么"写了规则"永远不等于"规则生效"</div>
+</header>
+
+<h2 id="why">为什么补这一课</h2>
+<p>L03 的课（<a href="0002-spec-parser-boundary.html">0002 六段闸门</a>）练的是"程序管结构、人管业务"；L02 练的是另一个方向的判断力——<strong>规则类交付怎么验收</strong>。它比代码交付更难验收：一段规则文本写进 <code>CLAUDE.md</code>，测试可以全绿、文件可以在场，但<strong>没有任何程序能证明"新会话真的会遵守它"</strong>。L02 的全部设计就围绕这一个缺口：怎么把"生效"从口头断言变成可留证的实验。你验收 L04+ 时会反复遇到同类判断——AI 说"我已经遵守了规则"，证据在哪一层？</p>
+
+<h2 id="intent">意图：长期规则与单次合同的分工</h2>
+<p>跨会话协作的约定有两种寿命，L02/L03 各固化一种：</p>
+<table>
+  <tr><th></th><th>L02 仓库规则（<code>CLAUDE.md</code>）</th><th>L03 Spec（<code>FDE_SPEC.md</code>）</th></tr>
+  <tr><td>寿命</td><td><strong>长期规则</strong>——跨任务有效</td><td><strong>单次合同</strong>——一次需求签字即冻结</td></tr>
+  <tr><td>回答</td><td>"<em>永远</em>怎样"：边界、调用方向、完成定义</td><td>"<em>这次</em>要什么"：列、公式、验收用例</td></tr>
+  <tr><td>失效方式</td><td>被后续检查点修订</td><td>口径变化即生成新版本重新确认</td></tr>
+</table>
+<p>L04 换挡点后执行器在<strong>两者划定的边界内</strong>受控交付：规则画围栏，Spec 定目标。这个分工本身就来自上游 L02 辅导资料的因果交接（<a href="../../vendors/CodexFDE/docs/courses/L02/辅导资料.md">上游 L02 辅导资料</a>）。</p>
+<div class="callout"><span class="label">同形映射</span>上游把规则写进 <code>AGENTS.md</code>（Codex 生态惯例）；本仓库执行器是 Claude Code（ADR-0002），原生规则文件是 <code>CLAUDE.md</code>——映射记入讲义口径注，<strong>冻结合同 fixture 的词面逐字不动</strong>。这是复刻的标准动作：接口语义同形，词面按执行器现实适配。</div>
+
+<h2 id="mechanism">机制：N0/N1 对照实验与三层分检</h2>
+<p><strong>N0/N1 是一场对照实验</strong>：同一个固定请求（五条越界计划 + 一条合法维护方案），发给两个除规则文件外<strong>一切相同</strong>的干净会话（同模型、同 permission-mode、同工作目录，<code>claude -p</code> 无头执行天然留证）。</p>
+<pre><code>N0（改规则前）：固定请求 → 干净会话 A 的完整回答     ← observed_at 必须早于规则修改
+   ↓ 在已有规则文件上做增量补齐（五条边界 + 结构约定 + DoD）
+N1（改规则后）：同一固定请求逐字重发 → 干净会话 B 的回答（仅追加一句：请说明读取了哪个规则文件并引用条款）</code></pre>
+<p>两个设计要点，都是验收时用来戳穿假证据的：</p>
+<div class="marginnote">① <strong>N0 先于修改且可以正确</strong>——如果 N0 本来就判对了（本仓库 CLAUDE.md 之前已有"待审核 ≠ 已接受"铁律，确实发生了），唯一诚实的记录是"没有观察到明显行为改善，但新任务已正确引用规则"；<strong>为制造 N0→N1 差异诱导模型犯错是红旗，直接退回</strong>（讲义 §4 红旗清单）。② <strong>请求原文逐字</strong>——L02 复查轮 P1 的真实教训：v1 会话改写了请求首行，整轮证据作废重采（<a href="../../docs/replication/evidence/L02.md">证据账 §7</a>）。</div>
+<p>实验之外还有<strong>三层分检</strong>——三层互不替代，验收时混装即红旗：</p>
+<table>
+  <tr><th>层</th><th>证明什么</th><th>证据形态</th><th>证明不了什么</th></tr>
+  <tr><td>① 读取层</td><td>规则进入了会话</td><td>N1 引用规则文件与条款原文</td><td>—（必要不充分）</td></tr>
+  <tr><td>② 行为层</td><td>回答遵守了规则</td><td>五条越界逐项判拒 + 合法维护放行</td><td>换个措辞还遵守吗</td></tr>
+  <tr><td>③ 程序层</td><td>规则要素在场、命令真实</td><td>合同测试回归绿</td><td><strong>行为遵守</strong>（永远证明不了）</td></tr>
+</table>
+
+<h2 id="code">"代码"实现：这一讲写了什么、刻意不写什么</h2>
+<p>L02 几乎没有新模块——它的交付物是<strong>规则文本 + 测试 + 采集工具</strong>，而教学点恰恰在于测试的边界：</p>
+<ul>
+  <li><strong>规则内容</strong>（<a href="../../CLAUDE.md"><code>CLAUDE.md</code></a> 增量）：五条 FlowERP 业务边界——段首带适用条件"涉及 FlowERP 业务实现时，纯文档改动不受约束"；结构调用方向（cli → bootstrap → sqlite）；完成定义（交回三样：范围内 Diff、真实退出码、未解决问题清单）。</li>
+  <li><strong>合同测试</strong>（<a href="../../tests/test_l02_workbench_rules.py"><code>tests/test_l02_workbench_rules.py</code></a>，5 用例）断言的全是<strong>文本在场</strong>：五条边界语义（<code>test_five_business_invariants_present</code>）、适用条件（<code>test_invariants_carry_applicability</code>）、结构约定、DoD、引用的命令真实存在（<code>test_referenced_commands_are_real</code>——防规则写虚构路径）。</li>
+  <li><strong>刻意不做</strong>：文件头诚实声明局限——"文本在场 ≠ 行为遵守"，行为层由 N0/N1 承担。测试不锁文风、不模拟会话。<strong>知道程序层证明不了什么，和知道它能证明什么，是同一个能力。</strong></li>
+  <li><strong>采集工具诞生</strong>：<a href="../../tools/capture_evidence.py"><code>tools/capture_evidence.py</code></a>——因为 vendor 工具硬编码 <code>lesson-01-submission/</code>，L02 起自建（磁盘合同逐字段同形；L03 又参数化为 <code>--submission-root</code>）。</li>
+</ul>
+
+<h2 id="hands-on">亲手复验：两层证据各摸一次</h2>
+<p>先写预测，再动手（仓库根目录）：</p>
+<pre><code># ① 程序层：5 用例应全绿（文本在场断言）
+.venv/bin/python -m unittest discover -s tests -v -p "test_l02_*.py"
+
+# ② 行为层：肉眼对照 N0 与 N1——同一份固定请求的两个回答
+#    打开 lesson-02-submission/N0.md 与 lesson-02-submission/N1-and-boundary.md
+#    核对三件事：N1 是否指认根目录 CLAUDE.md？五条是否逐项判拒？
+#    合法维护方案（保留失败记录+折叠详情+分列展示）是否被放行？</code></pre>
+<table>
+  <tr><th>复验项</th><th>我的预测（先填）</th><th>实际</th></tr>
+  <tr><td>程序层退出码</td><td>＿＿，因为＿＿</td><td>＿＿</td></tr>
+  <tr><td>N1 引用了条款吗（①层）</td><td>＿＿</td><td>＿＿</td></tr>
+  <tr><td>N1 五条逐项判拒 + 维护放行吗（②层）</td><td>＿＿</td><td>＿＿</td></tr>
+</table>
+
+<h2 id="quiz">测验：这层证据能证明什么？</h2>
+<div id="quiz-root"></div>
+<script defer>
+window.addEventListener("load", () => mountQuiz("quiz-root", [
+  { scenario: "验收人看到：<code>CLAUDE.md</code> 五条边界齐全，合同测试 5/5 绿。这能证明规则生效了吗？",
+    options: [
+      { text: "只证明规则要素在场", correct: true,
+        why: "对。程序层只能断言文本在场与命令真实；行为遵守永远在程序层证明范围之外——需 N1 行为证据补位。" },
+      { text: "证明新会话会遵守规则", correct: false,
+        why: "错。文本在场 ≠ 行为遵守（三层分检①②层缺失）——把这说成生效是验收红旗。" },
+      { text: "证明规则内容全部正确", correct: false,
+        why: "错。测试断言在场性，不裁决规则内容对错；规则对错由人审与检查点裁决。" } ] },
+  { scenario: "N1 的回答五条全部判拒了，但没有说明读取了哪个规则文件、没引用任何条款。能声称规则生效吗？",
+    options: [
+      { text: "不能，读取层证据缺失", correct: true,
+        why: "对。判拒可能来自模型自身判断而非规则；讲义 C8 明确：N1 须引用条款，否则不得声称规则已生效。" },
+      { text: "能，行为结果已经达标", correct: false,
+        why: "错。结果正确但来源不可归因——恰好是\"规则生效\"要排除的解释，三层缺一层就声称生效即混装。" },
+      { text: "能，判拒本身就是证据", correct: false,
+        why: "错。同一谬误：正确结果可以有无数来源，实验设计的目的就是把来源钉住。" } ] },
+  { scenario: "N0 的回答五条本来也全部判拒了。这轮实验算什么？",
+    options: [
+      { text: "如实记录，不制造失败", correct: true,
+        why: "对。仓库此前已有部分铁律，N0 正确是允许结果——记录\"无改善但新任务已正确引用规则\"，L02 真实发生的就是这个。" },
+      { text: "重写请求诱导 N0 犯错", correct: false,
+        why: "错。为制造 N0→N1 差异诱导犯错是讲义红旗清单明令的退回项——证据自证失败。" },
+      { text: "判定实验失败重新设计", correct: false,
+        why: "错。实验目的是留证而非制造差异；N0 正确恰恰说明部分规则早已生效，是有价值的结论。" } ] },
+  { scenario: "N0/N1 两次会话之间，允许下列哪一项不同？",
+    options: [
+      { text: "规则文件的内容不同", correct: true,
+        why: "对。对照实验唯一自变量是规则内容；模型、permission-mode、工作目录、请求原文必须逐字一致。" },
+      { text: "请求的措辞可以微调", correct: false,
+        why: "错。请求原文逐字是硬要求——L02 复查轮 P1：v1 改写请求首行，整轮证据作废重采。" },
+      { text: "会话的模型可以换一个", correct: false,
+        why: "错。模型不同则行为差异无法归因于规则；两次配置必须逐字一致（模型 ID 先经用户确认）。" } ] },
+]));
+</script>
+
+<h2 id="l04">这一课对应的下一讲</h2>
+<p>L04 起，"规则"与"合同"共同框住执行器：规则画围栏（五条边界 + 写集），Spec 定目标（本讲 <a href="0002-spec-parser-boundary.html">0002</a> 的闸门语义）。你验收时的口头禅应该是两层：<strong>"证据在哪一层？"（在场 / 行为 / 程序）</strong>与<strong>"唯一的自变量是什么？"（对照实验归因）</strong>。执行器将来声称"遵守了 CLAUDE.md"，这两句就是你的追问模板。</p>
+
+<h2 id="sources">主要原始资料</h2>
+<ul>
+  <li><strong>首选精读</strong>：<a href="../../docs/lessons/L02-仓库规则.md">本仓库 L02 讲义</a>——§1 三层分检与 N0/N1 执行器映射、§4 人审清单与红旗清单（验收判断的浓缩形态）。</li>
+  <li><a href="../../docs/replication/evidence/L02.md">L02 证据账</a>——N0/N1 真实会话、复查修复轮（P1 逐字教训）的完整现场。</li>
+  <li><a href="../../lesson-02-submission/N1-and-boundary.md">N1-and-boundary.md</a> 与 <a href="../../lesson-02-submission/N0.md">N0.md</a>——行为层证据实物；对照 <a href="../../lesson-02-submission/agents-before.md">agents-before.md</a> / <a href="../../lesson-02-submission/agents-after.md">agents-after.md</a> 看规则增量。</li>
+  <li><a href="../../vendors/CodexFDE/docs/courses/L02/辅导资料.md">上游 L02 辅导资料</a>——"规则有没有用要三层分检"的原始出处（§5）。</li>
+  <li><a href="../reference/0001-workbench-cheatsheet.html">速查：Workbench 内核</a> · <a href="0002-spec-parser-boundary.html">0002 六段闸门</a>——本课的左邻右舍。</li>
+</ul>
+
+<footer class="colophon">
+  <p>卡住了？把问题丢给会话里的 Claude——三层分检、对照归因、红旗判例，都值得追问。下一课预告：L04 换挡点，执行器合同（写集 / Diff 摘要 / 客户真理）。</p>
+</footer>
+
+</body>
+</html>
