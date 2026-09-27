@@ -1,0 +1,32 @@
+[
+  [
+    "sku",
+    "name",
+    "site",
+    "location",
+    "lot_id",
+    "on_hand",
+    "reserved",
+    "available"
+  ],
+  [
+    "P001",
+    "螺丝",
+    "EAST",
+    "A01",
+    "LOT-6111B7C52B954CC393B44FDE15654B9F",
+    "8",
+    "3",
+    "5"
+  ],
+  [
+    "P001",
+    "螺丝",
+    "WEST",
+    "B01",
+    "LOT-BB4D8458B7C243088B35E8D80C5839C1",
+    "12",
+    "4",
+    "8"
+  ]
+]
