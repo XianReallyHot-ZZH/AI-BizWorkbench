@@ -40,6 +40,11 @@ def build_parser() -> argparse.ArgumentParser:
     from .learning import register_commands as register_learning_commands
 
     register_learning_commands(REGISTRY)
+    # S02 支线：工作台看板经同一条缝注册（适配器在 workbench/dashboard.py，
+    # 只读观察窗：sqlite mode=ro + 仅 GET；读侧复用 bootstrap 查询函数，不建第二套账本）。
+    from .dashboard import register_commands as register_dashboard_commands
+
+    register_dashboard_commands(REGISTRY)
     for register in REGISTRY.values():
         register(subparsers)
     return parser

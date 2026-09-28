@@ -1,0 +1,161 @@
+...................................................................FFFFFFFFFE...............
+======================================================================
+ERROR: test_stdlib_only_imports (test_side_dashboard.DashboardContractTest.test_stdlib_only_imports)
+C5：零依赖——dashboard.py 顶层 imports 全部落在标准库白名单内。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 375, in test_stdlib_only_imports
+    source = (REPO_ROOT / "workbench" / "dashboard.py").read_text(encoding="utf-8")
+  File "/Users/xianreallyhotzzh/anaconda3/envs/AICoding-ZeroToOne/lib/python3.13/pathlib/_local.py", line 546, in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/anaconda3/envs/AICoding-ZeroToOne/lib/python3.13/pathlib/_abc.py", line 632, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xianreallyhotzzh/anaconda3/envs/AICoding-ZeroToOne/lib/python3.13/pathlib/_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/workbench/dashboard.py'
+
+======================================================================
+FAIL: test_binds_loopback_and_explicit_port (test_side_dashboard.DashboardContractTest.test_binds_loopback_and_explicit_port)
+C6：绑定安全——--port 显式必填、无 --host；源码恒绑 127.0.0.1，无 0.0.0.0。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 393, in test_binds_loopback_and_explicit_port
+    self.assertEqual(help_text.returncode, 0, help_text.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_data_fidelity_matches_sqlite_truth (test_side_dashboard.DashboardContractTest.test_data_fidelity_matches_sqlite_truth)
+C2：面板数据与 sqlite 直查逐一一致（任务数、相位、acceptance、evidence_complete）。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 259, in test_data_fidelity_matches_sqlite_truth
+    self.start_dashboard(port)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 123, in start_dashboard
+    self.fail(f"看板服务未就绪（rc={proc.returncode}）\nstdout={out}\nstderr={err}")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 看板服务未就绪（rc=2）
+stdout=
+stderr=usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_missing_runtime_dir_fails_with_json_contract (test_side_dashboard.DashboardContractTest.test_missing_runtime_dir_fails_with_json_contract)
+C3：runtime-dir 不存在 → JSON 错误契约（词面对齐未初始化族），不起服务。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 285, in test_missing_runtime_dir_fails_with_json_contract
+    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_non_ledger_file_fails_with_json_contract (test_side_dashboard.DashboardContractTest.test_non_ledger_file_fails_with_json_contract)
+C3：非本工作台账本（无 workbench 表）→ 同一 JSON 错误契约。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 299, in test_non_ledger_file_fails_with_json_contract
+    self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1 : usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_old_ledger_missing_tables_degrade_to_empty (test_side_dashboard.DashboardContractTest.test_old_ledger_missing_tables_degrade_to_empty)
+C3：老账本缺 V0/记忆表 → 对应屏降级为空，200 不裸崩，其余屏照常。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 315, in test_old_ledger_missing_tables_degrade_to_empty
+    self.start_dashboard(port)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 123, in start_dashboard
+    self.fail(f"看板服务未就绪（rc={proc.returncode}）\nstdout={out}\nstderr={err}")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 看板服务未就绪（rc=2）
+stdout=
+stderr=usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_read_only_get_only_and_ledger_bytes_unchanged (test_side_dashboard.DashboardContractTest.test_read_only_get_only_and_ledger_bytes_unchanged)
+C1：三层只读——起停服务一次，账本字节不动；写方法一律 405 JSON。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 238, in test_read_only_get_only_and_ledger_bytes_unchanged
+    self.start_dashboard(port)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 123, in start_dashboard
+    self.fail(f"看板服务未就绪（rc={proc.returncode}）\nstdout={out}\nstderr={err}")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 看板服务未就绪（rc=2）
+stdout=
+stderr=usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_screen_executions_and_reviews (test_side_dashboard.DashboardContractTest.test_screen_executions_and_reviews)
+C4·执行与复核：执行记录 + 具名复核入屏，状态派生 accepted。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 346, in test_screen_executions_and_reviews
+    self.start_dashboard(port)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 123, in start_dashboard
+    self.fail(f"看板服务未就绪（rc={proc.returncode}）\nstdout={out}\nstderr={err}")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 看板服务未就绪（rc=2）
+stdout=
+stderr=usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_screen_memory_assets (test_side_dashboard.DashboardContractTest.test_screen_memory_assets)
+C4·记忆资产：S01 五表真数据入屏（candidate 资产 + 事件链）。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 364, in test_screen_memory_assets
+    self.start_dashboard(port)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 123, in start_dashboard
+    self.fail(f"看板服务未就绪（rc={proc.returncode}）\nstdout={out}\nstderr={err}")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 看板服务未就绪（rc=2）
+stdout=
+stderr=usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+======================================================================
+FAIL: test_screen_tasks_chain_shows_phases_and_anchor (test_side_dashboard.DashboardContractTest.test_screen_tasks_chain_shows_phases_and_anchor)
+C4·任务与证据链：全链任务锚定完整；断链任务如实报 missing 词面。
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 331, in test_screen_tasks_chain_shows_phases_and_anchor
+    self.start_dashboard(port)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_side_dashboard.py", line 123, in start_dashboard
+    self.fail(f"看板服务未就绪（rc={proc.returncode}）\nstdout={out}\nstderr={err}")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 看板服务未就绪（rc=2）
+stdout=
+stderr=usage: python -m workbench.cli [-h] <command> ...
+python -m workbench.cli: error: argument <command>: invalid choice: 'workbench-dashboard' (choose from workbench-init, workbench-project-add, workbench-task-create, workbench-evidence-add, workbench-status, spec, workbench-task-run, workbench-task-review, workbench-task-show, workbench-learn-create, workbench-learn-govern, workbench-learn-recall, workbench-learn-bind, workbench-learn-run, workbench-learn-finish, workbench-learn-show)
+
+
+----------------------------------------------------------------------
+Ran 92 tests in 84.655s
+
+FAILED (failures=9, errors=1)
