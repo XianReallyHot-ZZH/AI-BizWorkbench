@@ -1,0 +1,12 @@
+diff --git a/flowerp/service.py b/flowerp/service.py
+index 99753c2..d6f15ef 100644
+--- a/flowerp/service.py
++++ b/flowerp/service.py
+@@ -156,6 +156,7 @@ class ERPService:
+                 raise NotFound(f"商品不存在：{sku}")
+             exists = conn.execute("SELECT 1 FROM inventory_events WHERE event_key=?", (event_key,)).fetchone()
+             if exists:
++                conn.execute("UPDATE stock SET on_hand=on_hand+? WHERE sku=?", (quantity, sku))
+                 row = conn.execute(
+                     "SELECT p.*,s.on_hand,s.reserved,(s.on_hand-s.reserved) AS available "
+                     "FROM products p JOIN stock s USING(sku) WHERE p.sku=?", (sku,)
