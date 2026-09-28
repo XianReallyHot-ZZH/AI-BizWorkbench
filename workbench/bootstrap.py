@@ -90,6 +90,61 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS reviews_by_task ON reviews (task_id);
 """
 
+# S01 支线：记忆系统五表（只追加）。DDL 单一来源：init 建库与 _ensure_v0_schema
+# 旧账迁移共用（同 L04 先例）；状态迁移只改 assets.state/approved_by 列与追加
+# events/runs 行，payload 与采用快照绝不改写（CONTEXT.md「记忆系统」词条）。
+_LEARNING_SCHEMA = """
+CREATE TABLE IF NOT EXISTS learning_assets (
+  asset_id TEXT PRIMARY KEY,
+  family TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  project_id TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'memory',
+  state TEXT NOT NULL DEFAULT 'candidate',
+  approved_by TEXT NOT NULL DEFAULT '',
+  payload TEXT NOT NULL,
+  sha256 TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(family, version)
+);
+CREATE TABLE IF NOT EXISTS learning_events (
+  event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  asset_id TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  action TEXT NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  evidence TEXT NOT NULL DEFAULT '{}',
+  at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS learning_events_by_asset ON learning_events (asset_id);
+CREATE TABLE IF NOT EXISTS learning_recalls (
+  recall_id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  task_id TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  sha256 TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS learning_bindings (
+  binding_id TEXT PRIMARY KEY,
+  recall_id TEXT NOT NULL,
+  plan_id TEXT NOT NULL UNIQUE,
+  task_id TEXT NOT NULL UNIQUE,
+  payload TEXT NOT NULL,
+  sha256 TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS learning_runs (
+  run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  binding_id TEXT NOT NULL,
+  phase TEXT NOT NULL,
+  payload TEXT NOT NULL DEFAULT '{}',
+  at TEXT NOT NULL,
+  UNIQUE(binding_id, phase)
+);
+CREATE INDEX IF NOT EXISTS learning_runs_by_binding ON learning_runs (binding_id);
+"""
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS workbench (
   id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -131,7 +186,7 @@ CREATE TABLE IF NOT EXISTS evidence (
   recorded_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS evidence_by_task ON evidence (task_id);
-""" + _EXECUTION_SCHEMA  # L04 执行/复核表：单一 DDL 来源，init 与旧账迁移共用（复查轮 S1）
+""" + _EXECUTION_SCHEMA + _LEARNING_SCHEMA  # 单一 DDL 来源：L04 执行/复核 + S01 记忆五表，init 与旧账迁移共用
 
 
 class LedgerUnavailable(RuntimeError):
@@ -216,6 +271,7 @@ def _ensure_v0_schema(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE executions ADD COLUMN change_manifest_sha256 TEXT NOT NULL DEFAULT ''")
     if "eval_timed_out" not in execution_columns:
         conn.execute("ALTER TABLE executions ADD COLUMN eval_timed_out INTEGER NOT NULL DEFAULT 0")
+    conn.executescript(_LEARNING_SCHEMA)  # S01：记忆五表，旧账幂等补建
     conn.commit()
 
 

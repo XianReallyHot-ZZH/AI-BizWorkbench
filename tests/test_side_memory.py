@@ -41,6 +41,7 @@ L04 执行/复核机制（accepted 状态派生），替身执行器边界同 te
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shlex
 import sqlite3
@@ -125,8 +126,8 @@ class SideMemoryContractTest(unittest.TestCase):
         self.assertEqual(run_cli("workbench-project-add", "--runtime-dir", str(self.rt),
                                  "--project-id", "P-2", "--name", "另一项目").returncode, 0)
 
-    def accept_task(self, task_id: str, project_id: str = "P-1") -> None:
-        """创建任务并以替身执行器走完 code 执行 + 具名复核，到达 accepted。"""
+    def run_task(self, task_id: str, project_id: str = "P-1") -> None:
+        """创建任务并以替身执行器跑一次 code 执行（停 review，不复核）。"""
         ws = self.make_workspace(f"ws-{task_id}")
         create = run_cli("workbench-task-create", "--runtime-dir", str(self.rt),
                          "--project-id", project_id, "--task-id", task_id,
@@ -143,6 +144,10 @@ class SideMemoryContractTest(unittest.TestCase):
                       shlex.join([sys.executable, str(self.eval_probe())]),
                       "--execution-timeout", "900", "--actor", OWNER_A)
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+
+    def accept_task(self, task_id: str, project_id: str = "P-1") -> None:
+        """run_task + 具名复核，到达 accepted（记忆来源准入的前提）。"""
+        self.run_task(task_id, project_id)
         review = run_cli("workbench-task-review", task_id, "--runtime-dir", str(self.rt),
                          "--reviewer", REVIEWER_B, "--decision", "approve", "--note", "核对")
         self.assertEqual(review.returncode, 0, review.stdout + review.stderr)
@@ -195,21 +200,24 @@ class SideMemoryContractTest(unittest.TestCase):
                       "reason": "复查轮直接适用"} for m in matches]
         return self.bind(recall_id, task_id, decisions, plan_id=plan_id)
 
-    def first_evidence_id(self) -> int:
+    def exec_id(self, task_id: str) -> int:
         db = self.rt / "workbench.db"
         conn = sqlite3.connect(db)
         try:
-            row = conn.execute("SELECT MIN(record_id) FROM evidence").fetchone()
+            row = conn.execute(
+                "SELECT MIN(execution_id) FROM executions WHERE task_id = ?", (task_id,)
+            ).fetchone()
             return int(row[0])
         finally:
             conn.close()
 
     def learn_run(self, binding_id: str, phase: str, result: str,
-                  record_id: int | None = None) -> subprocess.CompletedProcess:
+                  task_id: str) -> subprocess.CompletedProcess:
+        """相位证据引用绑定任务自己的执行记录，模块侧现算摘要。"""
         return run_cli("workbench-learn-run", "--runtime-dir", str(self.rt),
                        "--binding-id", binding_id, "--phase", phase, "--result", result,
                        "--evidence-table", "executions",
-                       "--evidence-record-id", str(record_id or self.first_evidence_id()),
+                       "--evidence-record-id", str(self.exec_id(task_id)),
                        "--summary", f"{phase} 相位结果")
 
     def learn_finish(self, binding_id: str, outcome: str,
@@ -245,7 +253,7 @@ class SideMemoryContractTest(unittest.TestCase):
         """链走通：提炼→审核→发布→召回→逐项采用→三相位→outcome 回写。"""
         self.init_workbench()
         self.accept_task("T-SRC")
-        self.plain_task("T-DLV")
+        self.run_task("T-DLV")
         created = self.create_asset()
         self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
         asset = payload(created)["asset"]
@@ -274,7 +282,7 @@ class SideMemoryContractTest(unittest.TestCase):
         self.assertTrue(binding["assets"][0]["sha256"])  # 采用快照封存带摘要
 
         for phase in ("precheck", "implement", "eval"):
-            ran = self.learn_run(binding["binding_id"], phase, "passed")
+            ran = self.learn_run(binding["binding_id"], phase, "passed", "T-DLV")
             self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
             self.assertTrue(payload(ran)["run"]["evidence"]["sha256"])  # 引用账本记录现算摘要
 
@@ -343,7 +351,7 @@ class SideMemoryContractTest(unittest.TestCase):
         """C3：跳过审批被拒；candidate 不进召回；outcome 缺具名验收被拒。"""
         self.init_workbench()
         self.accept_task("T-SRC")
-        self.plain_task("T-DLV")
+        self.run_task("T-DLV")
         created = self.create_asset()
         self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
         asset_id = payload(created)["asset"]["asset_id"]
@@ -362,7 +370,7 @@ class SideMemoryContractTest(unittest.TestCase):
         self.assertEqual(bound.returncode, 0, bound.stdout + bound.stderr)
         binding_id = payload(bound)["binding"]["binding_id"]
         for phase in ("precheck", "implement", "eval"):
-            self.assertEqual(self.learn_run(binding_id, phase, "passed").returncode, 0)
+            self.assertEqual(self.learn_run(binding_id, phase, "passed", "T-DLV").returncode, 0)
         missing = self.learn_finish(binding_id, "passed", reviewer="")
         self.assertEqual(missing.returncode, 1, missing.stdout + missing.stderr)
         self.assertIn("reuse_acceptance_missing", missing.stdout)  # 复用验证缺少具名验收
@@ -371,15 +379,15 @@ class SideMemoryContractTest(unittest.TestCase):
         """C4：复用失败不冒充通过；memory 类失败只记 outcome，不自动撤回。"""
         self.init_workbench()
         self.accept_task("T-SRC")
-        self.plain_task("T-DLV")
+        self.run_task("T-DLV")
         asset = self.published_asset()
         rec = self.recall("T-DLV", "P-1", "无头会话")
         matches = payload(rec)["recall"]["matches"]
         bound = self.bind_adopt_all(payload(rec)["recall"]["recall_id"], "T-DLV", matches)
         binding_id = payload(bound)["binding"]["binding_id"]
-        self.assertEqual(self.learn_run(binding_id, "precheck", "passed").returncode, 0)
-        self.assertEqual(self.learn_run(binding_id, "implement", "passed").returncode, 0)
-        self.assertEqual(self.learn_run(binding_id, "eval", "failed").returncode, 0)
+        self.assertEqual(self.learn_run(binding_id, "precheck", "passed", "T-DLV").returncode, 0)
+        self.assertEqual(self.learn_run(binding_id, "implement", "passed", "T-DLV").returncode, 0)
+        self.assertEqual(self.learn_run(binding_id, "eval", "failed", "T-DLV").returncode, 0)
         masked = self.learn_finish(binding_id, "passed")
         self.assertEqual(masked.returncode, 1, masked.stdout + masked.stderr)
         self.assertIn("phase_not_passed", masked.stdout)  # 历史成功不掩盖本轮失败
@@ -395,24 +403,30 @@ class SideMemoryContractTest(unittest.TestCase):
         """C5/C10：读取即重算摘要复核；账本被手改必须暴露，不静默。"""
         self.init_workbench()
         self.accept_task("T-SRC")
-        asset = self.published_asset()
+        asset_a = self.published_asset(family="lessons-a")
+        asset_b = self.published_asset(family="lessons-b")
         db = self.rt / "workbench.db"
 
+        # 载荷被手改 → 读取即校验失败（快照防漂移）
         conn = sqlite3.connect(db)
-        conn.execute("UPDATE learning_assets SET payload = '{\"被\": \"篡改\"}'")
+        conn.execute(
+            "UPDATE learning_assets SET payload = '{\"被\": \"篡改\"}' WHERE asset_id = ?",
+            (asset_a["asset_id"],))
         conn.commit()
         conn.close()
-        tampered = self.show(asset_id=asset["asset_id"])
+        tampered = self.show(asset_id=asset_a["asset_id"])
         self.assertEqual(tampered.returncode, 1, tampered.stdout + tampered.stderr)
         self.assertIn("memory_content_checksum_failed", tampered.stdout)
 
-        # 还原 payload 后，来源证据被手改也要暴露（来源快照引用链复核）
+        # 来源执行记录被一致性手改（正文与摘要列同改）→ 来源引用链复核暴露
+        forged = hashlib.sha256("被篡改的来源输出".encode("utf-8")).hexdigest()
         conn = sqlite3.connect(db)
         conn.execute(
-            "UPDATE evidence SET output_text = '被篡改的来源输出' WHERE record_id = 1")
+            "UPDATE executions SET stdout_text = '被篡改的来源输出', stdout_sha256 = ? "
+            "WHERE task_id = 'T-SRC'", (forged,))
         conn.commit()
         conn.close()
-        source = self.show(asset_id=asset["asset_id"])
+        source = self.show(asset_id=asset_b["asset_id"])
         self.assertEqual(source.returncode, 1, source.stdout + source.stderr)
         self.assertIn("source_task_report_changed", source.stdout)
 
@@ -441,7 +455,7 @@ class SideMemoryContractTest(unittest.TestCase):
             self.assertEqual(bad.returncode, 1, bad.stdout + bad.stderr)
             self.assertIn("human_actor_required", bad.stdout)
         # 资产仍未被审核（被拒操作不留痕），非人复核人同样过不了 finish 的门槛
-        self.plain_task("T-DLV")
+        self.run_task("T-DLV")
         self.assertEqual(self.govern(asset_id, "approve").returncode, 0)
         self.assertEqual(self.govern(asset_id, "publish").returncode, 0)
         rec = self.recall("T-DLV", "P-1", "无头会话")
@@ -449,7 +463,7 @@ class SideMemoryContractTest(unittest.TestCase):
         bound = self.bind_adopt_all(payload(rec)["recall"]["recall_id"], "T-DLV", matches)
         binding_id = payload(bound)["binding"]["binding_id"]
         for phase in ("precheck", "implement", "eval"):
-            self.assertEqual(self.learn_run(binding_id, phase, "passed").returncode, 0)
+            self.assertEqual(self.learn_run(binding_id, phase, "passed", "T-DLV").returncode, 0)
         robot = self.learn_finish(binding_id, "passed", reviewer="agent:claude")
         self.assertEqual(robot.returncode, 1, robot.stdout + robot.stderr)
         self.assertIn("human_actor_required", robot.stdout)
@@ -499,14 +513,16 @@ class SideMemoryContractTest(unittest.TestCase):
         created = self.create_asset(actor=OWNER_A)  # 提炼者 = OWNER_A
         self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
         asset_id = payload(created)["asset"]["asset_id"]
-        selfrec = self.recall("T-SRC", "P-1", "无头会话")
+        self_publish = self.govern(asset_id, "approve", actor=OWNER_A)
+        self.assertEqual(self_publish.returncode, 1, self_publish.stdout + self_publish.stderr)
+        self.assertIn("self_govern_rejected", self_publish.stdout)
+        self.assertEqual(self.govern(asset_id, "approve").returncode, 0)  # 独立具名审核放行
+        self.assertEqual(self.govern(asset_id, "publish").returncode, 0)
+        selfrec = self.recall("T-SRC", "P-1", "无头会话")  # 来源任务自召回
         self.assertEqual(selfrec.returncode, 0, selfrec.stdout + selfrec.stderr)
         body = payload(selfrec)["recall"]
         self.assertEqual(body["matches"], [])
         self.assertTrue(any("self_source" in e["reason"] for e in body["excluded"]))
-        self_publish = self.govern(asset_id, "approve", actor=OWNER_A)
-        self.assertEqual(self_publish.returncode, 1, self_publish.stdout + self_publish.stderr)
-        self.assertIn("self_govern_rejected", self_publish.stdout)
 
     def test_bind_decisions_must_match_recall(self) -> None:
         """C13：采用决定必须与本轮召回 matches 逐项对应。"""
