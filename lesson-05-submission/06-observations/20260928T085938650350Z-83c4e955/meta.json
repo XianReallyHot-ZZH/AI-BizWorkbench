@@ -1,0 +1,18 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py",
+    "--target",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py\", \"--target\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-28T08:59:38.650350+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/06-observations/20260928T085938650350Z-83c4e955/output.txt",
+  "sha256": "bb07e09453f56da5a2ca2873a2be897809472f08cf7cb09957ff7a6a3f372845",
+  "provenance": "local_teaching_capture"
+}
