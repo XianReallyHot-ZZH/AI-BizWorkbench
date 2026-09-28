@@ -1,0 +1,18 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py",
+    "--target",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-probe/blind-ledger-rewrite"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py\", \"--target\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-probe/blind-ledger-rewrite\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-28T08:46:01.958883+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/06-observations/20260928T084601958883Z-a3c944f5/output.txt",
+  "sha256": "5b2b09ba134d0f365323520393f1f38d34989997bdea711f53c6f23790831843",
+  "provenance": "local_teaching_capture"
+}

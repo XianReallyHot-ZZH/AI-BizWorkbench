@@ -1,0 +1,24 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py",
+    "--target",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate",
+    "--opening",
+    "11",
+    "--receipt",
+    "3",
+    "--new",
+    "3"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py\", \"--target\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate\", \"--opening\", \"11\", \"--receipt\", \"3\", \"--new\", \"3\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T08:46:01.282766+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/06-observations/20260928T084601282766Z-e11caf14/output.txt",
+  "sha256": "9df9afc661523d24d2d68faf2ca14341f54f8be9429fb108e6e2022c43fd87a1",
+  "provenance": "local_teaching_capture"
+}

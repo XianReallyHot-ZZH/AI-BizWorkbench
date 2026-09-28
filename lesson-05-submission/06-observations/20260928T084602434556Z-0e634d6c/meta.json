@@ -1,0 +1,31 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "-m",
+    "workbench.cli",
+    "workbench-task-run",
+    "CASE-WB-L05-001",
+    "--runtime-dir",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L01-workbench",
+    "--workspace",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate",
+    "--mode",
+    "verify",
+    "--eval-command",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case receiving_is_idempotent --no-report",
+    "--execution-timeout",
+    "900",
+    "--actor",
+    "Claude"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"workbench.cli\", \"workbench-task-run\", \"CASE-WB-L05-001\", \"--runtime-dir\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L01-workbench\", \"--workspace\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate\", \"--mode\", \"verify\", \"--eval-command\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case receiving_is_idempotent --no-report\", \"--execution-timeout\", \"900\", \"--actor\", \"Claude\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T08:46:02.434556+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/06-observations/20260928T084602434556Z-0e634d6c/output.txt",
+  "sha256": "f604d1f12b1e7078524410aacde480792c42baffd3fdbe457f69d2cc01a4162d",
+  "provenance": "local_teaching_capture"
+}

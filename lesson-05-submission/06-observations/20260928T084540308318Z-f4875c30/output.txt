@@ -1,0 +1,8 @@
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/eval/cases.py
+1a2f303ce0008be4c0b7b908ed4d830700ea6ea53930b392d13cbe8239cd6aa8  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/flowerp/service.py
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/eval/cases.py
+6c372dcd105c2c476bbbb76b97abaf6edfbbac233cc7cfb7567a73052325385a  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/flowerp/service.py
+dd6bf3839640dfe6cfe96a6da4de8282b9a73ae5e2c7e675288cd47302c11675  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py
+e9358d126f159609a29600b152ebf2e69c3ae49728c675f1a14bd85cbbe0f5e5  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/build_defect_baseline.py
