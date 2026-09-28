@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0005 · 记忆系统：让工作台自己记得住教训</title>
+<link rel="stylesheet" href="../assets/course.css">
+<script defer src="../assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="kicker">Lesson 0005 · 支线 S01 复盘</div>
+  <h1>记忆系统：让工作台自己记得住教训</h1>
+  <div class="subtitle">S01 的意图、机制与代码实现 —— 经验不进账本就等于没发生过，进了账本还要能被证明"没被改过、没过期"</div>
+</header>
+
+<h2 id="why">为什么补这一课</h2>
+<p>你刚以六个具名动作验收了支线 S01（approve / publish / bind / outcome / v2 发布，全落你的名字）。但按本仓库的老规矩：<strong>放行了什么，就要读懂什么</strong>。这一课回答你点的四个问题：S01 在做什么？目的是什么？解决什么问题？代码怎么实现的？学完的标准：下次看记忆相关代码，你能自己指出"这条经验凭什么进账、凭什么被信、凭什么算失效"。</p>
+<div class="callout"><span class="label">先看一个对照</span>L04 的三条 <code>claude -p</code> 硬教训，昨天存在哪？<a href="../../docs/handoffs/handoff-L04-to-支线.md">交接文档</a>的正文里——它随会话结束而蒸发，下一个 Claude 会话根本看不到它。今天它存在于哪？<code>ASSET-becd3ae6</code>，主账里的一行，带来源引用、带 SHA-256、会出现在下一次相关任务的召回里。<strong>同样的内容，两种存在方式，一个会蒸发，一个不会。</strong>S01 做的就是这个搬运——但搬运的每一步都有门。</div>
+
+<h2 id="intent">意图：解决"经验蒸发"</h2>
+<p>上游 AGENTS.md 有一段逐字口径（<a href="../../docs/research/upstream-memory-system.md">调查笔记 §5</a> 引）：<em>"单次交付成功、事件持久化、反馈登记或资产登记，均不足以证明三者已闭环。完成须有跨事项证据：前一事项经验被后一事项召回……"</em>。翻译一下：<strong>工作台三件套 = Harness + 记忆系统 + 工作流蒸馏</strong>，L01–L04 建好了第一件，但当时的教训只能靠人肉搬运（交接文档、讲义、你的记忆）。换挡点之后工作台要"组织协同"，一个不记得自己犯过错的协调者，每次协作都从零开始犯同样的错。</p>
+<p>所以 S01 的目的就一句话：<strong>把"已验收任务的经验"变成可治理、可召回、会失效的账本资产</strong>。注意三个限定词，各对应一道门：</p>
+<table>
+  <tr><th>限定词</th><th>解决什么问题</th><th>对应的门</th></tr>
+  <tr><td>可治理</td><td>AI 自己提炼、自己发布、自己采用 = 既当运动员又当裁判</td><td>具名人工审核（human() 词面拒绝 AI 名义）+ 非提炼者自审拒绝 + 跨项目治理拒绝</td></tr>
+  <tr><td>可召回</td><td>账本里的死数据不叫记忆，能在新任务里被<strong>有理由地</strong>捞出来才叫</td><td>关键词命中带理由、召回包整包落库、检索不到<strong>如实为空</strong></td></tr>
+  <tr><td>会失效</td><td>经验会过期；过期经验继续被注入比没有记忆更危险</td><td>撤回/被替代只做状态迁移<strong>不删除</strong>；失效条目不再进召回，但全部历史保留</td></tr>
+</table>
+
+<h2 id="mechanism">机制：五表、两套链、一条状态机</h2>
+<p><a href="../../workbench/learning.py"><code>workbench/learning.py</code></a>（770 行，七命令）背后是五张只追加的表（与上游同形，DDL 单一来源在 <a href="../../workbench/bootstrap.py"><code>bootstrap.py</code></a> 的 <code>_LEARNING_SCHEMA</code>）：</p>
+<table>
+  <tr><th>表</th><th>装什么</th><th>一句话职责</th></tr>
+  <tr><td><code>learning_assets</code></td><td>记忆条目本体 + 冻结 payload + sha256</td><td>经验内容（family+version 成版本链）</td></tr>
+  <tr><td><code>learning_events</code></td><td>candidate/approve/publish/revoke/superseded 事件</td><td>条目的只追加履历</td></tr>
+  <tr><td><code>learning_recalls</code></td><td>每次召回的整包快照（RECALL-*）</td><td>证明"当时召回什么、为何命中、为何排除"</td></tr>
+  <tr><td><code>learning_bindings</code></td><td>采用快照（BIND-*，plan/task 双唯一）</td><td>一次交付用了哪个版本的<strong>全文封存</strong></td></tr>
+  <tr><td><code>learning_runs</code></td><td>五相位证据，UNIQUE(binding_id,phase)</td><td>采用之后的复验链</td></tr>
+</table>
+<div class="callout"><span class="label">两套链的分工（本课核心判断）</span>0001 课学的四相位红绿链没有消失，但它<strong>只服务任务证据账</strong>。记忆账用的是另一套：<strong>sha256 快照链</strong>。为什么分家？红绿链回答的问题是"这些记录的时序对不对"（红先于绿、diff 居间）；快照链回答的是"这份内容还是封存时的那份吗"。记忆的核心恐惧不是时序错乱，是<strong>内容漂移</strong>——所以每条内容都算哈希、每次读取都重算比对。记住这个分工：相位判时序，快照判不变。相位常量也分家了：记忆复用链自有五相位 <code>precheck/implement/eval/review/outcome</code>（learning.py:73），<code>bootstrap.PHASES</code> 四相位一个字没动。</div>
+<p>条目生命周期是一条只派生不回改的状态机：<code>candidate →(approve→publish)→ active →(发布新版本原子置)→ superseded</code>，或 <code>→(revoke)→ revoked</code>。所有状态变更只改 <code>state</code> 列 + 追加事件，<strong>payload 和快照永不改写</strong>。</p>
+
+<h2 id="code">代码实现：四段门，四个真实故事</h2>
+<p>挑四段最值得读的。每段都对应一个 S01 真实发生过的故事——不是教学虚构。</p>
+
+<h3>① 来源准入：门在入口（<a href="../../workbench/learning.py#L248">learning.py:248</a>）</h3>
+<pre><code>def _admission_snapshot(conn, task_id, project_id) -&gt; dict:
+    task = _check_task(conn, task_id)          # 任务不存在 → required_task_missing
+    if task["project_id"] != project_id:       # 跨项目 → project_mismatch
+        raise LearningError(...)
+    if _task_state(conn, task_id) != "accepted":   # 未具名接受 → source_task_not_accepted
+        raise LearningError(...)
+    execution = _latest_execution(conn, task_id)
+    review = _latest_review(conn, task_id)
+    snapshot = {...任务事实 + 复核 + 执行记录摘要列引用...}
+    return {"task_id": ..., "snapshot": snapshot, "sha256": _sha256(_dumps(snapshot))}</code></pre>
+<p>只有 <strong>accepted</strong> 状态的任务能当提炼来源——而"accepted"不是一个人说了算的状态，是 L04 那套"执行 → 具名复核"派生出来的。经验从进入账本的第一刻就带着完整的责任链。封存的不是一句"来自 L04"，而是任务事实、复核人和执行记录指纹的<strong>整体快照 + 哈希</strong>。</p>
+
+<h3>② 读取即复核：信的是哈希，不是存储（<a href="../../workbench/learning.py#L148">learning.py:148-179</a>）</h3>
+<pre><code>def _check_payload_integrity(row, what):       # 每次读资产都走
+    if _sha256(row["payload"]) != row["sha256"]:
+        raise LearningError("memory_content_checksum_failed", ...)   # 快照被改动 → 拒读
+
+def _check_source(conn, source):               # 来源引用链也复核
+    for ref in snapshot["execution_refs"]:     # 与现账执行记录的摘要列逐一比对
+        if ...摘要对不上...:
+            raise LearningError("source_task_report_changed", ...)</code></pre>
+<div class="callout"><span class="label">真实故事</span>复查轮发现 <code>_check_source</code> 读的是 <code>source["execution_refs"]</code>，而实际结构是 <code>source["snapshot"]["execution_refs"]</code>——循环体拿到空列表，<strong>整段复核安静地空转</strong>，返回码照常是 0。谁抓住的？合同测试 C5/C10：故意把来源执行记录连正文带摘要列一起改掉，<code>show</code> 却还成功。教训两层：复核代码自己也会错，所以复核必须<strong>被测试钉住"真的能拦"</strong>；而"安静地什么都不查"比报错更危险——失败不可抹的反面就是成功不可冒充。</div>
+
+<h3>③ 召回管线：每次"不命中"都有去处（<a href="../../workbench/learning.py#L402">learning.py:402</a>）</h3>
+<pre><code>for row in 项目的 active 资产:
+    payload = _check_payload_integrity(...)    # 读时复核（②的门在召回里也过一遍）
+    if 来源任务 == 当前任务:  → excluded["self_source:同源事项不得作为独立复用"]
+    if 命中 excludes:         → excluded["excludes:..."]
+    if 关键词不命中 applies:  → 静默跳过（检索面之外，不进任何分组）
+    超出字符预算:              → excluded["budget_exceeded:..."]
+    否则 → matches（带命中理由 applies:关键词）
+conflict_key 相同的命中 → conflicts 分组，"请逐项判断，不自动合并"</code></pre>
+<p>整包（matches + excluded + conflicts + 预算占用）落库成 RECALL-*。<strong>检索不到就返回空 matches</strong>——不编造召回，这也是 C7 合同的断言。你验收时看到的两次召回就是这条管线：第一次命中 v1（RECALL-bc14883c），v2 发布后再召回只剩 v2——v1 不是被删了，是被状态过滤掉了。</p>
+
+<h3>④ 失效治理与防漂移：不删除，也不轻信（<a href="../../workbench/learning.py#L331">govern :331</a> / <a href="../../workbench/learning.py#L225">_validate_binding_assets :225</a>）</h3>
+<pre><code># publish（govern 内）：同 family 旧 active 版本同事务原子置 superseded
+olds = SELECT ... WHERE family = ? AND state = 'active' AND asset_id != 新版
+for old in olds:
+    UPDATE state = 'superseded'
+    _append_event(old, "superseded", evidence={"replacement": 新版id})
+
+# learn-run / learn-finish 开头：采用版本防漂移
+def _validate_binding_assets(conn, payload):
+    for asset in payload["assets"]:            # 绑定时封存的 sha256
+        if 现账 sha256 != 封存 sha256:
+            raise LearningError("binding_version_changed", ...)   # 复验前就拦下</code></pre>
+<p>两个"为什么"值得咀嚼：<strong>为什么失效不删除？</strong>与铁律 3 同构——删了失效记录，就删了"它曾经被认为是对的"这个事实，下次同样的经验再出现时无从对照。<strong>为什么绑定了还要再验？</strong>采用快照封存的是"当时的版本"，如果资产后来被改（哪怕哈希列一起被改），复验跑的就不再是当时采用的东西——C4 合同同时钉住了另一面：memory 类资产复用失败<strong>只记 outcome 不自动撤回</strong>（失败可能是用法错了，撤回是具名人工的判断）。</p>
+
+<h2 id="verify">亲手复验（只读命令，随便跑）</h2>
+<p>老规矩：先预测，再运行，对照结论。全部只读，动的是主账真实数据：</p>
+<pre><code># ① 预测：v1（ASSET-becd3ae6）现在是什么状态？事件链有哪几条？
+.venv/bin/python -X utf8 -m workbench.cli workbench-learn-show \
+  --runtime-dir .runtime/course/L01-workbench --asset-id ASSET-becd3ae6
+
+# ② 预测：换个新任务召回"无头会话"，注入哪个版本？reason 字段长什么样？
+.venv/bin/python -X utf8 -m workbench.cli workbench-learn-recall \
+  --runtime-dir .runtime/course/L01-workbench --project-id PERSONAL-WORKBENCH \
+  --task-id CASE-WB-S01-WALK2 --keyword "无头会话"</code></pre>
+<p>对答案：① state=<code>superseded</code>，事件链 <code>candidate→approve→publish→superseded</code>，最后一条事件带 <code>replacement: ASSET-b8f18a6c</code>；② matches 只含 v2，reason 是 <code>applies:无头会话</code>。如果两条预测全中，说明机制你已经拿下了。</p>
+
+<h2 id="quiz">判分测验（4 题，答错不算失败，算定位）</h2>
+<div id="quiz-root"></div>
+
+<h2 id="next">下一步</h2>
+<ul>
+  <li>主线路线图下一站：<strong>L05 失败优先 Eval</strong>——0004 课的引子"检查器自己会错吗"正式接上；本课的"复核被测试钉住"正是它的预热。</li>
+  <li>复验块做完，顺手把 <a href="../reference/0001-workbench-cheatsheet.html">cheatsheet</a> 的 v2 期待办清了（可把记忆七命令加进去）。</li>
+  <li><strong>有问题随时问你的老师（我）</strong>：任何一段代码、任何一个门，都可以要求展开讲或对照上游 vendor 源码。</li>
+</ul>
+<p>延伸阅读（一手来源）：<a href="../../docs/research/upstream-memory-system.md">上游记忆系统调查笔记</a>（全部主张带行号）· 方案定稿 <a href="../../docs/lessons/支线-记忆系统最小闭环.md">支线-记忆系统最小闭环.md</a> · 证据账 <a href="../../docs/replication/evidence/S01.md">S01.md</a>（含时间戳事故与九条失败现场）。</p>
+<p>相关课：<a href="0001-evidence-chain-judgement.html">0001 链判定</a>（红绿链的原始规则）· <a href="0004-controlled-execution.html">0004 受控执行</a>（来源任务的 accepted 是怎么来的）</p>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  mountQuiz("quiz-root", [
+    {
+      scenario: "任务证据账用红绿链判定，记忆账却用 sha256 快照链。为什么分家？",
+      options: [
+        { text: "红绿链证明记录时序，快照链证明内容未被改动", correct: true,
+          why: "对。红绿链管时序（红先绿后 diff 居间），记忆的核心恐惧是内容漂移，所以读时重算哈希。两套链各答一个问题。" },
+        { text: "红绿链只能用在测试数据上，生产数据用快照链", correct: false,
+          why: "反了——红绿链服务的任务证据账恰恰装的是生产证据。分家不是因为数据新旧，是因为要回答的问题不同。" },
+        { text: "快照链存储成本更低，红绿链每条都要跑测试", correct: false,
+          why: "哈希重算并不比存相位记录便宜。成本不是理由，判定目标不同才是。" },
+        { text: "上游如此规定，复刻照搬不需要更多道理", correct: false,
+          why: "复刻的是方法不是形骸——上游确实分家，但本课要你带走的是'相位判时序、快照判不变'这个为什么。" }
+      ]
+    },
+    {
+      scenario: "复查轮发现 _check_source 读错了层级，整段来源复核安静空转。是哪条合同测试抓住它的？",
+      options: [
+        { text: "C5/C10：篡改来源执行记录后 show 仍返回成功", correct: true,
+          why: "对。把来源执行记录连正文带摘要列一起改，读取本应报 source_task_report_changed，却 rc=0——空转当场暴露。" },
+        { text: "C7：召回不命中时必须返回空 matches 列表", correct: false,
+          why: "C7 钉的是'检索不到如实为空'，与来源复核是否空转无关。" },
+        { text: "C11：一次交付只能绑定一条采用快照", correct: false,
+          why: "C11 钉绑定唯一性（task/plan 双唯一），碰不到来源复核。" },
+        { text: "C8：AI 或占位名义的操作人一律被拒", correct: false,
+          why: "C8 钉 human() 具名门槛，与复核逻辑的层级错误无关。" }
+      ]
+    },
+    {
+      scenario: "memory 类资产复用失败后，为什么只记 outcome 不自动撤回？",
+      options: [
+        { text: "失败可能是用法错了，撤回须留待具名人工判断", correct: true,
+          why: "对。自动检查不冒充人工接受——失败归失败，'这条经验该不该废'是具名人工的判断，与铁律 2 同构。" },
+        { text: "撤回操作尚未实现，上游标记为待建设功能", correct: false,
+          why: "revoke 通道是实现了的（C2 合同钉住）。不自动撤回是设计裁决，不是能力缺口。" },
+        { text: "自动撤回会破坏资产 sha256 快照链的完整性", correct: false,
+          why: "状态迁移不改 payload、不动哈希——撤回对快照链无害。不自动撤回不是技术限制。" },
+        { text: "outcome 与 state 存在不同表里，无法关联更新", correct: false,
+          why: "表间关联靠 binding_id 就能完成，'够不着'不成立。这是刻意不做什么，不是做不了。" }
+      ]
+    },
+    {
+      scenario: "S01 证据账出过一次 04:05:30 时间戳事故。它和记忆系统的哪条规则同构？",
+      options: [
+        { text: "observed_at 只许现场捕获，正如快照只许读时重算", correct: true,
+          why: "对。手填时刻=事后构造证据；哈希只算一次不再重算=轻信存储。两者都要求'每次主张都在当下重新生成'。" },
+        { text: "时间戳错了会导致 SQLite 唯一索引冲突而拒绝写入", correct: false,
+          why: "唯一索引在 (binding_id, phase) 和 (family, version) 上，时间戳没有任何唯一约束。" },
+        { text: "误填的时间戳记录被删除后重新补录了一条", correct: false,
+          why: "恰恰相反——只追加账本删不掉那条记录，它保留在账上，链靠后继的真实记录恢复。" },
+        { text: "事件证明了测试必须先于实现运行才能算起始红", correct: false,
+          why: "起始红规则没错但答非所问——时间戳事故讲的是证据生成纪律，不是红绿顺序。" }
+      ]
+    }
+  ]);
+});
+</script>
+</body>
+</html>
