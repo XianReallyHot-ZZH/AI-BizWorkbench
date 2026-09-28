@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    "echo 'target: '\"$L06_EVAL_TARGET\" && exec .venv/bin/python -X utf8 -m evals.l06.checks --no-report > /tmp/l06-rerun.json; echo \"rc: $?\" && .venv/bin/python -X utf8 -c \"\nimport json\nnew = json.load(open('/tmp/l06-rerun.json'))\nsealed = json.loads(open('lesson-06-submission/05-green/20260928T135555209271Z-be06293d/output.txt').read().split('{', 1)[1].rjust(0) if False else open('lesson-06-submission/05-green/20260928T135555209271Z-be06293d/output.txt').read()[open('lesson-06-submission/05-green/20260928T135555209271Z-be06293d/output.txt').read().index('{'):])\nfor r in (new, sealed): r.pop('generated_at')\nprint('structure identical (minus generated_at):', new == sealed)\""
+  ],
+  "command": "[\"sh\", \"-c\", \"echo 'target: '\\\"$L06_EVAL_TARGET\\\" && exec .venv/bin/python -X utf8 -m evals.l06.checks --no-report > /tmp/l06-rerun.json; echo \\\"rc: $?\\\" && .venv/bin/python -X utf8 -c \\\"\\nimport json\\nnew = json.load(open('/tmp/l06-rerun.json'))\\nsealed = json.loads(open('lesson-06-submission/05-green/20260928T135555209271Z-be06293d/output.txt').read().split('{', 1)[1].rjust(0) if False else open('lesson-06-submission/05-green/20260928T135555209271Z-be06293d/output.txt').read()[open('lesson-06-submission/05-green/20260928T135555209271Z-be06293d/output.txt').read().index('{'):])\\nfor r in (new, sealed): r.pop('generated_at')\\nprint('structure identical (minus generated_at):', new == sealed)\\\"\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T14:07:18.037213+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/06-observations/20260928T140718037213Z-30aeee3b/output.txt",
+  "sha256": "768be55cd3aca1082bfd10f16ee7e5288951d8e0e0c4f4f5cebd57a3652243df",
+  "provenance": "local_teaching_capture"
+}

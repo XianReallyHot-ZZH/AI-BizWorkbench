@@ -81,7 +81,7 @@ def _teaching_observation() -> None:
     raise AssertionError("教学观察项：模拟非阻断提示，不代表实际缺陷")
 
 
-def entries(opening: int = 8, reserved: int = 3) -> list[tuple[str, str, object]]:
+def entries(opening: int, reserved: int) -> list[tuple[str, str, object]]:
     return [
         ("l06_stock_consistency", "blocking", (lambda: _run_driver(opening, reserved))),
         ("l05_receiving_regression", "blocking", (lambda: _customer_case("receiving_is_idempotent"))),
