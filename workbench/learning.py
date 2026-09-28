@@ -12,10 +12,11 @@ recalls/bindings/runs；记忆链自有五相位 precheck/implement/eval/review/
 - ``workbench-learn-create``：来源准入只收已验收任务（``_task_state``=accepted
   且具名复核在场）；来源快照（任务事实 + 复核 + 执行摘要列引用）整体封存并记
   sha256。family+version 构成版本链，--supersedes 声明替代意图（不强制）。
-- ``workbench-learn-govern``：approve/publish/revoke 三决定。操作人必须具名
-  人工（拒绝 ai/codex/system/claude/待确认/待定/tbd/pending/agent:*）且不得是
-  提炼者；publish 前必须先 approve（跳过审批被拒）；publish 同事务把同 family
-  旧 active 版本原子置 superseded（事件带 replacement）。
+- ``workbench-learn-govern``：approve/publish/revoke 三决定。``--project-id`` 必给，
+  跨项目治理显式拒绝；操作人必须具名人工（拒绝 ai/codex/system/claude/待确认/
+  待定/tbd/pending/agent:*，claude 为本仓库增补）且不得是提炼者；publish 前
+  必须先 approve（跳过审批被拒）；publish 同事务把同 family 旧 active 版本
+  原子置 superseded（事件带 replacement）。
 - ``workbench-learn-recall``：项目过滤 + 仅 active + 关键词 applies 命中
   /excludes 排除 + 同源事项不得独立复用 + 字符预算（默认 12000，超限进
   excluded）+ conflict_key 冲突显式分组（不自动合并）；检索不到如实为空；
@@ -48,6 +49,7 @@ import argparse
 import json
 import sqlite3
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 
 from .bootstrap import (
@@ -71,7 +73,8 @@ from .bootstrap import (
 RUN_PHASES = ("precheck", "implement", "eval", "review", "outcome")
 RECORDABLE_RUN_PHASES = ("precheck", "implement", "eval")
 DEFAULT_RECALL_BUDGET = 12000
-# 具名门槛：拒绝 AI/系统/占位名义（上游 learning.py human() 同词面）。
+# 具名门槛：拒绝 AI/系统/占位名义。词面 = 上游 learning.py human()
+# （ai/codex/system/待确认/待定/tbd/pending/agent:*），本仓库增补 claude（更严）。
 HUMAN_FORBIDDEN = {"ai", "codex", "system", "claude", "待确认", "待定", "tbd", "pending"}
 
 
@@ -82,6 +85,16 @@ class LearningError(RuntimeError):
         super().__init__(f"{code}: {message}")
         self.code = code
         self.message = message
+
+
+@dataclass(frozen=True)
+class _RecallCandidate:
+    """召回候选：命中得分、资产行、载荷、命中理由、内容长度（预算用）。"""
+    score: int
+    row: sqlite3.Row
+    payload: dict
+    reason: str
+    content_len: int
 
 
 # ---- 基础 ---------------------------------------------------------------
@@ -193,6 +206,42 @@ def _append_event(conn: sqlite3.Connection, asset_id: str, actor: str, action: s
         (asset_id, actor, action, note, _dumps(evidence or {}), _now()))
 
 
+def _load_recall(conn: sqlite3.Connection, recall_id: str) -> tuple[sqlite3.Row, dict]:
+    row = conn.execute(
+        "SELECT * FROM learning_recalls WHERE recall_id = ?", (recall_id,)).fetchone()
+    if row is None:
+        raise LearningError("recall_not_found", f"召回包不存在：{recall_id}")
+    return row, _check_payload_integrity(row, f"召回包 {recall_id} ")
+
+
+def _load_binding(conn: sqlite3.Connection, binding_id: str) -> tuple[sqlite3.Row, dict]:
+    row = conn.execute(
+        "SELECT * FROM learning_bindings WHERE binding_id = ?", (binding_id,)).fetchone()
+    if row is None:
+        raise LearningError("binding_not_found", f"采用快照不存在：{binding_id}")
+    return row, _check_payload_integrity(row, f"采用快照 {binding_id} ")
+
+
+def _validate_binding_assets(conn: sqlite3.Connection, payload: dict) -> None:
+    """采用版本防漂移：绑定封存的资产 sha256 与现账逐一比对（上游 validate_binding）。"""
+    for asset in payload.get("assets", []):
+        row = conn.execute(
+            "SELECT sha256 FROM learning_assets WHERE asset_id = ?",
+            (asset["asset_id"],)).fetchone()
+        if row is None or row["sha256"] != asset["sha256"]:
+            raise LearningError(
+                "binding_version_changed",
+                f"采用版本内容已变化：{asset['asset_id']}")
+
+
+def _require_phase_fresh(conn: sqlite3.Connection, binding_id: str, phase: str) -> None:
+    dup = conn.execute(
+        "SELECT 1 FROM learning_runs WHERE binding_id = ? AND phase = ?",
+        (binding_id, phase)).fetchone()
+    if dup is not None:
+        raise LearningError("phase_already_recorded", f"相位已记录，只记一次：{phase}")
+
+
 # ---- 来源准入与快照 ---------------------------------------------------------
 
 
@@ -275,6 +324,8 @@ def _cmd_learn_create(args) -> int:
         return 0
     except LearningError as error:
         return _fail(str(error))
+    finally:
+        conn.close()
 
 
 def _cmd_learn_govern(args) -> int:
@@ -283,6 +334,11 @@ def _cmd_learn_govern(args) -> int:
         _ensure_v0_schema(conn)
         actor = _require_human(args.actor)
         row, payload = _read_asset(conn, args.asset_id)
+        if row["project_id"] != args.project_id:  # 跨项目治理显式拒绝（上游 :252-253 口径）
+            raise LearningError(
+                "project_mismatch",
+                f"记忆条目 {row['asset_id']} 属于项目 {row['project_id']}，"
+                f"与 --project-id {args.project_id} 不符")
         if payload.get("created_by", "").strip() == actor:
             raise LearningError(
                 "self_govern_rejected", f"提炼者不得自审：{actor}")
@@ -321,7 +377,7 @@ def _cmd_learn_govern(args) -> int:
             _append_event(conn, asset_id, actor, "publish",
                           note=args.note or "",
                           evidence={"superseded": [o["asset_id"] for o in olds]})
-        elif args.decision == "revoke":
+        else:  # revoke（approve/publish 由 argparse choices 限定，此处只剩 revoke）
             if row["state"] not in ("candidate", "active"):
                 raise LearningError(
                     "invalid_transition",
@@ -330,8 +386,6 @@ def _cmd_learn_govern(args) -> int:
                 "UPDATE learning_assets SET state = 'revoked' WHERE asset_id = ?",
                 (asset_id,))
             _append_event(conn, asset_id, actor, "revoke", note=args.note or "")
-        else:
-            raise LearningError("invalid_transition", f"未知治理决定：{args.decision}")
         state = conn.execute(
             "SELECT state FROM learning_assets WHERE asset_id = ?", (asset_id,)).fetchone()
         conn.commit()
@@ -341,11 +395,14 @@ def _cmd_learn_govern(args) -> int:
         return 0
     except LearningError as error:
         return _fail(str(error))
+    finally:
+        conn.close()
 
 
 def _cmd_learn_recall(args) -> int:
     conn = _open_ledger(args.runtime_dir)
     try:
+        _ensure_v0_schema(conn)
         task = _check_task(conn, args.task_id)
         if task["project_id"] != args.project_id:
             raise LearningError(
@@ -359,7 +416,7 @@ def _cmd_learn_recall(args) -> int:
             "ORDER BY family, version DESC", (args.project_id,)).fetchall()
         matches: list[dict] = []
         excluded: list[dict] = []
-        candidates: list[tuple[int, sqlite3.Row, dict, str, int]] = []
+        candidates: list[_RecallCandidate] = []
         for row in rows:
             payload = _check_payload_integrity(row, f"记忆条目 {row['asset_id']} ")
             _check_source(conn, payload.get("source", {}))
@@ -381,23 +438,29 @@ def _cmd_learn_recall(args) -> int:
                 score, reason = len(hits), "applies:" + ",".join(hits)
             else:
                 score, reason = 0, "applies:*"  # 无关键词或无适用词：通用条目
-            candidates.append((score, row, payload, reason,
-                               len(payload.get("content", ""))))
-        candidates.sort(key=lambda item: (-item[0], item[1]["family"], -item[1]["version"]))
+            candidates.append(_RecallCandidate(
+                score=score, row=row, payload=payload, reason=reason,
+                content_len=len(payload.get("content", ""))))
+        candidates.sort(key=lambda item: (-item.score, item.row["family"],
+                                          -item.row["version"]))
         budget_used = 0
         conflict_groups: dict[str, list[str]] = {}
-        for score, row, payload, reason, content_len in candidates:
-            if budget_used + content_len > budget:
-                excluded.append({"asset_id": row["asset_id"],
+        for candidate in candidates:
+            if budget_used + candidate.content_len > budget:
+                excluded.append({"asset_id": candidate.row["asset_id"],
                                  "reason": "budget_exceeded:超出上下文字符预算"})
                 continue
-            budget_used += content_len
-            matches.append({"asset_id": row["asset_id"], "family": row["family"],
-                            "version": row["version"], "title": payload.get("title", ""),
-                            "reason": reason,
+            budget_used += candidate.content_len
+            payload = candidate.payload
+            matches.append({"asset_id": candidate.row["asset_id"],
+                            "family": candidate.row["family"],
+                            "version": candidate.row["version"],
+                            "title": payload.get("title", ""),
+                            "reason": candidate.reason,
                             "conflict_key": payload.get("conflict_key", "")})
             if payload.get("conflict_key"):
-                conflict_groups.setdefault(payload["conflict_key"], []).append(row["asset_id"])
+                conflict_groups.setdefault(payload["conflict_key"],
+                                           []).append(candidate.row["asset_id"])
         conflicts = [{"conflict_key": key, "asset_ids": ids,
                       "note": "请逐项判断，不自动合并"}
                      for key, ids in conflict_groups.items() if len(ids) > 1]
@@ -417,6 +480,8 @@ def _cmd_learn_recall(args) -> int:
         return 0
     except LearningError as error:
         return _fail(str(error))
+    finally:
+        conn.close()
 
 
 def _cmd_learn_bind(args) -> int:
@@ -424,22 +489,17 @@ def _cmd_learn_bind(args) -> int:
     try:
         _ensure_v0_schema(conn)
         actor = _require_human(args.actor)
-        row = conn.execute(
-            "SELECT * FROM learning_recalls WHERE recall_id = ?",
-            (args.recall_id,)).fetchone()
-        if row is None:
-            raise LearningError("recall_not_found", f"召回包不存在：{args.recall_id}")
-        rp = _check_payload_integrity(row, f"召回包 {args.recall_id} ")
+        _, recall_payload = _load_recall(conn, args.recall_id)
         _check_task(conn, args.task_id)
-        if args.task_id != rp.get("task_id"):
+        if args.task_id != recall_payload.get("task_id"):
             raise LearningError(
                 "recall_task_mismatch",
-                f"绑定任务 {args.task_id} 与召回包事项 {rp.get('task_id')} 不一致")
+                f"绑定任务 {args.task_id} 与召回包事项 {recall_payload.get('task_id')} 不一致")
         try:
             decisions = json.loads(args.decisions)
         except json.JSONDecodeError as error:
             raise LearningError("decision_mismatch", f"决定集不是合法 JSON：{error}")
-        match_ids = [m["asset_id"] for m in rp.get("matches", [])]
+        match_ids = [m["asset_id"] for m in recall_payload.get("matches", [])]
         dec_ids = [d.get("asset_id") for d in decisions] if isinstance(decisions, list) else []
         shaped = all(isinstance(d, dict) and isinstance(d.get("adopt"), bool)
                      and isinstance(d.get("reason"), str) for d in decisions) \
@@ -460,7 +520,7 @@ def _cmd_learn_bind(args) -> int:
             if not decision["adopt"]:
                 continue
             arow, apayload = _read_asset(conn, decision["asset_id"])
-            if apayload.get("project_id") != rp.get("project_id"):
+            if apayload.get("project_id") != recall_payload.get("project_id"):
                 raise LearningError(
                     "project_mismatch",
                     f"跨项目采用被拒：{arow['asset_id']} 属于 {apayload.get('project_id')}")
@@ -490,6 +550,8 @@ def _cmd_learn_bind(args) -> int:
         return 0
     except LearningError as error:
         return _fail(str(error))
+    finally:
+        conn.close()
 
 
 def _evidence_text(conn: sqlite3.Connection, table: str, record_id: int) -> tuple[str, str]:
@@ -513,23 +575,14 @@ def _cmd_learn_run(args) -> int:
     conn = _open_ledger(args.runtime_dir)
     try:
         _ensure_v0_schema(conn)
-        row = conn.execute(
-            "SELECT * FROM learning_bindings WHERE binding_id = ?",
-            (args.binding_id,)).fetchone()
-        if row is None:
-            raise LearningError("binding_not_found", f"采用快照不存在：{args.binding_id}")
-        payload = _check_payload_integrity(row, f"采用快照 {args.binding_id} ")
+        _, payload = _load_binding(conn, args.binding_id)
+        _validate_binding_assets(conn, payload)  # 采用版本防漂移（复查轮补全）
         task_id, text = _evidence_text(conn, args.evidence_table, args.evidence_record_id)
         if task_id != payload.get("task_id"):
             raise LearningError(
                 "evidence_task_mismatch",
                 f"证据记录属于任务 {task_id}，与绑定任务 {payload.get('task_id')} 不符")
-        dup = conn.execute(
-            "SELECT 1 FROM learning_runs WHERE binding_id = ? AND phase = ?",
-            (args.binding_id, args.phase)).fetchone()
-        if dup is not None:
-            raise LearningError(
-                "phase_already_recorded", f"相位已记录，只记一次：{args.phase}")
+        _require_phase_fresh(conn, args.binding_id, args.phase)
         run_payload = {"result": args.result, "summary": args.summary or "",
                        "evidence": {"table": args.evidence_table,
                                     "record_id": args.evidence_record_id,
@@ -546,18 +599,16 @@ def _cmd_learn_run(args) -> int:
         return 0
     except LearningError as error:
         return _fail(str(error))
+    finally:
+        conn.close()
 
 
 def _cmd_learn_finish(args) -> int:
     conn = _open_ledger(args.runtime_dir)
     try:
         _ensure_v0_schema(conn)
-        row = conn.execute(
-            "SELECT * FROM learning_bindings WHERE binding_id = ?",
-            (args.binding_id,)).fetchone()
-        if row is None:
-            raise LearningError("binding_not_found", f"采用快照不存在：{args.binding_id}")
-        payload = _check_payload_integrity(row, f"采用快照 {args.binding_id} ")
+        _, payload = _load_binding(conn, args.binding_id)
+        _validate_binding_assets(conn, payload)  # 采用版本防漂移（复查轮补全）
         reviewer = (args.reviewer or "").strip()
         if args.outcome == "passed" and not reviewer:
             raise LearningError(
@@ -576,12 +627,7 @@ def _cmd_learn_finish(args) -> int:
                 ("review", {"reviewer": reviewer, "note": args.note or ""}),
                 ("outcome", {"outcome": args.outcome, "reviewer": reviewer,
                              "note": args.note or ""})):
-            dup = conn.execute(
-                "SELECT 1 FROM learning_runs WHERE binding_id = ? AND phase = ?",
-                (args.binding_id, phase)).fetchone()
-            if dup is not None:
-                raise LearningError(
-                    "phase_already_recorded", f"相位已记录，只记一次：{phase}")
+            _require_phase_fresh(conn, args.binding_id, phase)
             conn.execute(
                 "INSERT INTO learning_runs (binding_id, phase, payload, at) "
                 "VALUES (?, ?, ?, ?)",
@@ -593,6 +639,8 @@ def _cmd_learn_finish(args) -> int:
         return 0
     except LearningError as error:
         return _fail(str(error))
+    finally:
+        conn.close()
 
 
 def _cmd_learn_show(args) -> int:
@@ -610,24 +658,16 @@ def _cmd_learn_show(args) -> int:
                              "payload": payload,
                              "events": _row_events(conn, row["asset_id"])}})
         elif args.recall_id:
-            row = conn.execute(
-                "SELECT * FROM learning_recalls WHERE recall_id = ?",
-                (args.recall_id,)).fetchone()
-            if row is None:
-                raise LearningError("recall_not_found", f"召回包不存在：{args.recall_id}")
-            _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED,
-                   "recall": _check_payload_integrity(row, f"召回包 {args.recall_id} ")})
+            _, payload = _load_recall(conn, args.recall_id)
+            _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED, "recall": payload})
         else:
-            row = conn.execute(
-                "SELECT * FROM learning_bindings WHERE binding_id = ?",
-                (args.binding_id,)).fetchone()
-            if row is None:
-                raise LearningError("binding_not_found", f"采用快照不存在：{args.binding_id}")
-            _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED,
-                   "binding": _check_payload_integrity(row, f"采用快照 {args.binding_id} ")})
+            _, payload = _load_binding(conn, args.binding_id)
+            _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED, "binding": payload})
         return 0
     except LearningError as error:
         return _fail(str(error))
+    finally:
+        conn.close()
 
 
 # ---- REGISTRY 缝注册（与 bootstrap/spec/execution 同形）--------------------
@@ -653,6 +693,8 @@ def _register_learn_create(subparsers: argparse._SubParsersAction) -> None:
 def _register_learn_govern(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("workbench-learn-govern", help="记忆条目具名治理决定")
     parser.add_argument("--runtime-dir", required=True)
+    parser.add_argument("--project-id", required=True,
+                        help="治理所在项目（跨项目治理被拒）")
     parser.add_argument("--asset-id", required=True)
     parser.add_argument("--decision", required=True,
                         choices=("approve", "publish", "revoke"))

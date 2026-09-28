@@ -14,6 +14,8 @@ C9     → test_invalid_transitions_rejected → 重复 approve / 重复 revoke 
 C11    → test_binding_unique_per_task_and_plan → 同 task 再绑 / 同 plan 再绑 → binding_exists
 C12    → test_self_source_recall_and_self_govern_rejected → 来源任务自召回 → excluded(self_source)；提炼者自审 → self_govern_rejected
 C13    → test_bind_decisions_must_match_recall → 决定集与召回 matches 不逐项对应 → decision_mismatch
+复查轮C1补全 → test_govern_rejects_cross_project → 跨项目治理 → project_mismatch（上游显式拒绝口径）
+复查轮防漂移 → test_binding_detects_adopted_version_drift → 采用版本内容被改（含摘要列同改）→ learn-run 前暴露 binding_version_changed
 
 CLI 合同（本文件的被测缝，实现须与此一致）：
 - workbench-learn-create  --runtime-dir --project-id --task-id --family --title --content
@@ -32,7 +34,8 @@ CLI 合同（本文件的被测缝，实现须与此一致）：
 source_task_not_accepted / required_task_missing / decision_mismatch / asset_not_active /
 binding_exists / recall_task_mismatch / phase_already_recorded / evidence_record_missing /
 evidence_task_mismatch / missing_phase / phase_not_passed / reuse_acceptance_missing /
-memory_content_checksum_failed / source_task_report_changed / show_target_required
+memory_content_checksum_failed / source_task_report_changed / show_target_required /
+project_mismatch / binding_version_changed
 
 口径：全部用例经真实 CLI 子进程（sys.executable -X utf8 -m workbench.cli）驱动，
 不绕开命令入口直调内部函数；每个用例独立的临时运行目录。来源任务准入复用
@@ -174,8 +177,9 @@ class SideMemoryContractTest(unittest.TestCase):
         return run_cli(*args)
 
     def govern(self, asset_id: str, decision: str, actor: str = REVIEWER_B,
-               note: str = "按边界核对") -> subprocess.CompletedProcess:
+               note: str = "按边界核对", project_id: str = "P-1") -> subprocess.CompletedProcess:
         return run_cli("workbench-learn-govern", "--runtime-dir", str(self.rt),
+                       "--project-id", project_id,
                        "--asset-id", asset_id, "--decision", decision,
                        "--actor", actor, "--note", note)
 
@@ -398,6 +402,42 @@ class SideMemoryContractTest(unittest.TestCase):
         self.assertEqual(payload(shown)["asset"]["state"], "active")  # memory 类不自动撤回
         rec2 = self.recall("T-DLV", "P-1", "无头会话")
         self.assertEqual(len(payload(rec2)["recall"]["matches"]), 1)  # 召回仍可见
+
+    def test_govern_rejects_cross_project(self) -> None:
+        """复查轮（C1 补全）：跨项目治理被拒；本项目治理放行。"""
+        self.init_workbench()
+        self.accept_task("T-SRC")
+        created = self.create_asset()
+        self.assertEqual(created.returncode, 0, created.stdout + created.stderr)
+        asset_id = payload(created)["asset"]["asset_id"]
+        foreign = self.govern(asset_id, "approve", project_id="P-2")
+        self.assertEqual(foreign.returncode, 1, foreign.stdout + foreign.stderr)
+        self.assertIn("project_mismatch", foreign.stdout)
+        own = self.govern(asset_id, "approve", project_id="P-1")
+        self.assertEqual(own.returncode, 0, own.stdout + own.stderr)
+
+    def test_binding_detects_adopted_version_drift(self) -> None:
+        """复查轮：采用版本内容漂移（正文+摘要列一致改）在复验前暴露。"""
+        self.init_workbench()
+        self.accept_task("T-SRC")
+        self.run_task("T-DLV")
+        asset = self.published_asset()
+        rec = self.recall("T-DLV", "P-1", "无头会话")
+        matches = payload(rec)["recall"]["matches"]
+        bound = self.bind_adopt_all(payload(rec)["recall"]["recall_id"], "T-DLV", matches)
+        binding_id = payload(bound)["binding"]["binding_id"]
+        drifted = '{"family": "claude-p-lessons", "version": 1, "被": "篡改成新内容"}'
+        forged = hashlib.sha256(drifted.encode("utf-8")).hexdigest()
+        db = self.rt / "workbench.db"
+        conn = sqlite3.connect(db)
+        conn.execute(
+            "UPDATE learning_assets SET payload = ?, sha256 = ? WHERE asset_id = ?",
+            (drifted, forged, asset["asset_id"]))
+        conn.commit()
+        conn.close()
+        ran = self.learn_run(binding_id, "precheck", "passed", "T-DLV")
+        self.assertEqual(ran.returncode, 1, ran.stdout + ran.stderr)
+        self.assertIn("binding_version_changed", ran.stdout)
 
     def test_read_path_recomputes_sha256_tamper_blocked(self) -> None:
         """C5/C10：读取即重算摘要复核；账本被手改必须暴露，不静默。"""
