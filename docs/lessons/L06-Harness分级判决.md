@@ -51,7 +51,7 @@ blocking / observing 标注；【现查】= 按客户真理调整后的口径。
 2. **实现转绿**：`evals/harness.py`（`run(entries, *, suite, names, report_path)`，x 模式写报告不覆盖）+ `evals/report_contract.py` → 合同套件绿。
 3. **缺陷基线**：`.runtime/course/L06-defect-baseline/`（锚点唯一性校验植入 CSV `{row['available']}`→`{row['on_hand']}`；脚本自检：查询 5、CSV 8）+ 假绿辨别力探针（暂存换入 blocking_failed=0 变体 → 合同套件红 → 恢复；探针目录留痕不删，S02"实现暂存重采真红"先例）。
 4. **可信红**：统一运行器收口登记项跑缺陷 clone → `decision: block`、退出 1、库存项定位「查询 5、CSV 8」（同命令 capture，红相位）。
-5. **修业务**：clone 内 `flowerp/service.py` export 恢复正确口径（一行）→ diff 落账 → **同一条命令**绿：三 blocking 绿 + 教学观察告警 + `decision: pass`、退出 0。
+5. **修业务**：clone 内 `flowerp/service.py` export 恢复正确口径（一行）→ diff 落账 → **同一条命令**绿：四 blocking 绿 + 教学观察告警 + `decision: pass`、退出 0。
 6. **迁移 + 盲区探针**：13/4→9、10 拒（observation 相位，L05 C6 同款）；盲区探针（C7，客户 eval 绿×2、口径检查红）。
 7. **收口**：全量 unittest 绿、`workbench-status` 复核、C6 指纹复核、`code-review` 双轴 → 修复轮（若有）→ **具名验收 → `git merge --no-ff lesson-06`** → roadmap。执行期经 `/mattpocock-skills:implement`（用户显式，到点停下提醒）。
 
