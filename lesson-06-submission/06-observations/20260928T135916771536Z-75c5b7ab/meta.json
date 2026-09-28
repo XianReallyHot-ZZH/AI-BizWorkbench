@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    ".venv/bin/python -X utf8 -m workbench.cli workbench-status --runtime-dir .runtime/course/L01-workbench --require-project PERSONAL-WORKBENCH --require-task CASE-WB-L06-001 --require-red-green-evidence | python3 -c \"import json,sys; d=json.load(sys.stdin); print(json.dumps({k:d.get(k) for k in (\\\"ok\\\",\\\"evidence_complete\\\",\\\"acceptance\\\",\\\"errors\\\")}, ensure_ascii=False))\""
+  ],
+  "command": "[\"sh\", \"-c\", \".venv/bin/python -X utf8 -m workbench.cli workbench-status --runtime-dir .runtime/course/L01-workbench --require-project PERSONAL-WORKBENCH --require-task CASE-WB-L06-001 --require-red-green-evidence | python3 -c \\\"import json,sys; d=json.load(sys.stdin); print(json.dumps({k:d.get(k) for k in (\\\\\\\"ok\\\\\\\",\\\\\\\"evidence_complete\\\\\\\",\\\\\\\"acceptance\\\\\\\",\\\\\\\"errors\\\\\\\")}, ensure_ascii=False))\\\"\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T13:59:16.771536+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/06-observations/20260928T135916771536Z-75c5b7ab/output.txt",
+  "sha256": "09866b714582e26273e628e51bf5dab4b9d36757ad717177573bfc3aeace0f87",
+  "provenance": "local_teaching_capture"
+}

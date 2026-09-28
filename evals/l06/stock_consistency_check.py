@@ -70,8 +70,10 @@ def run(opening: int, reserved: int) -> int:
         if any(value != wanted for value in observed.values()):
             return fail("AC-AVAILABLE", {"wanted": wanted}, observed)
 
-        before = snapshot(store)
         excessive = service.create_order("超额订单", [OrderLine(sku, expected + 1, 100)], "order-B")
+        # 快照拍在草稿单创建之后：建单是合法写入，被拒绝的是预占——拒绝必须零变动
+        # （上游冻结检查同语义；首版拍在建单前，被干净候选绿腿抓获，失败现场封存留痕）。
+        before = snapshot(store)
         try:
             service.reserve_order(excessive["id"])
         except InsufficientStock:

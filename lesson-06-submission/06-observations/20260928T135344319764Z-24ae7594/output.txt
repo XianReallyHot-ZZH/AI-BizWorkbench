@@ -1,0 +1,1 @@
+{"defect_live": true, "query_available": 5, "csv_available": 8}

@@ -1,0 +1,15 @@
+{
+  "phase": "green",
+  "argv": [
+    "sh",
+    "-c",
+    "echo \"target: $L06_EVAL_TARGET\" && exec .venv/bin/python -X utf8 -m evals.l06.checks --no-report"
+  ],
+  "command": "[\"sh\", \"-c\", \"echo \\\"target: $L06_EVAL_TARGET\\\" && exec .venv/bin/python -X utf8 -m evals.l06.checks --no-report\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-28T13:54:22.601087+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/05-green/20260928T135422601087Z-93b27034/output.txt",
+  "sha256": "1d95bac150c7ad6685e8efde3d35c306ab1514693b595f3a7af077595ca72ea6",
+  "provenance": "local_teaching_capture"
+}

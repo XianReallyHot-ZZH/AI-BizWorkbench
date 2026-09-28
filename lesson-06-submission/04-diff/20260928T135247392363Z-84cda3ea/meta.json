@@ -1,0 +1,17 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "diff",
+    "--",
+    "evals/harness.py",
+    "evals/report_contract.py"
+  ],
+  "command": "[\"git\", \"diff\", \"--\", \"evals/harness.py\", \"evals/report_contract.py\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T13:52:47.392363+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/04-diff/20260928T135247392363Z-84cda3ea/output.txt",
+  "sha256": "eac006f88329f35aed78ad8e4632127c401b09bfff2037bfce6f861d26d7b624",
+  "provenance": "local_teaching_capture"
+}

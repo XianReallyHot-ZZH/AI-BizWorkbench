@@ -1,0 +1,22 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "evals/l06/stock_consistency_check.py",
+    "--target",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate",
+    "--opening",
+    "13",
+    "--reserved",
+    "4"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"evals/l06/stock_consistency_check.py\", \"--target\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate\", \"--opening\", \"13\", \"--reserved\", \"4\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T13:56:17.426931+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/06-observations/20260928T135617426931Z-16bebfde/output.txt",
+  "sha256": "5d9a5e147b25d528039ffbb8d29e3b828a5e41d9ba15c2d008189a20dbcc55e6",
+  "provenance": "local_teaching_capture"
+}

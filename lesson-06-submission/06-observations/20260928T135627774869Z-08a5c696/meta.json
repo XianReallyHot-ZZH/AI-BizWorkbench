@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    "cd .runtime/course/L06-defect-baseline && pwd && exec .venv/bin/python -X utf8 -m eval.harness --case inventory_export_is_stable --no-report"
+  ],
+  "command": "[\"sh\", \"-c\", \"cd .runtime/course/L06-defect-baseline && pwd && exec .venv/bin/python -X utf8 -m eval.harness --case inventory_export_is_stable --no-report\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 126,
+  "observed_at": "2026-09-28T13:56:27.774869+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/06-observations/20260928T135627774869Z-08a5c696/output.txt",
+  "sha256": "5132ed7073b57f898ee12d147a714b1980d3ad421e04c461d1250d94d4589823",
+  "provenance": "local_teaching_capture"
+}
