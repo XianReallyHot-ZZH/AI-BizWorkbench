@@ -1,0 +1,18 @@
+test_l06_eval_harness (unittest.loader._FailedTest.test_l06_eval_harness) ... ERROR
+
+======================================================================
+ERROR: test_l06_eval_harness (unittest.loader._FailedTest.test_l06_eval_harness)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_l06_eval_harness
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/anaconda3/envs/AICoding-ZeroToOne/lib/python3.13/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l06_eval_harness.py", line 25, in <module>
+    from evals.harness import run
+ModuleNotFoundError: No module named 'evals.harness'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)
