@@ -95,3 +95,13 @@ _Avoid_: ERP 绿灯
 **执行器 (Executor)**:
 受工作台合同约束、代为修改代码的 AI CLI。本仓库现为 Claude Code。
 _Avoid_: Agent（保留给课程里的 agent/ 模块概念）、模型
+
+**记忆系统 (Memory system)**:
+工作台三件套之一：把已验收任务的经验提炼为带证据引用的条目，经具名审核后按项目召回、逐项采用并复验，失效不删除只状态迁移。条目四状态 candidate/active/superseded/revoked；内容与采用快照只追加，状态变更不改写历史快照；检索不到如实为空。
+_Avoid_: 记忆库（泛称）、知识库
+
+**记忆条目 (Memory asset)**:
+带来源证据引用与适用边界的可复用经验（memory 类）或流程（workflow 类，待建设）。
+
+**采用快照 (Adoption binding)**:
+一次交付对某版本记忆全文的封存引用（BIND），执行前后复验防漂移；一次交付最多绑定一条。
