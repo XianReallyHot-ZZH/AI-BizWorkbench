@@ -104,14 +104,25 @@ def _memory_view(conn: sqlite3.Connection) -> dict:
 
 
 def _task_view(conn: sqlite3.Connection, task: dict) -> dict:
-    """任务行投影：证据/执行记录只留账面事实与摘要列，正文快照不进看板。"""
-    chain_error = _chain_error(task["evidence"])
+    """任务行投影：证据/执行记录只留账面事实与摘要列，正文快照不进看板。
+
+    链语义三态（验收期发现修正，2026-09-28）：有证据相位才谈锚定——
+    applicable=True 时 anchored/error 按 _chain_error；evidence 0 相位（L04+
+    执行/复核模型或纯载体任务）标 applicable=False「不走证据链」，
+    从未有过链不得报「失锚」，也不拉低全账判定。
+    """
+    if task["evidence"]:
+        chain_error = _chain_error(task["evidence"])
+        chain = {"applicable": True, "anchored": chain_error is None,
+                 "error": chain_error}
+    else:
+        chain = {"applicable": False, "anchored": False, "error": None}
     return {
         "task_id": task["task_id"],
         "request": task["request"],
         "state": _task_state(conn, task["task_id"]),
         "phases": [record["phase"] for record in task["evidence"]],
-        "chain": {"anchored": chain_error is None, "error": chain_error},
+        "chain": chain,
         "evidence": [{
             "record_id": record["record_id"], "phase": record["phase"],
             "command_text": record["command_text"],
@@ -140,18 +151,17 @@ def collect_data(conn: sqlite3.Connection) -> dict:
     row = conn.execute("SELECT * FROM workbench WHERE id = 1").fetchone()
     projects = _load_projects(conn)
     digest_errors = _digest_problems(projects)
-    all_anchored = True
     project_views = []
+    applicable_chains = []
     for project in projects:
         task_views = [_task_view(conn, task) for task in project["tasks"]]
-        all_anchored = all_anchored and all(
-            task["chain"]["anchored"] for task in task_views)
+        applicable_chains += [task["chain"] for task in task_views
+                              if task["chain"]["applicable"]]
         project_views.append({
             "project_id": project["project_id"], "name": project["name"],
             "path": project["path"], "purpose": project["purpose"],
             "created_at": project["created_at"], "tasks": task_views,
         })
-    task_count = sum(len(p["tasks"]) for p in project_views)
     return {
         "ok": True,
         "flowerp_connected": FLOWERP_CONNECTED,
@@ -163,7 +173,10 @@ def collect_data(conn: sqlite3.Connection) -> dict:
         },
         # 信用内核词面：验收动作不进面板，恒待人签（无按钮，只显示待人工具名）。
         "acceptance": "pending_human_review",
-        "evidence_complete": bool(task_count) and all_anchored and not digest_errors,
+        # 只统计走证据链的任务；全走执行/复核模型的账本没有链可完整性可言。
+        "evidence_complete": (bool(applicable_chains)
+                              and all(c["anchored"] for c in applicable_chains)
+                              and not digest_errors),
         "errors": digest_errors,
         "limitations": list(LIMITATIONS),
         "projects": project_views,
@@ -197,6 +210,8 @@ def _table(headers: list[str], rows: list[list]) -> str:
 
 
 def _chain_badge(chain: dict) -> _Safe:
+    if not chain["applicable"]:
+        return _Safe('<span class="na">不走证据链</span>')
     if chain["anchored"]:
         return _Safe('<span class="ok">锚定完整</span>')
     return _Safe(f'<span class="bad">失锚：{_esc(chain["error"])}</span>')
@@ -296,7 +311,7 @@ table {{ border-collapse: collapse; width: 100%; margin: .6rem 0 1.2rem; font-si
 th, td {{ border: 1px solid #d8d8e2; padding: .35rem .5rem; text-align: left; vertical-align: top; }}
 th {{ background: #f0f0f7; }}
 td.empty, p.empty {{ color: #777; }}
-.ok {{ color: #14691b; }} .bad {{ color: #a11515; }}
+.ok {{ color: #14691b; }} .bad {{ color: #a11515; }} .na {{ color: #777; }}
 .banner {{ background: #f0f0f7; padding: .6rem .9rem; border-left: 4px solid #556; }}
 code {{ background: #f0f0f7; padding: 0 .3rem; }}
 footer {{ margin-top: 3rem; color: #666; font-size: .8rem; }}

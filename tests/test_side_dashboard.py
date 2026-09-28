@@ -10,6 +10,7 @@ C4     → test_screen_tasks_chain_shows_phases_and_anchor → 红绿链任务�
 C4     → test_screen_executions_and_reviews → 执行记录与具名复核入屏；任务状态 accepted
 C4     → test_screen_memory_assets → S01 记忆五表真数据入屏（candidate 资产 + 事件）
 C4复查补全 → test_screen_identity_and_four_sections → 身份屏 HTML 专测（四 section 齐全 + owner/判定/边界声明）
+验收期发现 → test_chain_not_applicable_without_evidence_records → 无证据相位的任务不报「失锚」标不走证据链，且不拉低全账判定
 C5     → test_stdlib_only_imports → 全 AST imports ⊆ 标准库白名单 + canary 自证可失败
 C6     → test_binds_loopback_and_explicit_port → --port 显式无 --host；源码回环 + lsof 运行时监听实测
 
@@ -342,6 +343,29 @@ class DashboardContractTest(unittest.TestCase):
         self.assertIn("same_command_red_diff_green_missing",
                       tasks["T-BROKEN"]["chain"]["error"])
         self.assertEqual(tasks["T-CHAIN"]["state"], "no_execution")
+
+    def test_chain_not_applicable_without_evidence_records(self) -> None:
+        """验收期发现·链语义：从未有证据链的任务不得标「失锚」。
+
+        L04+ 任务验证在执行/复核记录（evidence 表 0 相位），标失锚=把没丢的
+        链报成丢了；且不适用者不得拉低全账判定（主账真数据曾因此误判 false）。
+        """
+        self.init_workbench()
+        self.plain_task("T-PLAIN")   # 无记录无执行
+        self.accept_task("T-EXEC")   # 验证全在执行/复核，evidence 0 相位
+        self.chain_task("T-CHAIN")   # 一条完整证据链
+        port = free_port()
+        self.start_dashboard(port)
+        data = self.get_json(port)
+        tasks = {t["task_id"]: t for p in data["projects"] for t in p["tasks"]}
+        for task_id in ("T-PLAIN", "T-EXEC"):
+            self.assertIs(tasks[task_id]["chain"]["applicable"], False, task_id)
+            self.assertIsNone(tasks[task_id]["chain"]["error"], task_id)
+        self.assertIs(tasks["T-CHAIN"]["chain"]["applicable"], True)
+        self.assertIs(tasks["T-CHAIN"]["chain"]["anchored"], True)
+        self.assertIs(data["evidence_complete"], True)  # 不走的链不拉低全账判定
+        _, html_text = http_request("GET", port, "/")
+        self.assertIn("不走证据链", html_text)
 
     def test_screen_executions_and_reviews(self) -> None:
         """C4·执行与复核：执行记录 + 具名复核入屏，状态派生 accepted。"""
