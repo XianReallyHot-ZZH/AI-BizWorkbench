@@ -36,6 +36,10 @@ def build_parser() -> argparse.ArgumentParser:
     from .execution import register_commands as register_execution_commands
 
     register_execution_commands(REGISTRY)
+    # S01 支线：记忆系统七命令经同一条缝注册（适配器在 workbench/learning.py，复用 bootstrap 存储入口）。
+    from .learning import register_commands as register_learning_commands
+
+    register_learning_commands(REGISTRY)
     for register in REGISTRY.values():
         register(subparsers)
     return parser
