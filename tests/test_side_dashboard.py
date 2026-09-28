@@ -130,6 +130,9 @@ class DashboardContractTest(unittest.TestCase):
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait(timeout=10)
+        for stream in (proc.stdout, proc.stderr):
+            if stream:
+                stream.close()
 
     def get_json(self, port: int) -> dict:
         status, body = http_request("GET", port, "/?format=json")
@@ -241,6 +244,7 @@ class DashboardContractTest(unittest.TestCase):
         status, body = http_request("GET", port, "/?format=json")
         self.assertEqual(status, 200, body)
         self.assertEqual(json.loads(body)["acceptance"], "pending_human_review")
+        self.assertIs(json.loads(body)["evidence_complete"], True)  # 全链任务 → 全账判定完整
         for method in ("POST", "PUT", "DELETE"):
             status, body = http_request(method, port, "/")
             self.assertEqual(status, 405, f"{method} 应被拒（405），实得 {status}")
@@ -261,9 +265,10 @@ class DashboardContractTest(unittest.TestCase):
         conn = sqlite3.connect(self.rt / "workbench.db")
         try:
             db_tasks = conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
-            db_phases = dict(conn.execute(
-                "SELECT task_id, GROUP_CONCAT(phase, ',') FROM evidence GROUP BY task_id"
-            ).fetchall())
+            db_phases: dict[str, list[str]] = {}
+            for task_id, phase in conn.execute(
+                    "SELECT task_id, phase FROM evidence ORDER BY record_id"):
+                db_phases.setdefault(task_id, []).append(phase)
         finally:
             conn.close()
         tasks = [t for p in data["projects"] for t in p["tasks"]]
@@ -271,9 +276,9 @@ class DashboardContractTest(unittest.TestCase):
         by_id = {t["task_id"]: t for t in tasks}
         self.assertEqual({t["task_id"] for t in tasks}, set(db_phases))
         for task_id, phases in db_phases.items():
-            self.assertEqual(by_id[task_id]["phases"], phases.split(","))
+            self.assertEqual(by_id[task_id]["phases"], phases)
         self.assertEqual(data["acceptance"], "pending_human_review")
-        self.assertIs(data["evidence_complete"], True)  # T-BROKEN 断链但 T-CHAIN 全链 → 全账判定
+        self.assertIs(data["evidence_complete"], False)  # T-BROKEN 断链如实拉低全账判定
         self.assertEqual(data["workbench"]["owner"], OWNER_A)
 
     def test_missing_runtime_dir_fails_with_json_contract(self) -> None:
@@ -339,8 +344,7 @@ class DashboardContractTest(unittest.TestCase):
     def test_screen_executions_and_reviews(self) -> None:
         """C4·执行与复核：执行记录 + 具名复核入屏，状态派生 accepted。"""
         self.init_workbench()
-        self.plain_task("T-DLV")
-        self.accept_task("T-DLV")
+        self.accept_task("T-DLV")  # run_task 内含建任务（同 test_side_memory 先例）
         port = free_port()
         self.start_dashboard(port)
         data = self.get_json(port)
