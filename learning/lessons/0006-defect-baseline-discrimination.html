@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0006 · 缺陷基线：让检查自证清白</title>
+<link rel="stylesheet" href="../assets/course.css">
+<script defer src="../assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="kicker">Lesson 0006 · L05 复盘</div>
+  <h1>缺陷基线：让检查自证清白</h1>
+  <div class="subtitle">检查器辨别力三问 —— 全部素材取自你今天刚验收的 L05：无效探针、两连红、盲区实验、裸断言口径，没有一个是教学虚构</div>
+</header>
+
+<h2 id="why">为什么补这一课</h2>
+<p>0004 课留的引子——<strong>「检查器自己会错吗」</strong>——你今天验收的 L05 就是正式回答。但这一课不是复述讲义：L05 执行期真实发生了一次翻案（讲义定稿被探针推翻重写），翻案本身恰恰是本课最好的教材。学完的标准：下次任何人对你说「检查都过了」，你能在三十秒内问出三个让绿灯自证清白的问题。</p>
+<div class="callout"><span class="label">先看一个对照</span>两份报告，都是绿的：<strong>报告甲</strong>——对干净候选跑检查，通过；<strong>报告乙</strong>——对干净候选跑检查，通过，且同一检查对已知坏版本连跑两次都报红。哪份证明检查<strong>有辨别力</strong>？甲只证明了「没报错」——它甚至可能根本没读到要害（今天真的发生了，见故事①）。乙才证明了「能抓住错」。上游 L05 辅导资料 §3 的原话：<em>「检查在正确程序上通过，只能说明它没有报错。」</em></div>
+
+<h2 id="three">机制：辨别力三问</h2>
+<p>一份绿灯要自证清白，验收人依次问三个问题。每个问题对应 L05 的一道实证工序，缺一环，绿灯的效力就降一级：</p>
+<table>
+  <tr><th>三问</th><th>问的是什么</th><th>L05 的实证工序</th><th>缺了会怎样</th></tr>
+  <tr><td>①检查谁？<br>（被测路径）</td><td>检查真的跑在它声称检查的实现上吗</td><td>验证缺陷生效：打补丁后 on_hand 5→10、流水不重复，自检输出在案</td><td>缺陷打在检查够不着的层上，红绿全是空转（故事①真实上演）</td></tr>
+  <tr><td>②抓得到吗？<br>（缺陷基线）</td><td>对<strong>已知带缺陷</strong>的版本，检查是否稳定报红</td><td>同一命令对缺陷基线连跑两次，均 <code>[BLOCK]</code> rc=1（record 44/45）</td><td>通过≠能抓错：可能检查太松、可能压根没执行到要害</td></tr>
+  <tr><td>③对什么盲？<br>（盲区对照）</td><td>检查读不到的状态里，藏着哪些它能放行的错</td><td>账面重写实验：删旧流水键、写新键、库存返回正确——客户 eval 绿×2，驱动红（record 51）</td><td>盲区被当成「已覆盖」，绿报告的效力被高估（C7 留痕就是防这个）</td></tr>
+</table>
+<div class="callout"><span class="label">本课核心判断</span>辨别力不是检查的属性，是<strong>检查×被测物</strong>这对关系的属性。同一个检查，对「重试再次入账」有辨别力（库存变了它就读得出来），对「账面重写」全盲（它从不读流水）。所以问「这个检查好不好」没有意义，要问「这个检查对<strong>哪一类</strong>错有辨别力」——而上游的验收标准把它钉成了一句可操作的话：<em>「缺陷基线连续运行两次均失败；失败信息能够定位到具体要求。」</em></div>
+
+<h2 id="stories">四个真实故事</h2>
+
+<h3>① 无效探针：事实为真，层是错的（为什么第一问是「检查谁」）</h3>
+<p>讲义定稿 v1 现查过：客户 <code>receive</code> 已幂等，引用 <code>inventory.py:102</code>——<strong>这个事实完全为真</strong>。缺陷基线就照这条引用，把「重试多写流水」补丁打进了那一层。结果：客户 eval 连跑两次<strong>仍然绿</strong>。再查流水表：0 行。</p>
+<p>真相：同一仓库里有两层幂等实现。eval 的用例走的是门面 <code>ERPService.receive_stock</code>（<code>service.py:150</code>，读写 <code>inventory_events</code>/<code>stock</code> 表），<code>inventory.py:102</code> 的 <code>InventoryService.receive</code>（<code>stock_moves</code>/<code>stock_balance</code> 层）<strong>它根本不经过</strong>。补丁打在检查不可达的层上，缺陷从未被触发，绿是货真价实的绿——也是毫无意义的绿。这次翻案把讲义推进到 v2：缺陷改打门面重放分支（重试再次入账），探针实证后才动工。</p>
+<div class="callout"><span class="label">验收人用法</span>「引用路径为真」和「被测路径为真」是两件事。看到证据账里写「X 已实现，位置在 F:L」，验收时多问一句：<strong>检查运行时真的会走到 F:L 吗？</strong>——本仓库的教训已经写进记忆：现查要查到被测路径级，代码阅读推断不算证据，动手前用探针实证。</div>
+
+<h3>② 两连红：两个「干净」和一个「同命令」</h3>
+<p>缺陷基线立起来之后，为什么非要<strong>连跑两次</strong>、还强调<strong>每次从相同干净数据开始</strong>？上游 §3 给了精确理由：<em>「若第二次沿用第一次污染的数据，失败可能只是残留状态造成的，无法做同样的判断。」</em>客户 eval 每次自建临时库，天然满足「干净」；连跑两次排除的是偶发（环境抖动、时序运气）。L05 的两条红（record 44/45，rc=1，<code>[BLOCK]</code>）+ 中间一条 diff（缺陷补丁，record 46）+ 一条绿（真实候选，record 48），构成完整链。</p>
+<p>还有一处容易看漏的设计：<strong>红与绿是同一条命令</strong>。命令串逐字节相同（<code>cd "$L05_EVAL_TARGET" &amp;&amp; pwd &amp;&amp; exec …</code>），变的只是环境变量指向的树——红在缺陷基线，绿在真实候选。输出里的 <code>pwd</code> 行、封存的 argv、证据账三重披露。这正是 0001 课「同命令红绿」规则在本讲的变体：<strong>变的必须只有被测物，命令本身一个字都不能动</strong>——否则你无法排除「绿是换个跑法跑出来的」。</p>
+
+<h3>③ 盲区实验：绿灯的边界要亲手量出来</h3>
+<p>客户 eval 对「重试再次入账」报红——好。那它对别的坏法呢？造第四个探针：<strong>删掉原流水键、写入新键 <code>receipt:001-rewritten</code>，库存返回保持正确</strong>。业务上这比双入账更阴险：账面被重写了，数字却看不出问题。上游 §2 早就预言这类反例：<em>「删掉一条旧流水、再多写一条新流水，数量没变，账却变了。」</em></p>
+<p>实测：客户 eval 绿×2（它只断言返回值 <code>on_hand</code> 和 <code>idempotent_replay</code>，从不读 <code>inventory_events</code>）；同一棵树上，场景驱动一跑就红——<code>{"step": "replay-ledger", "expected": "库存与流水均不变", "actual": "重放改变了账面"}</code>。这就是三问的第三问：<strong>盲区不是缺陷，是边界</strong>——前提是它被如实写进证据账（L05 的 C7 留痕），而不是被绿报告盖住。为什么本讲不顺手给客户 eval 补上流水断言？因为那是改客户的检查——留待检查点显式采纳，本讲只留痕。</p>
+
+<h3>④ 裸断言：失败信息能定位到哪一层</h3>
+<p>上游验收标准还有后半句：「失败信息<strong>能够定位到具体要求</strong>」。L05 的红灯输出长这样：</p>
+<pre><code>[BLOCK] receiving_is_idempotent    122 ms  AssertionError:
+{"total": 1, "passed": 0, "blocking_failed": 1, "decision": "block"}</code></pre>
+<p>断言消息是空的——客户用例用的是裸 <code>assert</code>，而 harness 的 error 载荷只有 <code>{"type", "message"}</code>，<strong>任何输出、任何报告都不会包含断言表达式本身</strong>。复查轮抓到证据账初版误称「traceback 行在场」，已纠正。最终口径是定位三件套：用例名（<code>receiving_is_idempotent</code>，名字即要求）+ <code>[BLOCK]</code> 行 + 数值级定位由 observing 驱动承载（<code>expected on_hand 28 / actual 36</code> + 要求逐字文本）。顺带的收获：给客户 eval 加消息文本=改客户检查=违 D1，所以定位缺口用<strong>分层补足</strong>解决，而不是改检查凑口径。</p>
+
+<h2 id="verify">亲手复验（对真实资产，先预测再运行）</h2>
+<p>老规矩。①是讲义 §4 人审清单的原话「亲手跑 C3 两连红命令」，缺陷基线还在 <code>.runtime</code> 里，随便跑：</p>
+<pre><code># ① 预测：输出会是什么形状？退出码？
+cd .runtime/course/L05-defect-baseline
+/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 \
+  -m eval.harness --case receiving_is_idempotent --no-report; echo "rc=$?"
+
+# ② 预测：红绿链四行的相位和退出码各是什么？
+sqlite3 "file:$PWD/../../.runtime/course/L01-workbench/workbench.db?mode=ro" \
+  "SELECT record_id,phase,returncode FROM evidence WHERE task_id='CASE-WB-L05-001'
+   AND phase IN ('red','diff','green') ORDER BY record_id"
+
+# ③ 预测：这行哈希和证据账 C5 写的指纹一致吗？
+shasum -a 256 ../../.runtime/course/L05-candidate/eval/harness.py</code></pre>
+<p>对答案：① <code>[BLOCK] receiving_is_idempotent … AssertionError:</code> + <code>"decision": "block"</code> + rc=1（注意消息为空，这是故事④的口径，不是坏了）；② 44 red 1 / 45 red 1 / 46 diff 0 / 48 green 0——两红夹一 diff 后一绿；③ <code>e2f526b6…</code>，与 <a href="../../docs/replication/evidence/L05.md">L05.md</a> C5 行逐字符一致。三条全中，辨别力三问你就有了手感。</p>
+
+<h2 id="quiz">判分测验（4 题，答错不算失败，算定位）</h2>
+<div id="quiz-root"></div>
+
+<h2 id="next">下一步</h2>
+<ul>
+  <li>主线下一站：<strong>L06 Harness 分级汇总</strong>——本讲的三问会升级：多项检查怎么分级、汇总、不互相冒充。注意 D3 裁决：eval.harness 待建设项是 L06 正题，本讲刻意没抢跑。</li>
+  <li>复验块做完，<a href="../reference/0001-workbench-cheatsheet.html">cheatsheet</a> v2 待办可顺手清（L04 三命令+状态机+记忆七命令）。</li>
+  <li><strong>有问题随时问你的老师（我）</strong>：四个探针的完整输出、v1→v2 翻案全程、或任何一段想展开的代码。</li>
+</ul>
+<p>延伸阅读（一手来源）：上游 <a href="../../vendors/CodexFDE/docs/courses/L05/辅导资料.md">L05 辅导资料</a>（§3 缺陷基线、§4 冻结、§5 迁移为本课知识主干）· 讲义定稿 v2 <a href="../../docs/lessons/L05-失败优先Eval.md">L05-失败优先Eval.md</a>（§5 两级裁决记录=翻案全程）· 证据账 <a href="../../docs/replication/evidence/L05.md">L05.md</a>（四个故事的全部门令牌）。</p>
+<p>相关课：<a href="0001-evidence-chain-judgement.html">0001 链判定</a>（同命令红绿的原始规则）· <a href="0003-rules-behavior-proof.html">0003 规则生效的证明</a>（盲区实验是 N0/N1 对照归因的近亲）· <a href="0004-controlled-execution.html">0004 受控执行</a>（引子出处）</p>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  mountQuiz("quiz-root", [
+    {
+      scenario: "检查在正确程序上全部通过，为什么还证明不了它有辨别力？",
+      options: [
+        { text: "通过只说明未报错，能否抓错须喂已知坏版本", correct: true,
+          why: "对。这就是上游 §3 的原话逻辑：通过只排除「误报」，辨别力要靠缺陷基线证明「不漏报」。两件事方向相反。" },
+        { text: "检查器运行耗时太短，未能覆盖核心业务分支", correct: false,
+          why: "耗时与覆盖面是另一类问题（覆盖不足），而辨别力缺失时检查可以跑得很慢很全照样抓不到错。" },
+        { text: "正确程序上的通过只会被记账为观察而非证据", correct: false,
+          why: "通过确实是证据——证明的是「不误报」这半边。错在把「半边证据」当成了「全部证明」，不是把它逐出证据。" },
+        { text: "辨别力只能由上游合同宣示，无法由运行证明", correct: false,
+          why: "恰好相反——本课全部内容就是辨别力的运行时证明工序：缺陷基线两连红就是它的机器证据。" }
+      ]
+    },
+    {
+      scenario: "v1 讲义把「重试多写流水」补丁打在 inventory.py:102，客户 eval 连跑两次仍绿。最可能的解释？",
+      options: [
+        { text: "补丁所在层不在该检查的实际被测路径上", correct: true,
+          why: "对。eval 走门面 service.py:150（inventory_events/stock 表），inventory.py 那层它根本不经过——缺陷从未被触发。" },
+        { text: "补丁逻辑写错，缺陷从未真正触发过生效", correct: false,
+          why: "症状像，但归因错了：补丁逻辑本身没问题（同一补丁形状在正确层上一打就红），错的是打的层。" },
+        { text: "检查器读了流水表，但断言条件写得过松", correct: false,
+          why: "它压根没读流水表——断言只有返回值的 on_hand 和 idempotent_replay。「过松」的前提是读到了。" },
+        { text: "依赖缺失也会失败，但检查未执行到收货", correct: false,
+          why: "上游确实警告过环境错误会伪装失败——但这里是稳定地绿（rc=0），不是失败，所以排除环境伪装。" }
+      ]
+    },
+    {
+      scenario: "缺陷基线两连红，为什么要求每次从相同的干净数据开始？",
+      options: [
+        { text: "污染数据上的失败可能只是残留状态所致", correct: true,
+          why: "对。上游 §3 原文：第二次沿用污染数据时，「失败可能只是残留状态造成的，无法做同样的判断」。" },
+        { text: "干净数据让检查运行更快，节省执行时间", correct: false,
+          why: "两连红与性能无关——多跑一次恰恰是花更多时间买稳定性，不是为了省。" },
+        { text: "两次失败就能排除检查的一切随机性干扰", correct: false,
+          why: "两次失败排除的是数据残留这条特定混淆，不是「一切随机性」——把结论说满就错了。" },
+        { text: "账本只追加，脏数据会永久污染整条链路", correct: false,
+          why: "客户 eval 每次自建临时库，根本不进账本。「账本污染」答非所问。" }
+      ]
+    },
+    {
+      scenario: "L05 已冻结 eval 指纹，复查轮建议把驱动参数 new 改名 new_receipt——为什么最终不采纳？",
+      options: [
+        { text: "改冻结检查须单独说明并保留旧证据重建对照", correct: true,
+          why: "对。C5 的例外叙事成本（说明+旧结果保留+新对照）远超命名的收益——结论变化要能区分来自产品还是来自标准调整。" },
+        { text: "参数名属于实现细节，改名会破坏运行时兼容", correct: false,
+          why: "参数改名确实会动 CLI 形状，但这不是不采纳的理由——理由是冻结纪律，不是技术兼容。" },
+        { text: "驱动反正也还没合入主线，命名打磨推后再说", correct: false,
+          why: "驱动已经随 lesson-05 合入 master 了。事实前提就错——而且「以后再说」恰恰是冻结纪律要拦的随手改。" },
+        { text: "指纹算法对参数名并不敏感，改名不影响校验", correct: false,
+          why: "反了——驱动文件一改，sha256 必变，收口复核就会失败。指纹敏感的正是文件内容的每一个字节。" }
+      ]
+    }
+  ]);
+});
+</script>
+</body>
+</html>
