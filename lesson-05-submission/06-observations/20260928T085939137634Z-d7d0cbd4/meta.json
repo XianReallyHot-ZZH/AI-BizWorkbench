@@ -1,0 +1,23 @@
+{
+  "phase": "observation",
+  "argv": [
+    "shasum",
+    "-a",
+    "256",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/eval/harness.py",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/eval/cases.py",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/flowerp/service.py",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/eval/harness.py",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/eval/cases.py",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/flowerp/service.py",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/build_defect_baseline.py"
+  ],
+  "command": "[\"shasum\", \"-a\", \"256\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/eval/harness.py\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/eval/cases.py\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline/flowerp/service.py\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/eval/harness.py\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/eval/cases.py\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate/flowerp/service.py\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/receiving_scenario_check.py\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/evals/l05/build_defect_baseline.py\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T08:59:39.137634+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/06-observations/20260928T085939137634Z-d7d0cbd4/output.txt",
+  "sha256": "9f4b0c8dba900121e1d88bdfbe5c6834d1395c45b9c8bdb20f5a8dd05dbe5ed9",
+  "provenance": "local_teaching_capture"
+}

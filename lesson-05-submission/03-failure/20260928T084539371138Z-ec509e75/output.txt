@@ -1,0 +1,3 @@
+/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-defect-baseline
+[BLOCK] receiving_is_idempotent                122 ms  AssertionError: 
+{"total": 1, "passed": 0, "blocking_failed": 1, "observing_failed": 0, "decision": "block"}

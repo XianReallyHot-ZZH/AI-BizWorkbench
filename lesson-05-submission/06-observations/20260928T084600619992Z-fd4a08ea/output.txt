@@ -1,0 +1,1 @@
+{"case": "receiving_scenario", "status": "pass", "opening": 20, "receipt": 8, "new": 8, "on_hand_path": [20, 28, 28, 36], "ledger_path": [1, 2, 2, 3], "invalid_quantities_rejected": [0, -1]}

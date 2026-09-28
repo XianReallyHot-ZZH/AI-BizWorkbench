@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "flowerp_connected": false,
+  "execution": {
+    "task_id": "CASE-WB-L05-001",
+    "mode": "verify",
+    "workspace": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate",
+    "write_scope": [],
+    "executor_command": null,
+    "executor_prompt": "",
+    "eval_command": [
+      "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python",
+      "-X",
+      "utf8",
+      "-m",
+      "eval.harness",
+      "--case",
+      "receiving_is_idempotent",
+      "--no-report"
+    ],
+    "returncode": null,
+    "timed_out": false,
+    "stdout_text": "",
+    "stderr_text": "",
+    "changed_files": [],
+    "out_of_scope_files": [],
+    "change_manifest": [],
+    "diff_text": "",
+    "eval_returncode": 0,
+    "eval_output_text": "[PASS ] receiving_is_idempotent                129 ms  重复入库键只生效一次\n{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}\n",
+    "eval_timed_out": false,
+    "status": "verify_completed",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "eval_output_sha256": "b47ba2d65890280068d6ebe82096a94cc3112933ec67a911c1ee9a6cdef6fa94",
+    "execution_id": 5,
+    "actor": "Claude",
+    "observed_at": "2026-09-28T08:46:02+00:00"
+  },
+  "task_state": "review"
+}
