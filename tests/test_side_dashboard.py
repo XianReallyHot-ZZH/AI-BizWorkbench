@@ -9,8 +9,9 @@ C3     → test_old_ledger_missing_tables_degrade_to_empty → 老账本缺 V0/�
 C4     → test_screen_tasks_chain_shows_phases_and_anchor → 红绿链任务锚定完整 + 断链任务如实报 missing 词面
 C4     → test_screen_executions_and_reviews → 执行记录与具名复核入屏；任务状态 accepted
 C4     → test_screen_memory_assets → S01 记忆五表真数据入屏（candidate 资产 + 事件）
-C5     → test_stdlib_only_imports → dashboard.py 顶层 imports ⊆ 标准库白名单 + workbench 内部模块
-C6     → test_binds_loopback_and_explicit_port → --help 有 --port 无 --host；源码绑 127.0.0.1 且无 0.0.0.0
+C4复查补全 → test_screen_identity_and_four_sections → 身份屏 HTML 专测（四 section 齐全 + owner/判定/边界声明）
+C5     → test_stdlib_only_imports → 全 AST imports ⊆ 标准库白名单 + canary 自证可失败
+C6     → test_binds_loopback_and_explicit_port → --port 显式无 --host；源码回环 + lsof 运行时监听实测
 
 被测缝（实现须与此一致，D1–D5 裁决）：
 - workbench-dashboard --runtime-dir DIR --port N（REGISTRY 注册缝；--port 显式必填，无 --host，恒绑 127.0.0.1）
@@ -33,6 +34,7 @@ import hashlib
 import http.client
 import json
 import shlex
+import shutil
 import socket
 import sqlite3
 import subprocess
@@ -373,25 +375,52 @@ class DashboardContractTest(unittest.TestCase):
         self.assertEqual(asset["family"], "claude-p-lessons")
         self.assertGreaterEqual(data["memory"]["events_count"], 1)
 
+    def test_screen_identity_and_four_sections(self) -> None:
+        """复查轮 C4 补全·身份与判定：四屏 section 齐全，身份屏有真实种子断言。"""
+        self.init_workbench()
+        self.chain_task("T-CHAIN")
+        port = free_port()
+        self.start_dashboard(port)
+        status, html_text = http_request("GET", port, "/")
+        self.assertEqual(status, 200, html_text)
+        for section in ("screen-tasks", "screen-executions", "screen-memory",
+                        "screen-identity"):
+            self.assertIn(f'id="{section}"', html_text)
+        self.assertIn(OWNER_A, html_text)                # 所有者具名入屏
+        self.assertIn("pending_human_review", html_text)  # 恒待人签，面板无验收动作
+        self.assertIn("evidence_complete", html_text)     # 全账判定词面在场
+        self.assertIn("完整性不等于验收完成", html_text)    # 能力边界声明入屏
+
     def test_stdlib_only_imports(self) -> None:
-        """C5：零依赖——dashboard.py 顶层 imports 全部落在标准库白名单内。"""
+        """C5：零依赖——dashboard.py 全 AST imports 落在标准库白名单内。
+
+        复查轮加固：ast.walk 扫全树（函数体内第三方 import 也逃不掉），并以内置
+        canary 自证该扫描对违规形状真实可失败（测试自身的失败路径）。
+        """
+
+        def collect_imports(source_text: str) -> list[str]:
+            imported: list[str] = []
+            for node in ast.walk(ast.parse(source_text)):
+                if isinstance(node, ast.Import):
+                    imported += [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    if node.level > 0:
+                        continue  # 相对导入 = workbench 内部模块，放行
+                    imported.append(node.module or "")
+            return imported
+
+        canary = "def sneaky():\n    import requests\n"
+        self.assertIn("requests",
+                      [n.split(".")[0] for n in collect_imports(canary)])
+
         source = (REPO_ROOT / "workbench" / "dashboard.py").read_text(encoding="utf-8")
-        tree = ast.parse(source)
-        imported: list[str] = []
-        for node in tree.body:
-            if isinstance(node, ast.Import):
-                imported += [alias.name for alias in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                if node.level > 0:
-                    continue  # 相对导入 = workbench 内部模块，放行
-                imported.append(node.module or "")
-        offenders = [name for name in imported
+        offenders = [name for name in collect_imports(source)
                      if name.split(".")[0] not in STDLIB_WHITELIST]
         self.assertEqual(offenders, [], f"越出白名单的导入：{offenders}")
-        self.assertTrue(imported, "白名单断言必须真实扫到 imports")
+        self.assertTrue(collect_imports(source), "白名单断言必须真实扫到 imports")
 
     def test_binds_loopback_and_explicit_port(self) -> None:
-        """C6：绑定安全——--port 显式必填、无 --host；源码恒绑 127.0.0.1，无 0.0.0.0。"""
+        """C6：绑定安全——--port 显式必填、无 --host；恒绑 127.0.0.1（源码 + 运行时双钉）。"""
         help_text = run_cli("workbench-dashboard", "--help")
         self.assertEqual(help_text.returncode, 0, help_text.stderr)
         self.assertIn("--port", help_text.stdout)
@@ -399,6 +428,15 @@ class DashboardContractTest(unittest.TestCase):
         source = (REPO_ROOT / "workbench" / "dashboard.py").read_text(encoding="utf-8")
         self.assertIn("127.0.0.1", source)
         self.assertNotIn("0.0.0.0", source)
+        # 运行时实测（复查轮加固）：lsof 看真实监听地址，绑空串/通配也逃不掉
+        self.assertTrue(shutil.which("lsof"), "lsof 不可用，无法实测监听地址")
+        self.init_workbench()  # 起服务前须有可用账本（启动快速失败合同）
+        port = free_port()
+        self.start_dashboard(port)
+        listing = subprocess.run(["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN"],
+                                 capture_output=True, text=True).stdout
+        self.assertIn(f"127.0.0.1:{port}", listing, f"未见回环监听：\n{listing}")
+        self.assertNotIn(f"*:{port}", listing, f"存在通配/对外监听：\n{listing}")
 
 
 if __name__ == "__main__":

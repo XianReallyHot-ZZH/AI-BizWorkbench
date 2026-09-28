@@ -175,24 +175,31 @@ def collect_data(conn: sqlite3.Connection) -> dict:
 # ---- 服务端渲染（纯函数；零 JS、零表单、零按钮——观察窗没有验收动作）--------
 
 
+class _Safe(str):
+    """已转义/可信 HTML 片段标记：_esc 对其放行，转义责任收口在 _table/_esc。"""
+
+
 def _esc(value) -> str:
+    if isinstance(value, _Safe):
+        return str(value)
     return html.escape(str(value))
 
 
-def _table(headers: list[str], rows: list[list[str]]) -> str:
+def _table(headers: list[str], rows: list[list]) -> str:
+    """单元格转义收口在此：调用点传原始值，漏转义不再可能。"""
     head = "".join(f"<th>{_esc(h)}</th>" for h in headers)
     if not rows:
         body = f'<tr><td colspan="{len(headers)}" class="empty">（此屏无记录）</td></tr>'
     else:
         body = "".join(
-            "<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>" for row in rows)
+            "<tr>" + "".join(f"<td>{_esc(cell)}</td>" for cell in row) + "</tr>" for row in rows)
     return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
 
 
-def _chain_badge(chain: dict) -> str:
+def _chain_badge(chain: dict) -> _Safe:
     if chain["anchored"]:
-        return '<span class="ok">锚定完整</span>'
-    return f'<span class="bad">失锚：{_esc(chain["error"])}</span>'
+        return _Safe('<span class="ok">锚定完整</span>')
+    return _Safe(f'<span class="bad">失锚：{_esc(chain["error"])}</span>')
 
 
 def _render_tasks_screen(data: dict) -> str:
@@ -201,10 +208,10 @@ def _render_tasks_screen(data: dict) -> str:
         rows = []
         for task in project["tasks"]:
             rows.append([
-                _esc(task["task_id"]), _esc(task["request"]),
-                _esc(task["state"]), _chain_badge(task["chain"]),
-                _esc("、".join(task["phases"]) or "—"),
-                _esc(len(task["evidence"])),
+                task["task_id"], task["request"],
+                task["state"], _chain_badge(task["chain"]),
+                "、".join(task["phases"]) or "—",
+                len(task["evidence"]),
             ])
         parts.append(f"<h3>{_esc(project['project_id'])}（{_esc(project['name'])}）</h3>"
                      + _table(["任务", "请求", "状态", "红绿链锚定", "相位", "记录数"], rows))
@@ -220,14 +227,14 @@ def _render_executions_screen(data: dict) -> str:
             if not task["executions"] and not task["reviews"]:
                 continue
             exec_rows = [[
-                _esc(e["execution_id"]), _esc(e["mode"]), _esc(e["status"]),
-                _esc(e["returncode"]), _esc(e["eval_returncode"]),
-                _esc("是" if e["timed_out"] else "否"), _esc(e["actor"]),
-                _esc(e["observed_at"]),
+                e["execution_id"], e["mode"], e["status"],
+                e["returncode"], e["eval_returncode"],
+                "是" if e["timed_out"] else "否", e["actor"],
+                e["observed_at"],
             ] for e in task["executions"]]
             review_rows = [[
-                _esc(r["review_id"]), _esc(r["reviewer"]), _esc(r["decision"]),
-                _esc(r["note"]), _esc(r["reviewed_at"]),
+                r["review_id"], r["reviewer"], r["decision"],
+                r["note"], r["reviewed_at"],
             ] for r in task["reviews"]]
             parts.append(
                 f"<h3>{_esc(task['task_id'])}</h3>"
@@ -243,9 +250,9 @@ def _render_memory_screen(memory: dict) -> str:
         return ("<p class='empty'>（账本无记忆表——老账本缺表，此屏如实降级为空；"
                 "不偷偷建表）</p>")
     rows = [[
-        _esc(a["asset_id"]), _esc(a["family"]), _esc(a["version"]),
-        _esc(a["kind"]), _esc(a["state"]), _esc(a["approved_by"] or "—"),
-        _esc(a["title"]), _esc(a["sha256"][:12]), _esc(a["created_at"]),
+        a["asset_id"], a["family"], a["version"],
+        a["kind"], a["state"], a["approved_by"] or "—",
+        a["title"], a["sha256"][:12], a["created_at"],
     ] for a in memory["assets"]]
     return (_table(["条目", "family", "版本", "类型", "状态", "审核人", "标题",
                     "sha256 前 12", "创建时刻"], rows)
@@ -273,8 +280,8 @@ def _render_identity_screen(data: dict) -> str:
 
 
 def _render_html(data: dict) -> str:
-    banner = (
-        "ok" if data["evidence_complete"] and not data["errors"] else "bad")
+    verdict_text = ("全账判定完整" if data["evidence_complete"] and not data["errors"]
+                    else "全账判定存在失锚/疑点，逐屏核对")
     return f"""<!DOCTYPE html>
 <html lang="zh">
 <head>
@@ -304,13 +311,24 @@ footer {{ margin-top: 3rem; color: #666; font-size: .8rem; }}
 <section id="screen-executions"><h2>二、执行与复核记录</h2>{_render_executions_screen(data)}</section>
 <section id="screen-memory"><h2>三、记忆资产</h2>{_render_memory_screen(data["memory"])}</section>
 <section id="screen-identity"><h2>四、身份与完整性判定</h2>{_render_identity_screen(data)}</section>
-<footer>generated_at {_esc(data["generated_at"])} · {("全账判定完整" if banner == "ok" else "全账判定存在失锚/疑点，逐屏核对")}
+<footer>generated_at {_esc(data["generated_at"])} · {verdict_text}
  · ?format=json 返回同一数据</footer>
 </body>
 </html>"""
 
 
 # ---- HTTP 服务（仅 GET 的观察窗）-------------------------------------------
+
+
+def _error_payload(error: str) -> dict:
+    """JSON 错误契约统一形状（与 cli.py 顶层异常边界 / bootstrap._fail 同形）。"""
+    return {"ok": False, "flowerp_connected": FLOWERP_CONNECTED, "error": error}
+
+
+class _DashboardServer(ThreadingHTTPServer):
+    """看板服务：runtime_dir 为显式类属性（_cmd_dashboard 注入），不用动态挂。"""
+
+    runtime_dir: Path
 
 
 class _DashboardHandler(BaseHTTPRequestHandler):
@@ -325,26 +343,21 @@ class _DashboardHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path != "/":
-            self._send_json(404, {
-                "ok": False, "flowerp_connected": FLOWERP_CONNECTED,
-                "error": f"unknown_path: 看板只有一页 /（请求了 {parsed.path}）"})
+            self._send_json(
+                404, _error_payload(f"unknown_path: 看板只有一页 /（请求了 {parsed.path}）"))
             return
         want_json = parse_qs(parsed.query).get("format", [""])[0] == "json"
         try:
             conn = _connect_readonly(self.server.runtime_dir)
             if conn is None:  # 服务起后账本被移除的兜底，不裸崩
-                self._send_json(500, {
-                    "ok": False, "flowerp_connected": FLOWERP_CONNECTED,
-                    "error": UNINITIALIZED})
+                self._send_json(500, _error_payload(UNINITIALIZED))
                 return
             try:
                 data = collect_data(conn)
             finally:
                 conn.close()
         except Exception as error:  # 与 cli.py 顶层同形状：JSON 错误契约不裸 traceback
-            self._send_json(500, {
-                "ok": False, "flowerp_connected": FLOWERP_CONNECTED,
-                "error": f"内部错误：{type(error).__name__}: {error}"})
+            self._send_json(500, _error_payload(f"内部错误：{type(error).__name__}: {error}"))
             return
         if want_json:
             self._send_json(200, data)
@@ -352,9 +365,8 @@ class _DashboardHandler(BaseHTTPRequestHandler):
             self._send_html(200, _render_html(data))
 
     def _reject_write(self) -> None:
-        self._send_json(405, {
-            "ok": False, "flowerp_connected": FLOWERP_CONNECTED,
-            "error": "method_not_allowed: 看板是观察窗，零写端点，仅 GET"},
+        self._send_json(
+            405, _error_payload("method_not_allowed: 看板是观察窗，零写端点，仅 GET"),
             extra_headers=(("Allow", "GET"),))
 
     do_POST = _reject_write
@@ -362,24 +374,23 @@ class _DashboardHandler(BaseHTTPRequestHandler):
     do_DELETE = _reject_write
     do_PATCH = _reject_write
 
-    def _send_json(self, status: int, payload: dict,
-                   extra_headers: tuple[tuple[str, str], ...] = ()) -> None:
-        body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+    def _send_bytes(self, status: int, body: bytes, content_type: str,
+                    extra_headers: tuple[tuple[str, str], ...] = ()) -> None:
         self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Type", content_type)
         for name, value in extra_headers:
             self.send_header(name, value)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_json(self, status: int, payload: dict,
+                   extra_headers: tuple[tuple[str, str], ...] = ()) -> None:
+        self._send_bytes(status, json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"),
+                         "application/json; charset=utf-8", extra_headers)
+
     def _send_html(self, status: int, text: str) -> None:
-        body = text.encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        self._send_bytes(status, text.encode("utf-8"), "text/html; charset=utf-8")
 
 
 def _cmd_dashboard(args) -> int:
@@ -388,7 +399,7 @@ def _cmd_dashboard(args) -> int:
     if conn is None:  # 目录不存在 / 非本工作台账本：快速失败，不起服务
         return _fail(UNINITIALIZED)
     conn.close()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), _DashboardHandler)  # 仅回环，无 --host
+    server = _DashboardServer(("127.0.0.1", args.port), _DashboardHandler)  # 仅回环，无 --host
     server.runtime_dir = runtime_dir.resolve()
     try:
         _emit({"ok": True, "flowerp_connected": FLOWERP_CONNECTED,
