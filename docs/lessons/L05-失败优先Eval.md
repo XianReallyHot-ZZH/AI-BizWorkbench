@@ -1,7 +1,7 @@
 # L05 讲义：先设计失败，再编写 Eval
 
-- 状态：**草案待审**（用户审完才动手；候选表 §5 一次列全）
-- 起草：2026-09-28；上游 pin `CodexFDE@7f67533`（本日 fetch 现查未移动，无检查点动作）
+- 状态：**定稿**（候选表 D1–D5 已裁决，见 §5 裁决记录；用户审完才动手）
+- 起草：2026-09-28；上游 pin `CodexFDE@7f67533`（起草日与裁决日两次 fetch 现查均未移动，无检查点动作）
 - 合同来源：`workbench/course_contracts.py` LESSONS[number=5]（冻结合同，逐字引用不修）
 - 上游参考：`vendors/CodexFDE/docs/courses/L05/辅导资料.md`（只读对照）
 - 本讲性质：**客户真理重大现查**——讲义形状因此与上游课程有偏离，见 §1.3 与候选表 D1
@@ -75,4 +75,6 @@ blocking / observing 标注；【现查】= 按客户真理调整后的口径。
 | D4 | eval 用例身份 | **沿用客户用例 `receiving_is_idempotent`（blocking）**，本地命令身份固定写入证据账（L08"同一 Eval 身份"的起点） | 自写平行 eval（两套身份，L08 必撞） |
 | D5 | 候选分支机制 | 照旧：`lesson-05`，commit 1 = 基线+红证据 | 直接 master（违背 ADR-0004） |
 
-定稿动作（候选表确认后）：按裁决修订本文 → `lesson-05` 动工（commit 1 = 缺陷基线 + 红证据）。
+> **裁决记录（2026-09-28）**：D1–D5 推荐方案**全部接受**。用户原话：「没问题，继续」（批量确认，逐字入账）。同日现查复核：CodexFDE pin `7f67533` 未移动（无检查点动作）；flowERP `e0088d3` 两事实逐字核实成立——`inventory.py:102` `receive` 已幂等（重放返回余额 + `idempotent_replay: true`）、`eval/harness.py:27` `receiving_is_idempotent` 为 blocking 用例。
+
+定稿动作（已执行）：本文已按上述裁决修订 → 下一步 `lesson-05` 动工（commit 1 = 缺陷基线 + 红证据），执行期经 `/mattpocock-skills:implement`（用户显式技能，到点停下提醒）。
