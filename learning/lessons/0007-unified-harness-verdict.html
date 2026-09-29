@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0007 · 统一裁判：让绿灯值得信</title>
+<link rel="stylesheet" href="../assets/course.css">
+<script defer src="../assets/quiz.js"></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="kicker">Lesson 0007 · L06 复盘</div>
+  <h1>统一裁判：让绿灯值得信</h1>
+  <div class="subtitle">你的五个问题一次答完：解决什么问题 / 目标 / 方案 / 机制 / 代码解析 —— 素材全部取自你今天验收的 L06：假绿探针、可信红、R1 翻车、盲区实锤，没有一个是教学虚构</div>
+</header>
+
+<h2 id="problem">解决什么问题</h2>
+<p>到 L05 为止，每一讲都在造<strong>单个检查</strong>：幂等收货检查、范围检查、口径检查……L06 的问题是下一层——<strong>检查一多，谁来说「这次能不能交付」？</strong>五个检查四个绿一个红，交付还是拦截？谁数的结果？退出码给调用方的是什么？这些问题没有统一答案时，每个调用方自己数、自己判、自己解释退出码——数法不一致，结论就可议。</p>
+<div class="callout"><span class="label">比没有检查更危险的东西</span>上游 L06 辅导资料 §3 给了一段教学预期：<pre><code>l06_stock_consistency：blocking，失败，查询 5、CSV 8
+summary：blocking_failed=0，decision=pass
+检查运行器退出码：0</code></pre>
+分项发现了必须修复的错误，汇总却放行、退出码 0——<strong>假绿灯</strong>。没有检查，调用方至少知道自己在裸奔；假绿灯让错误交付<strong>披着可信的皮出门</strong>。所以本讲的第一目标不是「让检查变多」，是「让汇总没有资格撒谎」。</div>
+
+<h2 id="goal">目标是什么</h2>
+<p>冻结合同 fixture 一句话：<strong>「统一 Harness、判决与退出码」</strong>。拆成三个可验收的承诺：①多项检查按登记清单跑，<strong>分级汇总</strong>出唯一 decision；②<strong>阻断失败、报告 decision、进程退出码三者一致</strong>（acceptance[1]）；③业务侧统一可用库存口径 <code>available = on_hand − reserved</code> 且永不为负（acceptance[0]，绑定 eval <code>stock_never_negative</code>）。还有一层不在合同字面上、在 LESSON_STORY 里：<em>「统一等级、报告与退出码成为后续 Codex 交付的共同裁判」</em>——L07 的 Hook 要在生命周期时点<strong>复用同一个入口</strong>，所以这个裁判必须是可复用的代码，不是一次性脚本。</p>
+
+<h2 id="solution">方案是什么</h2>
+<p>客户真理现查再次改变形状：客户的 flowERP <strong>已经自带统一 harness</strong>（<code>eval/harness.py</code> 的 <code>run_suite</code>：EVALS 登记 18 用例、blocking 分级、schema 1.0 报告、退出码 = blocking 失败数决定）。所以本讲不重写客户检查（同 L05 的 D1 裁决逻辑），增量落在本仓库：<strong><code>evals/harness.py</code></strong>（统一运行器：登记 → 分级执行 → 报告 → 退出码）+ <strong><code>evals/report_contract.py</code></strong>（报告一致性独立复核，review 缝）+ <strong><code>evals/l06/</code></strong>（登记项收口 + 口径交叉驱动 + 缺陷基线构造）。教学链照上游钉死的次序：<strong>先修汇总，再修业务</strong>——中停点的「可信红」恰好证明汇总修好了；跳过次序，最终变绿就说不清来自哪项改动。</p>
+
+<h2 id="mechanisms">设计了哪些机制</h2>
+<p>五个机制，每个都对着一种具体的撒谎方式：</p>
+<table>
+  <tr><th>机制</th><th>防的是哪种谎</th><th>落点</th></tr>
+  <tr><td>①分级：blocking / observing</td><td>把告警升格成拦截（拦死正常交付），或把阻断降格成告警（放走坏交付）</td><td>等级写在登记处（<code>entries()</code>），是<strong>事先确认的规则</strong>，不是跑完再定</td></tr>
+  <tr><td>②汇总自逐项推导</td><td>假绿灯：summary 与 results 各说各话</td><td><code>decision</code> 和计数都从 <code>results</code> 现算，同一变量喂给报告和退出码</td></tr>
+  <tr><td>③报告独立复核（report_contract）</td><td>谎报的 summary 骗过调用方</td><td>复核器<strong>不信 summary</strong>，自己从 results 重推导 expected 再对质，连退出码一起核</td></tr>
+  <tr><td>④不吞错 + 报告独占</td><td>崩溃吞掉后续检查；旧绿报告被新调用覆盖冒充</td><td>异常记入该项 error 后<strong>继续跑</strong>；报告 <code>open("x")</code> 独占写，旧证据动不了</td></tr>
+  <tr><td>⑤客户真理 + 登记制</td><td>裁判只认自家检查，或两套平行身份（L08 必撞）</td><td>五登记项里两项直接子进程跑客户 blocking eval；报告 schema 1.0 与客户对齐，一套复核器两边通用</td></tr>
+</table>
+<div class="callout"><span class="label">本课核心判断</span>0006 课说「辨别力是检查×被测物关系的属性」；本讲补下半句：<strong>可信度是「逐项 → 汇总 → decision → 退出码」这条传导链的属性</strong>。链上任何一环自行其是（汇总不数分项、退出码不看 decision、复核只读 summary 不重推导），绿灯就断链。验收人看 Harness，看的不是代码多精巧，是这条链有没有暗门。</div>
+
+<h2 id="code">代码解析（四个文件，全部真实在库）</h2>
+
+<h3>① <code>evals/harness.py</code>——七步解剖一个 <code>run()</code></h3>
+<pre><code>def run(entries, *, suite="all", names=None, report_path=None):
+    if suite not in SUITES: raise ValueError(f"未知 suite：{suite}")   # 1 校验
+    if len(registry) != len(set(registry)): raise ValueError("登记项重名")
+    selected = [(n, l, f) for n, l, f in entries
+                if n in requested and (suite == "all" or l == suite)]  # 2 选择
+    if not selected or set(requested) != {n for n, _, _ in selected}:
+        raise ValueError("选择为空、含未知项或与 suite 不匹配")        # 空跑不算过
+    for name, level, fn in selected:                                   # 3 逐项执行
+        try:
+            evidence = str(fn()); passed = True
+        except Exception as exc:                                       # 4 不吞错
+            evidence = str(exc); passed = False
+            error = {"type": type(exc).__name__, "message": str(exc)}
+        results.append({..., "duration_ms": round(...)})
+    blocking_failed = sum(1 for item in results                        # 5 汇总：唯一的真相源
+        if not item["passed"] and item["level"] == "blocking")
+    report = {..., "summary": {...,                                    # 6 报告
+              "decision": "block" if blocking_failed else "pass"}}
+    with target.open("x", encoding="utf8") as stream: ...              # 独占写
+    return report, (1 if blocking_failed else 0)                       # 7 退出码同源</code></pre>
+<p>看第 5 步那一行 <code>sum(...)</code>：decision 和退出码<strong>都从这里这一个变量导出</strong>——汇总想撒谎，只能改这一行。假绿探针干的正是这件事：把这行挖成 <code>blocking_failed = 0</code>（上游同款缺陷），合同套件立刻两处红（test_02 <code>0 != 1 HARNESS-BLOCK</code>、test_04 <code>HARNESS-ERROR</code>）。九项合同测试就是给这条传导链的每一环上的锁：非多数表决（一败即 block）、observing 异常不升格、空选择拒绝、报告不可覆盖、消费端拒绝矛盾。</p>
+
+<h3>② <code>evals/report_contract.py</code>——复核器为什么骗不过</h3>
+<pre><code>blocking_failed = sum(1 for item in results
+    if not item["passed"] and item["level"] == "blocking")   # 自己重数，不读 summary
+expected = {"total": len(results), "passed": ..., "blocking_failed": blocking_failed,
+            "decision": "block" if blocking_failed else "pass"}
+if any(summary.get(key) != value for key, value in expected.items()):
+    raise RuntimeError("Eval 汇总与逐项结果不一致")
+if returncode != (1 if blocking_failed else 0):
+    raise RuntimeError("Eval 进程退出码与报告结论不一致")</code></pre>
+<p>关键设计：复核器把 summary <strong>当被告不当当证人</strong>——期望值全部从 results 重新推导，再跟报告自带的 summary 当场对质；退出码也在同一结论下复核。它还先核<strong>用例身份</strong>（requested_cases 与调用方请求、与实际 results 三方一致，防「换了用例冒名跑」）。注意它和 harness 里那行 <code>sum(...)</code> 是<strong>两份独立实现</strong>——这不是坏味道，是故意的：复核若复用被复核者的代码，谎就能一起骗过两处。附带收益：schema 与客户 harness 同为 1.0，<strong>客户的报告也过了我们的复核器</strong>（record 69），L08「本地/远端同一 Eval 身份」的地基就在这。</p>
+
+<h3>③ <code>evals/l06/checks.py</code>——登记制与客户真理</h3>
+<pre><code>def entries(opening: int, reserved: int) -> list[tuple[str, str, object]]:
+    return [
+        ("l06_stock_consistency",    "blocking", (lambda: _run_driver(opening, reserved))),
+        ("l05_receiving_regression", "blocking", (lambda: _customer_case("receiving_is_idempotent"))),
+        ("l06_customer_stock_case",  "blocking", (lambda: _customer_case("stock_never_negative"))),
+        ("l06_frozen_checks",        "blocking", _frozen_checks),   # 客户 eval 文件 sha256 对 vendors
+        ("teaching_observation",     "observing", _teaching_observation),  # 教学告警
+    ]</code></pre>
+<p>等级在登记处写死——这就是「事先确认的规则」。两项登记直接子进程调<strong>客户自己的 eval</strong>（L05 的幂等回归 + 本讲绑定的 <code>stock_never_negative</code>）：客户业务状态由客户检查说了算（ADR-0005），我们的裁判只负责<strong>收口</strong>不负责改判。目标树经 <code>L06_EVAL_TARGET</code> 环境变量注入——这正是链 B 红绿「同命令异树」的机关。</p>
+
+<h3>④ <code>evals/l06/stock_consistency_check.py</code>——口径交叉与 R1 的伤疤</h3>
+<pre><code>expected_available = opening - reserved          # 预期独立算：8−3=5，不抄返回值
+...
+observed = {"query": [...], "csv": [...]}        # 查询、CSV 两个出口都要 [8,3,5]
+if any(value != expected_triple for value in observed.values()):
+    return fail("AC-AVAILABLE", {"wanted": expected_triple}, observed)
+excessive = service.create_order("超额订单", ...)  # 草稿单：合法写入
+before = snapshot(store)                          # ← R1：首版拍在建单之前，被绿腿抓获
+try: service.reserve_order(excessive["id"])
+except InsufficientStock: pass                    # 拒绝预占
+if before != after: return fail("AC-UNCHANGED", ...)</code></pre>
+<p>R1 是今天的活教材：首版把 <code>before</code> 拍在 <code>create_order</code> <strong>之前</strong>——但建草稿单本身要写订单+明细两行（合法写入），被拒的是<strong>预占</strong>不是建单。干净候选绿腿首采当场翻红（<code>93b27034</code> 封存）。两层教训：<em>检查语义的锚点要对准「被拒的那个动作」</em>；以及 0006 课的三问反过来用在我自己身上也成立——<strong>这次翻红恰恰证明检查在真抓状态变动</strong>。</p>
+
+<h2 id="stories">今天链条上的四个真实瞬间</h2>
+<p>①<strong>假绿探针</strong>（record 60）：变体换入后套件 2 failures——九项合同对「自己的运行器坏了」有辨别力。②<strong>可信红</strong>（record 66）：汇总已修好、业务还是坏的，报告如实说 <code>expected [8,3,5] / query [8,3,5] / csv [8,3,8]</code>、decision block、退出 1——<strong>可信红证明汇总修好了</strong>，这是「先修汇总」次序的整个意义。③<strong>R1 翻车</strong>（93b27034）：见④的代码段。④<strong>盲区实锤</strong>（record 72/73）：客户 <code>inventory_export_is_stable</code> 用 reserved=0 的数据，对「CSV 误写 on_hand 且 reserved&gt;0」<strong>绿×2</strong>——同一棵缺陷树上我们的口径检查红（record 66）。盲区不是罪，没量过盲区才是。</p>
+
+<h2 id="verify">亲手复验（对真实资产，先预测再运行）</h2>
+<p>老规矩，三个都在 <code>.runtime</code> 真账上：</p>
+<pre><code># ① 预测：decision？退出码？哪项失败、定位信息长什么样？
+L06_EVAL_TARGET=$PWD/.runtime/course/L06-defect-baseline \
+  .venv/bin/python -X utf8 -m evals.l06.checks --no-report | tail -8; echo "rc=$?"
+
+# ② 预测：passed 几项？observing_failed 几项？decision？退出码？
+L06_EVAL_TARGET=$PWD/.runtime/course/L06-candidate \
+  .venv/bin/python -X utf8 -m evals.l06.checks --no-report | tail -8; echo "rc=$?"
+
+# ③ 预测：哪些 record 出现？链判定取哪三条？
+sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro" \
+  "SELECT record_id,phase,returncode FROM evidence WHERE task_id='CASE-WB-L06-001'
+   AND phase IN ('red','diff','green') ORDER BY record_id"</code></pre>
+<p>对答案：① <code>decision: block</code>、rc=1，<code>l06_stock_consistency</code> 败，定位 <code>expected [8,3,5] / query [8,3,5] / csv [8,3,8]</code>——查询对、导出错，就是那行植入的缺陷；② <code>passed: 4</code>、<code>observing_failed: 1</code>（教学观察项在告警，<strong>不拦</strong>）、<code>decision: pass</code>、rc=0；③ 出现 57/58/59（链 A）+ 62/63/64/65/66（链 B 八条），链判定取各相位最新：<strong>66 红 → 65 diff → 64 绿</strong>（62/63 是 R1 前的 v1 历史，追加不删）。三条全中，传导链你就摸到手了。</p>
+
+<h2 id="quiz">判分测验（4 题，答错不算失败，算定位）</h2>
+<div id="quiz-root"></div>
+
+<h2 id="next">下一步</h2>
+<ul>
+  <li>主线下一站：<strong>L07 Hook 生命周期护栏</strong>。本讲的统一入口回答了「<em>怎样检查</em>」；L07 回答「<em>什么时候实际检查</em>」——Codex 结束工作前由 Hook 自动复用同一 Harness。引子先放这：同一份检查，怎么保证提交前<strong>一定被跑过</strong>，而不是「忘了跑但报告是绿的」？</li>
+  <li>cheatsheet v2 待办还在（L04 三命令+状态机+记忆七命令）；本讲的「传导链四环」若复验通过，可一并加成验收清单段。</li>
+  <li><strong>有问题随时问你的老师（我）</strong>：四个文件的完整源码、假绿探针的完整输出、R1 翻车前后两版驱动对照，或九项合同测试逐条讲。</li>
+</ul>
+<p>延伸阅读（一手来源）：上游 <a href="../../vendors/CodexFDE/docs/courses/L06/辅导资料.md">L06 辅导资料</a>（§3 假绿灯、§4 先修汇总、分级表为本课知识主干）· 讲义定稿 <a href="../../docs/lessons/L06-Harness分级判决.md">L06-Harness分级判决.md</a>（§1.3 客户真理现查、§5 裁决记录）· 证据账 <a href="../../docs/replication/evidence/L06.md">L06.md</a>（四个瞬间的全部门令牌）· 源码 <a href="../../evals/harness.py">evals/harness.py</a> / <a href="../../evals/report_contract.py">evals/report_contract.py</a> / <a href="../../evals/l06/checks.py">evals/l06/checks.py</a> / <a href="../../evals/l06/stock_consistency_check.py">evals/l06/stock_consistency_check.py</a>。</p>
+<p>相关课：<a href="0006-defect-baseline-discrimination.html">0006 辨别力三问</a>（假绿探针=三问对运行器自身；盲区法同一把刀）· <a href="0001-evidence-chain-judgement.html">0001 链判定</a>（同命令红绿的原始规则）· <a href="0004-controlled-execution.html">0004 受控执行</a>（task-run verify 的合同前史）</p>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  mountQuiz("quiz-root", [
+    {
+      scenario: "分项已发现阻断失败，汇总却显示 pass、进程退出 0。为什么说假绿灯比没有检查更危险？",
+      options: [
+        { text: "它让错误交付披着可信结论出门", correct: true,
+          why: "对。没有检查时调用方知道自己在裸奔；假绿灯把不可信的结论包装成可信的——误导的正是最信任报告的人。" },
+        { text: "说明检查逻辑写错，需要全部推倒重写", correct: false,
+          why: "分项检查可能完全正确（L06 里它如实红了）。坏的是分项到汇总的传导，不是检查本身。" },
+        { text: "退出码只是惯例，调用方从来不会真去看", correct: false,
+          why: "调用方恰恰会看——workbench-task-run 就是拿退出码判 verify_completed/eval_failed 的。惯例说法不成立。" },
+        { text: "分项结果仍会打印出来，人眼总能发现", correct: false,
+          why: "人眼兜底正是假绿灯要消灭的防线：报告的意义就是替人省掉逐项核对，矛盾被汇总层藏住了。" }
+      ]
+    },
+    {
+      scenario: "report_contract 复核报告时，谎报的 summary 为什么骗不过它？",
+      options: [
+        { text: "它从 results 重新推导期望值再对质", correct: true,
+          why: "对。summary 在复核器眼里是被告不是证人：期望汇总全部从 results 现算，对不上当场 RuntimeError。" },
+        { text: "它比对生成时间，确认报告来自本次运行", correct: false,
+          why: "时间戳核的是新鲜度，防不了内容撒谎——旧报告时间戳一样可以伪造在「本次」。对质才是核心。" },
+        { text: "它内嵌每项检查的标准答案逐项比对", correct: false,
+          why: "复核器是通用的，不知道任何业务标准答案；它能依赖的只有报告内部的 results 与外部传入的退出码。" },
+        { text: "它要求附带原始堆栈，逐帧回溯执行过程", correct: false,
+          why: "error 载荷只有 type 和 message 两个字段（L05 复查轮实测口径），复核根本不依赖堆栈。" }
+      ]
+    },
+    {
+      scenario: "teaching_observation 失败了，decision 仍是 pass、退出 0。依据的是哪条规则？",
+      options: [
+        { text: "observing 失败只记告警，等级事先确认", correct: true,
+          why: "对。等级写在登记处，是事先确认的规则；passed 只是本次运行的结果——两者不能混淆，也不能临时调换。" },
+        { text: "四项 blocking 全部通过，结论自然如此", correct: false,
+          why: "「blocking 全过」是本次运行的事实前提，不是规则依据。依据是分级规则本身——换个数据，规则依然管用。" },
+        { text: "教学项不是真实缺陷，判定时应当忽略", correct: false,
+          why: "危险方向：按「是不是真缺陷」豁免，就给了汇总层自由裁量的口子。规则看等级，不看复核者的心意。" },
+        { text: "汇总器检测到失败项，自动做了降级处理", correct: false,
+          why: "没有任何「自动降级」——若它真被登记成 blocking，decision 就是 block。自动调级恰恰是本讲要堵的暗门。" }
+      ]
+    },
+    {
+      scenario: "R1：驱动把 before 快照拍在建单之前，被干净候选绿腿当场抓获。核心教训是哪条？",
+      options: [
+        { text: "快照锚点要对准被拒动作，建单是合法写入", correct: true,
+          why: "对。被拒的是预占不是建单——建单写的订单+明细两行是正当变动，锚点错一格，检查就冤枉好人。" },
+        { text: "绿腿结果不可信，检查只应对缺陷树运行", correct: false,
+          why: "恰好相反——对缺陷树跑只证明「能红」，「该绿时真的绿」必须靠干净候选证明，两条腿缺一不可。" },
+        { text: "驱动必须换最严格的语言重写消除歧义", correct: false,
+          why: "问题不在语言表达力，在语义锚点选错了。换语言重写不解决「快照该拍在哪一步之后」这个判断。" },
+        { text: "统一运行器仍有缺陷，否则绿腿不会翻红", correct: false,
+          why: "翻红的正是驱动自己的口径检查，运行器如实转达了它——运行器 behaving correctly 才会把红报出来。" }
+      ]
+    }
+  ]);
+});
+</script>
+</body>
+</html>
