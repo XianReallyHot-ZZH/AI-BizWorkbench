@@ -1,0 +1,5 @@
+{
+  "error": "Spec 包含重复章节：目标",
+  "flowerp_connected": false,
+  "ok": false
+}

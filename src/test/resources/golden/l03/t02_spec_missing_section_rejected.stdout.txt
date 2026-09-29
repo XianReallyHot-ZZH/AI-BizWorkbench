@@ -1,0 +1,5 @@
+{
+  "error": "Spec 缺少必要章节：非目标",
+  "flowerp_connected": false,
+  "ok": false
+}

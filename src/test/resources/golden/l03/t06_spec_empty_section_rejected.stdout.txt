@@ -1,0 +1,5 @@
+{
+  "error": "Spec 章节内容不能为空：目标",
+  "flowerp_connected": false,
+  "ok": false
+}

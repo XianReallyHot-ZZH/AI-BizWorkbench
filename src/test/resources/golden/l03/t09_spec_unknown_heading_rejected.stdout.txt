@@ -1,0 +1,5 @@
+{
+  "error": "Spec 包含未知章节：附录",
+  "flowerp_connected": false,
+  "ok": false
+}

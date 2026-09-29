@@ -1,0 +1,5 @@
+{
+  "error": "Spec 缺少必要章节：来源, 目标, 非目标, 约束, 验收用例, 完成定义",
+  "flowerp_connected": false,
+  "ok": false
+}

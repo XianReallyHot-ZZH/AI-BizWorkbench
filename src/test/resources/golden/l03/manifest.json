@@ -1,0 +1,145 @@
+{
+  "generated_from": "frozen Python workbench @ master（见 evidence/L03-java.md §G 记录的 commit）",
+  "generator": "tools/generate_golden_l03.py",
+  "inputs": {
+    "golden-l03/inputs/confirmed-spec.md": "## 来源\n课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。\n决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。\n确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。\n## 目标\n提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。\n## 非目标\n本次不发送邮件、不自动补货、不修改库存与库存流水、不实现导出程序（导出程序由 L04 按本合同交付）。\n## 约束\n只读导出；可用量 available = on_hand - reserved。\n导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。\n按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。\n复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。\nCSV 以 UTF-8（无 BOM）写入。\n数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。\n导出成功或失败，库存与库存变动记录都不变。\n## 验收用例\nA1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。\nA2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。\nA3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。\nA4：没有库存记录时仍生成八列表头，无数据行。\nA5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。\nA6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。\nA7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。\nA8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。\n## 完成定义\nL03 完成需求审查、版本确认与合同结构检查。\nL04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。\n",
+    "golden-l03/inputs/duplicate-section.md": "## 来源\n对照基准夹具：重复章节拒绝。\n\n## 目标\n六段齐全的唯一目标段。\n\n## 非目标\n不验证业务语义。\n\n## 约束\n只做结构检查。\n\n## 验收用例\n给定本文件，执行 spec 解析，应拒绝并指认重复章节。\n\n## 完成定义\n重复出现的章节标题应被拒绝。\n\n## 目标\n重复出现的目标段，应触发重复检查。\n",
+    "golden-l03/inputs/empty-file.md": "",
+    "golden-l03/inputs/empty-section.md": "## 来源\n对照基准夹具：空章拒绝。\n\n## 目标\n\n## 非目标\n不验证业务语义。\n\n## 约束\n只做结构检查。\n\n## 验收用例\n给定本文件，执行 spec 解析，应拒绝并指认空章。\n\n## 完成定义\n\"目标\"正文为空应被拒绝。\n",
+    "golden-l03/inputs/heading-in-fence.md": "## 来源\n对照基准夹具：围栏屏蔽语义（检查点 0002 教学节）。\n\n## 目标\n验证围栏内的标题行不误认为章节，且围栏正文完整保留。\n\n## 非目标\n不验证业务语义。\n\n## 约束\n只做结构检查。下面的示例正文里含标题样式，但它不是章节：\n\n```text\n## 目标\n这是围栏内的示例正文，不是章节标题。\n```\n\n## 验收用例\n给定本文件，执行 spec 解析，应输出六字段且通过。\n\n## 完成定义\n围栏内标题不误认、围栏正文保留，即为本夹具的通过口径。\n",
+    "golden-l03/inputs/missing-section.md": "## 来源\n课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。\n决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。\n确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。\n## 目标\n提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。\n## 约束\n只读导出；可用量 available = on_hand - reserved。\n导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。\n按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。\n复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。\nCSV 以 UTF-8（无 BOM）写入。\n数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。\n导出成功或失败，库存与库存变动记录都不变。\n## 验收用例\nA1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。\nA2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。\nA3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。\nA4：没有库存记录时仍生成八列表头，无数据行。\nA5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。\nA6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。\nA7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。\nA8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。\n## 完成定义\nL03 完成需求审查、版本确认与合同结构检查。\nL04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。\n",
+    "golden-l03/inputs/procurement-draft.md": "## 来源\n课堂迁移练习：用通用模板起草\"采购申请导出\"，证明模板可复用、业务口径须重新确认。\n采购对象、审批状态与字段清单均无独立来源，一律标\"待确认\"；不复制库存需求的答案。\n状态：草稿（结构复验用，业务口径未确认）。\n## 目标\n提供采购申请明细文件，供（待确认：使用者角色）核对（待确认：核对目的）。\n## 非目标\n本次不发送邮件、不自动触发任何后续业务流程、不修改任何业务数据；不实现导出程序。\n## 约束\n只读导出；复用（待确认：既有查询与输出链及其位置）。\n字段清单与顺序：（待确认）。\n排序规则：（待确认）。\n导出成功或失败，业务数据都不变。\n## 验收用例\nA1：列与顺序按确认后的字段清单逐项核对（字段待确认）。\nA2：没有记录时仍输出表头、无数据行（待确认：本需求是否适用同一口径）。\nA3：写出失败时明确报错，旧文件与半成品的处理按确认后的口径复验（待确认）。\n## 完成定义\n结构经同一解析器复验通过；业务口径逐项确认后才能升级为确认版，未确认前不得进入实现。\n",
+    "golden-l03/inputs/unclosed-fence.md": "## 来源\n对照基准夹具：未闭合围栏拒绝。\n\n## 目标\n验证未闭合围栏必须报错，而不是吞掉后续正式章节。\n\n## 非目标\n不验证业务语义。\n\n## 约束\n只做结构检查。下面的示例缺少结束标记：\n\n```text\n## 目标\n围栏一直开到文件结尾，未闭合。\n\n## 验收用例\n给定本文件，执行 spec 解析，应拒绝并指认未闭合围栏。\n\n## 完成定义\n未闭合围栏应被拒绝。\n",
+    "golden-l03/inputs/unknown-heading.md": "## 来源\n对照基准夹具：未知章节拒绝。\n\n## 目标\n六段齐全的目标段。\n\n## 非目标\n不验证业务语义。\n\n## 约束\n只做结构检查。\n\n## 验收用例\n给定本文件，执行 spec 解析，应拒绝并指认未知章节。\n\n## 完成定义\n未知章节标题应被拒绝。\n\n## 附录\n未知章节，应触发未知检查。\n",
+    "golden-l03/inputs/wrong-formula.md": "## 来源\n课堂需求：运营人员需要核对可售数量并定位库存位置（课堂假设，真实客户未验证）。\n决定记录见 lesson-03-submission/decisions.md（需求八问 Q1..Q8 与反例审查 F1..F4，2026-09-27 用户确认）。\n确认人：XianReallyHot-ZZH（角色练习）；确认日期：2026-09-27；状态：已确认。\n## 目标\n提供库存明细 CSV 文件，供运营核对当前可售数量，并定位库存所在的仓库、仓位与批次。\n## 非目标\n本次不发送邮件、不自动补货、不修改库存与库存流水、不实现导出程序（导出程序由 L04 按本合同交付）。\n## 约束\n只读导出；可用量 available = on_hand。\n导出为八列 CSV：sku,name,site,location,lot_id,on_hand,reserved,available。\n按库存记录展开，一行对应一条库存记录，不跨仓库、仓位或批次合并。\n复用 flowERP 既有查询与文件输出链（inventory_export.py → export_csv → ERPStore），不新写库存算法。\nCSV 以 UTF-8（无 BOM）写入。\n数据出现 reserved > on_hand 时照实输出负可用量：导出是只读镜像，不修正、不拒绝；负值是异常信号，由人核查。\n导出成功或失败，库存与库存变动记录都不变。\n## 验收用例\nA1：列依次为 sku,name,site,location,lot_id,on_hand,reserved,available。\nA2：在库 8、预占 3 时可用量为 5；换成 12、4 时为 8。\nA3：同一 SKU 东仓记录 8、3，西仓记录 4、1：导出保留两行，可用量分别为 5、3，不合并为一行 8。\nA4：没有库存记录时仍生成八列表头，无数据行。\nA5：文件为 UTF-8（无 BOM）；名称含中文、逗号、引号或换行时，以 Python 标准 csv 模块 UTF-8 解码读回后逐字段与源数据相等。\nA6：导出结果依次按 sku、site、location、lot_id 升序排列；可选文本为空时按空字符串比较；完全相同排序键不承诺额外次序。\nA7：写出失败时进程以非零退出码结束并给出明确错误信息；已有有效目标文件保持原样；目标位置与临时残片（.tmp）均不残留。\nA8：存在 reserved > on_hand 的记录（如某行在库 2、预占 5）时，该行可用量照实输出为 -3，导出不阻断，其余行正常输出。\n## 完成定义\nL03 完成需求审查、版本确认与合同结构检查。\nL04 按本合同驱动交付，以 flowERP 自身 eval 独立复验（客户真理，ADR-0005），保留结果、修改范围与限制，由实际人员验收。\n",
+    "golden-l03/inputs/wrong-order.md": "## 目标\n对照基准夹具：顺序检查（来源与目标互换）。\n\n## 来源\n对照基准夹具来源段。\n\n## 非目标\n不验证业务语义。\n\n## 约束\n只做结构检查。\n\n## 验收用例\n给定本文件，执行 spec 解析，应拒绝并给出应为/实际顺序。\n\n## 完成定义\n章节顺序错误应被拒绝。\n"
+  },
+  "normalization": {
+    "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
+    "mask_fields": {
+      "created_at": "<TS>",
+      "recorded_at": "<TS>",
+      "workbench_id": "<WORKBENCH_ID>"
+    },
+    "mask_note": "掩码块为 l01/l02/l03 三套 golden 统一形状（重放测试断言其在场）；spec 输出本身无账本时间戳字段",
+    "non_json": "逐字保留"
+  },
+  "scenarios": [
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/confirmed-spec.md"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t01_spec_confirmed_ok",
+      "note": "冻结确认版：六字段原文 + ok:true（C3 结构半边）",
+      "stdout_file": "t01_spec_confirmed_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/missing-section.md"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t02_spec_missing_section_rejected",
+      "note": "冻结缺章版：缺章拒绝词面 + C11 eval spec_contract_rejects_ambiguity 承载",
+      "stdout_file": "t02_spec_missing_section_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/wrong-formula.md"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t03_spec_wrong_formula_passes",
+      "note": "冻结错误公式版：结构通过 ≠ 业务正确（C10 错误公式态）",
+      "stdout_file": "t03_spec_wrong_formula_passes.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/heading-in-fence.md"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t04_spec_heading_inside_fence_ok",
+      "note": "围栏屏蔽：围栏内标题不误认（检查点 0002 教学节）",
+      "stdout_file": "t04_spec_heading_inside_fence_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/procurement-draft.md"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t05_spec_procurement_draft_ok",
+      "note": "冻结采购稿：C6 结构半边重验",
+      "stdout_file": "t05_spec_procurement_draft_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/empty-section.md"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t06_spec_empty_section_rejected",
+      "stdout_file": "t06_spec_empty_section_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/duplicate-section.md"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t07_spec_duplicate_section_rejected",
+      "stdout_file": "t07_spec_duplicate_section_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/wrong-order.md"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t08_spec_wrong_order_rejected",
+      "stdout_file": "t08_spec_wrong_order_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/unknown-heading.md"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t09_spec_unknown_heading_rejected",
+      "stdout_file": "t09_spec_unknown_heading_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/unclosed-fence.md"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t10_spec_unclosed_fence_rejected",
+      "stdout_file": "t10_spec_unclosed_fence_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "spec",
+        ".runtime/golden-l03/inputs/empty-file.md"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t11_spec_empty_file_rejected",
+      "note": "空文件：缺章全列表词面（六段 \", \" 连接格式）",
+      "stdout_file": "t11_spec_empty_file_rejected.stdout.txt"
+    }
+  ]
+}

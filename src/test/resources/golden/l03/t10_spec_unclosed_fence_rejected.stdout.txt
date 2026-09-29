@@ -1,0 +1,5 @@
+{
+  "error": "Spec 代码围栏未闭合，请补齐示例的结束标记",
+  "flowerp_connected": false,
+  "ok": false
+}
