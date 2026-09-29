@@ -2,6 +2,14 @@
   "chain_command_text": "mvn test",
   "generated_from": "frozen Python workbench @ master（见 evidence/L01-java.md §G 记录的 commit）",
   "generator": "tools/generate_golden_l01.py",
+  "inputs": {
+    "golden-l01/inputs/diff.txt": "diff output\n",
+    "golden-l01/inputs/empty.txt": "",
+    "golden-l01/inputs/green.txt": "green output\n",
+    "golden-l01/inputs/post-red.txt": "post-green red output\n",
+    "golden-l01/inputs/red.txt": "red output\n",
+    "golden-l01/inputs/spec.md": "# 对照基准需求 V1\n\n查回任务当时依据的要求。\n"
+  },
   "normalization": {
     "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
     "mask_fields": {
@@ -400,9 +408,11 @@
         "T-GOLDEN",
         "--require-red-green-evidence"
       ],
+      "assert_db_absent": ".runtime/golden-l01/rt-empty/workbench.db",
       "exit_code": 1,
       "expected_exit_code": 1,
       "id": "s21_status_uninitialized",
+      "note": "查询后目录仍空（WB-10，重放侧按 assert_db_absent 机检）",
       "stdout_file": "s21_status_uninitialized.stdout.txt"
     },
     {
@@ -415,7 +425,12 @@
       "expected_exit_code": 1,
       "id": "s22_status_after_tamper",
       "note": "status 每次重算 SHA-256 复核；期望 errors 含 output_digest_mismatch",
-      "stdout_file": "s22_status_after_tamper.stdout.txt"
+      "stdout_file": "s22_status_after_tamper.stdout.txt",
+      "tamper_before": {
+        "db": ".runtime/golden-l01/rt/workbench.db",
+        "note": "白盒篡改（F3 先例）：直接 sqlite 改写存储内容，检验读取路径的摘要复核",
+        "sql": "UPDATE evidence SET output_text = '篡改后的内容' WHERE record_id = 1"
+      }
     }
   ]
 }
