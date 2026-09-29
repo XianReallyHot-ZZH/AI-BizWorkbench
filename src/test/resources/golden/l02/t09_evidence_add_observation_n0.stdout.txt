@@ -1,0 +1,12 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "record": {
+    "observed_at": "2026-09-29T09:00:04+08:00",
+    "output_sha256": "6a865760412edf09ef6019018a91d1d54e81b9d29998631a651da56eb09e15e1",
+    "phase": "observation",
+    "record_id": 4,
+    "returncode": 0,
+    "task_id": "T-GOLDEN-L02"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "record": {
+    "observed_at": "2026-09-29T09:00:05+08:00",
+    "output_sha256": "402178c261a491d06e73f4566a2269c0b3580ab8869c7101dd1d90bda46083bd",
+    "phase": "observation",
+    "record_id": 6,
+    "returncode": 0,
+    "task_id": "T-OBS-ONLY"
+  }
+}

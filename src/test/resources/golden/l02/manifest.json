@@ -1,0 +1,322 @@
+{
+  "chain_command_text": "mvn test",
+  "generated_from": "frozen Python workbench @ master（见 evidence/L02-java.md §G 记录的 commit）",
+  "generator": "tools/generate_golden_l02.py",
+  "inputs": {
+    "golden-l02/inputs/diff.txt": "diff output\n",
+    "golden-l02/inputs/green.txt": "green output\n",
+    "golden-l02/inputs/obs-n0.txt": "N0 observation output\n",
+    "golden-l02/inputs/obs-only.txt": "observation-only output\n",
+    "golden-l02/inputs/obs-regression.txt": "regression observation output\n",
+    "golden-l02/inputs/red.txt": "red output\n",
+    "golden-l02/inputs/spec.md": "# 仓库规则对照基准需求 V1\n\n查回规则固化任务的当时依据。\n"
+  },
+  "normalization": {
+    "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
+    "mask_fields": {
+      "created_at": "<TS>",
+      "recorded_at": "<TS>",
+      "workbench_id": "<WORKBENCH_ID>"
+    },
+    "mask_note": "墙钟与 uuid4 为不可复现字段；observed_at 是合同字段，逐字保留",
+    "non_json": "逐字保留"
+  },
+  "scenarios": [
+    {
+      "argv": [
+        "workbench-init",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--name",
+        "仓库规则对照基准工作台",
+        "--owner",
+        "GOLDEN-OWNER"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t01_init_ok",
+      "stdout_file": "t01_init_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-project-add",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--project-id",
+        "PROJECT-A",
+        "--name",
+        "规则固化项目",
+        "--path",
+        ".",
+        "--purpose",
+        "golden 对照（L02 流）"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t02_project_add_ok",
+      "stdout_file": "t02_project_add_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--project-id",
+        "PROJECT-A",
+        "--task-id",
+        "T-GOLDEN-L02",
+        "--requirement-id",
+        "T-GOLDEN-L02",
+        "--request",
+        "把仓库规则固化进规则文件",
+        "--actor",
+        "GOLDEN-ACTOR",
+        "--spec-file",
+        ".runtime/golden-l02/inputs/spec.md"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t03_task_create_with_spec",
+      "stdout_file": "t03_task_create_with_spec.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN-L02",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t04_status_chain_missing",
+      "stdout_file": "t04_status_chain_missing.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--task-id",
+        "T-GOLDEN-L02",
+        "--phase",
+        "red",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l02/inputs/red.txt",
+        "--returncode",
+        "1",
+        "--observed-at",
+        "2026-09-29T09:00:01+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t05_evidence_add_red",
+      "stdout_file": "t05_evidence_add_red.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--task-id",
+        "T-GOLDEN-L02",
+        "--phase",
+        "diff",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l02/inputs/diff.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:02+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t06_evidence_add_diff",
+      "stdout_file": "t06_evidence_add_diff.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--task-id",
+        "T-GOLDEN-L02",
+        "--phase",
+        "green",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l02/inputs/green.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:03+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t07_evidence_add_green",
+      "stdout_file": "t07_evidence_add_green.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN-L02",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t08_status_chain_complete",
+      "stdout_file": "t08_status_chain_complete.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--task-id",
+        "T-GOLDEN-L02",
+        "--phase",
+        "observation",
+        "--command-text",
+        "claude -p N0-probe",
+        "--output-file",
+        ".runtime/golden-l02/inputs/obs-n0.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:04+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t09_evidence_add_observation_n0",
+      "note": "绿后导入 observation：追加本身成功（账本只追加），链是否仍完整由 t10 判定",
+      "stdout_file": "t09_evidence_add_observation_n0.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN-L02",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t10_status_chain_complete_after_obs",
+      "note": "observation 不参与链判定、不破坏链（L02 流核心语义，bootstrap 链判定只看 red/diff/green）",
+      "stdout_file": "t10_status_chain_complete_after_obs.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--task-id",
+        "T-GOLDEN-L02",
+        "--phase",
+        "observation",
+        "--command-text",
+        "mvn test full-regression",
+        "--output-file",
+        ".runtime/golden-l02/inputs/obs-regression.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:05+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t11_evidence_add_observation_regression",
+      "stdout_file": "t11_evidence_add_observation_regression.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t12_status_plain_full_ledger",
+      "note": "无 require 标志的全量回显：1 任务 + 5 记录（红/Diff/绿/两 obs）",
+      "stdout_file": "t12_status_plain_full_ledger.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--project-id",
+        "PROJECT-A",
+        "--task-id",
+        "T-OBS-ONLY",
+        "--requirement-id",
+        "T-OBS-ONLY",
+        "--request",
+        "只有观察记录的任务",
+        "--actor",
+        "GOLDEN-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t13_task_create_obs_only",
+      "stdout_file": "t13_task_create_obs_only.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--task-id",
+        "T-OBS-ONLY",
+        "--phase",
+        "observation",
+        "--command-text",
+        "claude -p boundary-probe",
+        "--output-file",
+        ".runtime/golden-l02/inputs/obs-only.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:05+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "t14_evidence_add_obs_only",
+      "note": "时间字面量与 t11 相同：不同任务之间互不影响（链判定按任务隔离）",
+      "stdout_file": "t14_evidence_add_obs_only.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l02/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-OBS-ONLY",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "t15_status_obs_only_chain_missing",
+      "note": "observation 不满足红绿链要求（仍是 same_command_red_diff_green_missing 缺链）",
+      "stdout_file": "t15_status_obs_only_chain_missing.stdout.txt"
+    }
+  ]
+}

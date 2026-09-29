@@ -1,0 +1,12 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "task": {
+    "prerequisite_task_id": "",
+    "project_id": "PROJECT-A",
+    "request": "只有观察记录的任务",
+    "requirement_id": "T-OBS-ONLY",
+    "requirement_summary": "",
+    "task_id": "T-OBS-ONLY"
+  }
+}

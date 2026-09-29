@@ -1,0 +1,46 @@
+{
+  "acceptance": "pending_human_review",
+  "errors": [
+    "same_command_red_diff_green_missing: 缺少同命令的红—Diff—绿链"
+  ],
+  "evidence_complete": false,
+  "flowerp_connected": false,
+  "limitations": [
+    "用户导入的观察记录，未认证命令执行者和时间",
+    "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成"
+  ],
+  "ok": false,
+  "projects": [
+    {
+      "created_at": "<TS>",
+      "name": "规则固化项目",
+      "path": ".",
+      "project_id": "PROJECT-A",
+      "purpose": "golden 对照（L02 流）",
+      "tasks": [
+        {
+          "actor": "GOLDEN-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "PROJECT-A",
+          "request": "把仓库规则固化进规则文件",
+          "requirement_id": "T-GOLDEN-L02",
+          "requirement_snapshot": "# 仓库规则对照基准需求 V1\n\n查回规则固化任务的当时依据。\n",
+          "requirement_summary": "93a384a37d525c9e9ed39ed9ef9fdab72e3378662ee79aa1ab4f4e4f24b69886",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L02"
+        }
+      ]
+    }
+  ],
+  "workbench": {
+    "name": "仓库规则对照基准工作台",
+    "owner": "GOLDEN-OWNER",
+    "version": "V0.1",
+    "workbench_id": "<WORKBENCH_ID>"
+  }
+}
