@@ -1,0 +1,361 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 100 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 138.0 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Running workbench.spec.L03SpecContractTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.099 s -- in workbench.spec.L03SpecContractTest
+[INFO] Running workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Running workbench.golden.GoldenL01ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 21.76 s -- in workbench.golden.GoldenL01ReplayTest
+[INFO] Running workbench.golden.GoldenL04ReplayTest
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 6.188 s <<< FAILURE! -- in workbench.golden.GoldenL04ReplayTest
+[ERROR] workbench.golden.GoldenL04ReplayTest.replayAllScenariosByteIdentically -- Time elapsed: 6.185 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[s06_code_run_completed_to_review 退出码] 
+expected: 0
+ but was: 2
+	at workbench.testsupport.GoldenReplay.replay(GoldenReplay.java:109)
+	at workbench.golden.GoldenL04ReplayTest.replayAllScenariosByteIdentically(GoldenL04ReplayTest.java:28)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.golden.GoldenL03ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.747 s -- in workbench.golden.GoldenL03ReplayTest
+[INFO] Running workbench.golden.GoldenL02ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.02 s -- in workbench.golden.GoldenL02ReplayTest
+[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.025 s -- in workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Running workbench.execution.L04ExecutionContractTest
+[ERROR] Tests run: 24, Failures: 21, Errors: 0, Skipped: 0, Time elapsed: 74.75 s <<< FAILURE! -- in workbench.execution.L04ExecutionContractTest
+[ERROR] workbench.execution.L04ExecutionContractTest.outOfScopeStopsBeforeEval -- Time elapsed: 3.354 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.outOfScopeStopsBeforeEval(L04ExecutionContractTest.java:251)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.launchErrorPreservedAsFailedRecord -- Time elapsed: 3.354 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.launchErrorPreservedAsFailedRecord(L04ExecutionContractTest.java:314)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.reviewAnchorsToExecutionId -- Time elapsed: 3.380 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.reviewAnchorsToExecutionId(L04ExecutionContractTest.java:390)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.workspaceRejectsBeforeProcess -- Time elapsed: 3.392 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[/var/folders/2g/fb_sr5nd153b94j48r3dxq9m0000gn/T/junit6232217044749969043/ghost 应拒绝] 
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.workspaceRejectsBeforeProcess(L04ExecutionContractTest.java:241)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.evalCommandUnparseableRejected -- Time elapsed: 3.197 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.evalCommandUnparseableRejected(L04ExecutionContractTest.java:327)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.taskRunRequiresWriteScopeInCodeMode -- Time elapsed: 3.330 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.taskRunRequiresWriteScopeInCodeMode(L04ExecutionContractTest.java:178)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.taskRunRequiresExplicitTimeout -- Time elapsed: 3.334 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.taskRunRequiresExplicitTimeout(L04ExecutionContractTest.java:205)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.evalRunsInBoundWorkspaceCwd -- Time elapsed: 3.308 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.evalRunsInBoundWorkspaceCwd(L04ExecutionContractTest.java:337)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.timeoutPreservesPartialOutput -- Time elapsed: 3.345 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.timeoutPreservesPartialOutput(L04ExecutionContractTest.java:300)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.verifyModeNeverLaunchesExecutor -- Time elapsed: 3.160 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.verifyModeNeverLaunchesExecutor(L04ExecutionContractTest.java:269)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.executorFailurePreservesOutputAndDiff -- Time elapsed: 3.231 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.executorFailurePreservesOutputAndDiff(L04ExecutionContractTest.java:285)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.reviewStateRejectsRerun -- Time elapsed: 3.379 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.reviewStateRejectsRerun(L04ExecutionContractTest.java:359)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.taskShowSummarizesExecutionsAndReviews -- Time elapsed: 3.332 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.taskShowSummarizesExecutionsAndReviews(L04ExecutionContractTest.java:411)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.taskRunRequiresExecutorCommandInCodeMode -- Time elapsed: 3.249 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.taskRunRequiresExecutorCommandInCodeMode(L04ExecutionContractTest.java:190)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.verifyRejectsExecutorCommand -- Time elapsed: 3.301 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.verifyRejectsExecutorCommand(L04ExecutionContractTest.java:215)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.selfReviewRejected -- Time elapsed: 3.211 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.selfReviewRejected(L04ExecutionContractTest.java:375)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.prerequisiteAcceptedAllowsTaskCreation -- Time elapsed: 3.283 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.prerequisiteAcceptedAllowsTaskCreation(L04ExecutionContractTest.java:488)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.codeRunRecordsManifestDiffAndStopsAtReview -- Time elapsed: 3.278 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[执行成功 rc 0] 
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.codeRunRecordsManifestDiffAndStopsAtReview(L04ExecutionContractTest.java:147)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.evalFailureKeepsRecordAndStatus -- Time elapsed: 3.306 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.evalFailureKeepsRecordAndStatus(L04ExecutionContractTest.java:346)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.rerunAfterFailureKeepsOldRecord -- Time elapsed: 3.422 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.rerunAfterFailureKeepsOldRecord(L04ExecutionContractTest.java:449)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.execution.L04ExecutionContractTest.statusDigestCoversExecutions -- Time elapsed: 3.202 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.execution.L04ExecutionContractTest.statusDigestCoversExecutions(L04ExecutionContractTest.java:431)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.rules.L02WorkbenchRulesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in workbench.rules.L02WorkbenchRulesTest
+[INFO] Running workbench.rules.JavaLineRuleFactsTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in workbench.rules.JavaLineRuleFactsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L04ExecutionContractTest.codeRunRecordsManifestDiffAndStopsAtReview:147 [执行成功 rc 0] 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.evalCommandUnparseableRejected:327 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.evalFailureKeepsRecordAndStatus:346 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.evalRunsInBoundWorkspaceCwd:337 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.executorFailurePreservesOutputAndDiff:285 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.launchErrorPreservedAsFailedRecord:314 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.outOfScopeStopsBeforeEval:251 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.prerequisiteAcceptedAllowsTaskCreation:488 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.rerunAfterFailureKeepsOldRecord:449 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.reviewAnchorsToExecutionId:390 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.reviewStateRejectsRerun:359 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.selfReviewRejected:375 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.statusDigestCoversExecutions:431 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.taskRunRequiresExecutorCommandInCodeMode:190 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.taskRunRequiresExplicitTimeout:205 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.taskRunRequiresWriteScopeInCodeMode:178 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.taskShowSummarizesExecutionsAndReviews:411 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.timeoutPreservesPartialOutput:300 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.verifyModeNeverLaunchesExecutor:269 
+expected: 0
+ but was: 2
+[ERROR]   L04ExecutionContractTest.verifyRejectsExecutorCommand:215 
+expected: 1
+ but was: 2
+[ERROR]   L04ExecutionContractTest.workspaceRejectsBeforeProcess:241 [/var/folders/2g/fb_sr5nd153b94j48r3dxq9m0000gn/T/junit6232217044749969043/ghost 应拒绝] 
+expected: 1
+ but was: 2
+[ERROR]   GoldenL04ReplayTest.replayAllScenariosByteIdentically:28 [s06_code_run_completed_to_review 退出码] 
+expected: 0
+ but was: 2
+[INFO] 
+[ERROR] Tests run: 84, Failures: 22, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  04:22 min
+[INFO] Finished at: 2026-09-29T20:51:03+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
