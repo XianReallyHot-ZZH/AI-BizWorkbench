@@ -59,6 +59,43 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 
 ---
 
-## R. 候选 lesson-04-java 证据（implement 授权后补记）
+## R. 候选 lesson-04-java 证据（2026-09-29，implement 授权后）
 
-（待候选分支开工后补记：R1 起始红 / R2 红转绿 / R3 证据链与复验 / R4 任务账与终核 / A 门 / B 段）
+### R0 环境与分支形状
+
+- 分支 `lesson-04-java` 自 master@`76b7583` 分出（继承前置 golden + 共享件扩展）；决策记录：附录 A 全案审定 + 配合点 1 复认（降级路径，每次重新确认）见 `lesson-04-submission/java/decisions-java.md`（指针化）
+
+### R1 起始红（C1）
+
+- **红封条**：`lesson-04-submission/java/03-failure/20260929T124639108663Z-648136ff/`（`mvn test` 全量，rc=1，observed_at 2026-09-29T12:46:39Z）
+- 红形态：**84 跑 22 红**，全部目标能力缺失类——`L04ExecutionContractTest` 21（三命令 invalid-choice rc 2 + V0 行为断言落空）+ `GoldenL04ReplayTest` 1（golden l04 重放 s06 退出码 2≠0——本讲预期红点）；就位组 3 绿（映射表声明：C9 拒绝词面 / 建设合同 Java CLI spec 解析 rc 0 / Python 工件护栏）+ 既有 59 绿
+- 采红前预检同形状（首预检 83 跑 22 红暴露映射表误声明：`prerequisiteBindingFaces` 正面半边依赖 V0 → 拆分为就位拒绝面 + 红点正面；复检 25 跑 22 红符合预期后再正式采集）；commit 1 = `6598819`
+
+### R2 红转绿（配合点 2：用户显式调用 `/mattpocock-skills:implement`）—— 2026-09-29
+
+**实现八件**（commit 2 = 本 diff 封条，写集与附录 A2 C14 映射一致；Python 冻结面零触碰，pom.xml 零改动）：
+
+| 交付物 | 内容 |
+|---|---|
+| `workbench/execution/ExecutionCommands.java` | 三命令（JD1）：REGISTRY 第二批注册；校验类拒绝不落记录、执行类失败如实落账；检查序与冻结 execution.py 逐位同形（task 存在→workspace→scope→shlex→mode 门→超时门→prompt→actor→review 态）；verify 模式 `executor_command` null、失败/超时/越界路径 eval 键缺位形（golden s30 锁定）；`change_manifest_sha256` 只入库不出账（S-c1） |
+| `workbench/execution/Shlex.java` | 单串→argv（POSIX 子集：单引号字面/双引号受限转义/引号外反斜杠；不闭合即失败——词面由调用方固定给出） |
+| `workbench/execution/ProcessRunner.java` | 共用进程运行器：超时杀进程留部分输出（timed_out 独立）；启动失败落 failed 记录（launch error preserved，§3-16；errno 词面语言绑定按 JD6 如实偏差）；UTF-8 replace 解码同形 |
+| `workbench/execution/WriteScope.java` | 归一化（绝对路径/`..` 剔除、只剥 `./` 前缀、保序去重——S6a）+ in_scope |
+| `workbench/execution/WorkspaceInspector.java` | 校验拒于进程前（目录/.git/HEAD——S-c4）；`-uall` 逐文件采集（S-c8）+ `add -N .` + diff HEAD；前后摘要对原始字节（S6b） |
+| `bootstrap/Args.java` | 可重复取值选项扩展（--write-scope nargs="+" 同形；四参构造器行为零变化，L03 JD2 先例） |
+| `bootstrap/PyJson.java` | `dumpsCompact`（DB JSON 列 = Python json.dumps 默认紧凑分隔符同形；change_manifest_json 出账为原文，字节保真依赖它） |
+| `bootstrap/Ledger.java` | 读侧可见度放宽（latestExecution/latestReview→public、taskRow 新增、EXECUTION_COMPLETE_STATUSES→public、connection() 访问器）——Python execution.py import bootstrap 单一来源同形；`cli/Main.java` 注册缝 +1 |
+
+**红转绿**：`mvn test` 全量 **84/84 绿**（59 既有零变化 + L04 合同 24 + golden l04 47 场景字节级一致）——V0 行为面与冻结 Python 逐字节对照达成（移植注记 A1 预期）。
+
+**红绿间测试修正披露**（两处，期望对齐冻结实测、无断言放宽）：① stdout 期望 `"created\n"`→`"createdn"`（未引号 shell 词内反斜杠转义 `n`，golden s06 真值源）；② `change_manifest_sha256` 断言从 task-run 出账迁至 task-show DB 投影（golden s06/s44 键位证实：只入库不出账）。全记录在 `A-evidence-java.md`。
+
+### R3 证据链（C14）
+
+- **链三封条**（同命令 `mvn test`，observed_at 严格递增，Diff 严格居间）：red `…648136ff`（12:46:39，rc 1，84 跑 22 红）→ diff `…3d283277`（13:18:44，rc 0，暂存区全量 `git diff --cached`——新增件为主，Python 时代台账 #4 同口径如实披露）→ green `…34bbc6d0`（13:18:49，rc 0，84/84）
+- 全量回归即绿命令本体（`mvn test` 就是全量门）——Python 时代"全量回归 observation"在此不另设，如实说明
+
+### R4 待补（A 门与 B 段，验收门后）
+
+- A 门自举实跑（verify 模式 eval = `mvn test` 全量）与任务账导入：owner/actor 向用户索取后补记
+- B 段（候选 clone / FDE_SPEC SHA-256 / N0 / 受控执行 / probe 六场景）：A 具名验收后补记

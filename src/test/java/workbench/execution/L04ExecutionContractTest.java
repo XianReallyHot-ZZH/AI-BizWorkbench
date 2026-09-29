@@ -157,9 +157,11 @@ class L04ExecutionContractTest {
         assertThat(execution.get("diff_text").asText()).contains("diff --git", "delivery.csv");
         assertThat(execution.get("returncode").asInt()).isZero();
         assertThat(execution.get("timed_out").asBoolean()).isFalse();
-        assertThat(execution.get("stdout_text").asText()).isEqualTo("created\n");
+        // 冻结 Python 实测：反斜杠在未引号 shell 词内转义 'n'，stdout 即 "createdn"（golden s06 同值）
+        assertThat(execution.get("stdout_text").asText()).isEqualTo("createdn");
         assertThat(execution.get("stdout_sha256").asText()).hasSize(64);
-        assertThat(execution.get("change_manifest_sha256").asText()).hasSize(64);
+        // change_manifest_sha256 只入库不入 task-run 出账（冻结 golden s06 键位），出账见 task-show 投影
+        assertThat(execution.has("change_manifest_sha256")).isFalse();
         assertThat(execution.get("eval_returncode").asInt()).isZero();
         assertThat(execution.get("status").asText()).isEqualTo("completed");
         assertThat(payload.get("task_state").asText()).isEqualTo("review");
@@ -419,6 +421,9 @@ class L04ExecutionContractTest {
         JsonNode execution = task.get("executions").get(0);
         assertThat(execution.get("changed_files").toString()).contains("delivery.csv");
         assertThat(execution.get("eval_command").toString()).contains("sh");
+        assertThat(execution.get("change_manifest_sha256").asText())
+                .as("S-c1：DB 投影带 change_manifest_sha256（status 摘要复核的入账位）").hasSize(64);
+        assertThat(execution.get("change_manifest_json").asText()).contains("delivery.csv");
         assertThat(task.get("reviews").get(0).get("reviewer").asText()).isEqualTo(REVIEWER);
         assertThat(task.get("reviews").get(0).get("execution_id").asInt()).isEqualTo(1);
     }

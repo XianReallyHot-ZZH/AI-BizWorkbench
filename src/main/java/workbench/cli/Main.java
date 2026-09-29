@@ -4,6 +4,7 @@ import workbench.bootstrap.Args;
 import workbench.bootstrap.BootstrapCommands;
 import workbench.bootstrap.Command;
 import workbench.bootstrap.JsonOut;
+import workbench.execution.ExecutionCommands;
 import workbench.spec.SpecCommands;
 
 /**
@@ -22,6 +23,9 @@ public final class Main {
         // L03：spec 命令经同一条注册缝接入（适配器在 workbench.spec.SpecCommands，
         // 镜像 cli.py 的 L03 注册段：只加注册调用，缝位置不变）。
         SpecCommands.register(REGISTRY);
+        // L04：受控执行三命令经同一条缝注册（适配器在 workbench.execution.ExecutionCommands，
+        // 镜像 cli.py 的 L04 注册段：复用 bootstrap 存储入口）。
+        ExecutionCommands.register(REGISTRY);
     }
 
     public static void main(String[] args) {

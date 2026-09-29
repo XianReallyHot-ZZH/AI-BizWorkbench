@@ -20,6 +20,52 @@ public final class PyJson {
         return out.toString();
     }
 
+    /**
+     * 与 Python {@code json.dumps(obj, ensure_ascii=False)} 同形的紧凑形（默认分隔符
+     * ``", "`` / ``": "``，无换行缩进）——L04 执行记录的 JSON 文本列入库载体
+     * （execution.py 的 dumps；change_manifest_json 出账为原文，字节保真依赖它）。
+     */
+    public static String dumpsCompact(Object node) {
+        StringBuilder out = new StringBuilder();
+        writeCompact(node, out);
+        return out.toString();
+    }
+
+    private static void writeCompact(Object node, StringBuilder out) {
+        if (node == null) {
+            out.append("null");
+        } else if (node instanceof Boolean bool) {
+            out.append(bool);
+        } else if (node instanceof Number number) {
+            out.append(number);
+        } else if (node instanceof String string) {
+            quote(string, out);
+        } else if (node instanceof Map<?, ?> map) {
+            out.append("{");
+            int index = 0;
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (index++ > 0) {
+                    out.append(", ");
+                }
+                quote(String.valueOf(entry.getKey()), out);
+                out.append(": ");
+                writeCompact(entry.getValue(), out);
+            }
+            out.append("}");
+        } else if (node instanceof List<?> list) {
+            out.append("[");
+            for (int i = 0; i < list.size(); i++) {
+                if (i > 0) {
+                    out.append(", ");
+                }
+                writeCompact(list.get(i), out);
+            }
+            out.append("]");
+        } else {
+            throw new IllegalArgumentException("不可序列化的类型：" + node.getClass());
+        }
+    }
+
     private static void write(Object node, int depth, StringBuilder out) {
         if (node == null) {
             out.append("null");

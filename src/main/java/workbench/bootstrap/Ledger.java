@@ -46,7 +46,7 @@ public final class Ledger implements AutoCloseable {
     public static final List<String> LIMITATIONS = List.of(
             "用户导入的观察记录，未认证命令执行者和时间",
             "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成");
-    static final Set<String> EXECUTION_COMPLETE_STATUSES = Set.of("completed", "verify_completed");
+    public static final Set<String> EXECUTION_COMPLETE_STATUSES = Set.of("completed", "verify_completed");
 
     /** 运行库不可用（目录不可创建、文件非 sqlite 账本等基础设施失败）。 */
     public static final class LedgerUnavailable extends RuntimeException {
@@ -265,6 +265,11 @@ public final class Ledger implements AutoCloseable {
         }
     }
 
+    /** 存储单一入口的同一连接（镜像 Python：execution.py 命令层持同一 conn 直插执行/复核记录，写侧 SQL 不复制进 bootstrap）。 */
+    public Connection connection() {
+        return connection;
+    }
+
     @Override
     public void close() {
         try {
@@ -348,6 +353,17 @@ public final class Ledger implements AutoCloseable {
             ps.setString(1, taskId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
+            }
+        }
+    }
+
+    /** 任务行全字段（镜像 _cmd_task_show 的 SELECT *；缺任务返回 null，读侧单一来源）。 */
+    public Map<String, Object> taskRow(String taskId) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT * FROM tasks WHERE task_id = ?")) {
+            ps.setString(1, taskId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rowToMap(rs) : null;
             }
         }
     }
@@ -497,7 +513,8 @@ public final class Ledger implements AutoCloseable {
         return reviews;
     }
 
-    private Map<String, Object> latestExecution(String taskId) throws SQLException {
+    /** 最近一次执行（镜像 _latest_execution；L04 执行/复核命令层同源取用，Python import 先例）。 */
+    public Map<String, Object> latestExecution(String taskId) throws SQLException {
         if (!hasTable("executions")) {
             return null;
         }
@@ -510,7 +527,8 @@ public final class Ledger implements AutoCloseable {
         }
     }
 
-    private Map<String, Object> latestReview(String taskId) throws SQLException {
+    /** 最近一次复核（镜像 _latest_review；同 latestExecution 的命令层取用先例）。 */
+    public Map<String, Object> latestReview(String taskId) throws SQLException {
         if (!hasTable("reviews")) {
             return null;
         }

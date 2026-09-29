@@ -1,0 +1,991 @@
+diff --git a/src/main/java/workbench/bootstrap/Args.java b/src/main/java/workbench/bootstrap/Args.java
+index 372a34c..33e2d3f 100644
+--- a/src/main/java/workbench/bootstrap/Args.java
++++ b/src/main/java/workbench/bootstrap/Args.java
+@@ -23,6 +23,7 @@ public final class Args {
+     private final Map<String, String> values = new HashMap<>();
+     private final Set<String> present = new java.util.HashSet<>();
+     private final List<String> positionals = new ArrayList<>();
++    private final Map<String, List<String>> repeating = new java.util.LinkedHashMap<>();
+ 
+     /**
+      * @param argv         子命令名之后的参数
+@@ -41,6 +42,17 @@ public final class Args {
+      */
+     public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags,
+                 List<String> positionalNames) {
++        this(argv, valueFlags, booleanFlags, positionalNames, Set.of());
++    }
++
++    /**
++     * @param repeatingValueFlags 可重复收集的取值选项（L04 --write-scope 的 nargs="+" 同形，
++     *     移植注记 JD1）：选项后连续的非选项令牌逐一收入列表，遇下一 ``--`` 选项停止；
++     *     出现多次则各次收集值按出现序拼接。四参构造器行为零变化（回归保证：既有命令
++     *     不声明可重复选项）。
++     */
++    public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags,
++                List<String> positionalNames, Set<String> repeatingValueFlags) {
+         for (int i = 0; i < argv.length; i++) {
+             String token = argv[i];
+             if (!token.startsWith("--")) {
+@@ -62,6 +74,18 @@ public final class Args {
+                     throw new UsageException("argument " + name + ": ignored explicit argument");
+                 }
+                 present.add(name);
++            } else if (repeatingValueFlags.contains(name)) {
++                if (value == null) {
++                    if (i + 1 >= argv.length) {
++                        throw new UsageException(
++                                "argument " + name + ": expected at least one argument");
++                    }
++                    value = argv[++i];
++                }
++                repeating.put(name, new ArrayList<>(List.of(value)));
++                while (i + 1 < argv.length && !argv[i + 1].startsWith("--")) {
++                    repeating.get(name).add(argv[++i]);
++                }
+             } else if (valueFlags.contains(name)) {
+                 if (value == null) {
+                     if (i + 1 >= argv.length) {
+@@ -99,7 +123,12 @@ public final class Args {
+ 
+     /** 选项是否出现过（含取值选项）。 */
+     public boolean has(String name) {
+-        return present.contains(name) || values.containsKey(name);
++        return present.contains(name) || values.containsKey(name) || repeating.containsKey(name);
++    }
++
++    /** 可重复选项的收集值（按出现序；未出现返回空列表——argparse nargs='+' default=[] 同形）。 */
++    public List<String> repeatingList(String name) {
++        return repeating.getOrDefault(name, List.of());
+     }
+ 
+     public String optional(String name, String defaultValue) {
+diff --git a/src/main/java/workbench/bootstrap/Ledger.java b/src/main/java/workbench/bootstrap/Ledger.java
+index 9ceaadc..3a708b6 100644
+--- a/src/main/java/workbench/bootstrap/Ledger.java
++++ b/src/main/java/workbench/bootstrap/Ledger.java
+@@ -46,7 +46,7 @@ public final class Ledger implements AutoCloseable {
+     public static final List<String> LIMITATIONS = List.of(
+             "用户导入的观察记录，未认证命令执行者和时间",
+             "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成");
+-    static final Set<String> EXECUTION_COMPLETE_STATUSES = Set.of("completed", "verify_completed");
++    public static final Set<String> EXECUTION_COMPLETE_STATUSES = Set.of("completed", "verify_completed");
+ 
+     /** 运行库不可用（目录不可创建、文件非 sqlite 账本等基础设施失败）。 */
+     public static final class LedgerUnavailable extends RuntimeException {
+@@ -265,6 +265,11 @@ public final class Ledger implements AutoCloseable {
+         }
+     }
+ 
++    /** 存储单一入口的同一连接（镜像 Python：execution.py 命令层持同一 conn 直插执行/复核记录，写侧 SQL 不复制进 bootstrap）。 */
++    public Connection connection() {
++        return connection;
++    }
++
+     @Override
+     public void close() {
+         try {
+@@ -352,6 +357,17 @@ public final class Ledger implements AutoCloseable {
+         }
+     }
+ 
++    /** 任务行全字段（镜像 _cmd_task_show 的 SELECT *；缺任务返回 null，读侧单一来源）。 */
++    public Map<String, Object> taskRow(String taskId) throws SQLException {
++        try (PreparedStatement ps = connection.prepareStatement(
++                "SELECT * FROM tasks WHERE task_id = ?")) {
++            ps.setString(1, taskId);
++            try (ResultSet rs = ps.executeQuery()) {
++                return rs.next() ? rowToMap(rs) : null;
++            }
++        }
++    }
++
+     public void insertWorkbench(String workbenchId, String name, String owner) throws SQLException {
+         try (PreparedStatement ps = connection.prepareStatement(
+                 "INSERT INTO workbench (workbench_id, name, owner, version, created_at) VALUES (?,?,?,?,?)")) {
+@@ -497,7 +513,8 @@ public final class Ledger implements AutoCloseable {
+         return reviews;
+     }
+ 
+-    private Map<String, Object> latestExecution(String taskId) throws SQLException {
++    /** 最近一次执行（镜像 _latest_execution；L04 执行/复核命令层同源取用，Python import 先例）。 */
++    public Map<String, Object> latestExecution(String taskId) throws SQLException {
+         if (!hasTable("executions")) {
+             return null;
+         }
+@@ -510,7 +527,8 @@ public final class Ledger implements AutoCloseable {
+         }
+     }
+ 
+-    private Map<String, Object> latestReview(String taskId) throws SQLException {
++    /** 最近一次复核（镜像 _latest_review；同 latestExecution 的命令层取用先例）。 */
++    public Map<String, Object> latestReview(String taskId) throws SQLException {
+         if (!hasTable("reviews")) {
+             return null;
+         }
+diff --git a/src/main/java/workbench/bootstrap/PyJson.java b/src/main/java/workbench/bootstrap/PyJson.java
+index 4d027fe..d575be9 100644
+--- a/src/main/java/workbench/bootstrap/PyJson.java
++++ b/src/main/java/workbench/bootstrap/PyJson.java
+@@ -20,6 +20,52 @@ public final class PyJson {
+         return out.toString();
+     }
+ 
++    /**
++     * 与 Python {@code json.dumps(obj, ensure_ascii=False)} 同形的紧凑形（默认分隔符
++     * ``", "`` / ``": "``，无换行缩进）——L04 执行记录的 JSON 文本列入库载体
++     * （execution.py 的 dumps；change_manifest_json 出账为原文，字节保真依赖它）。
++     */
++    public static String dumpsCompact(Object node) {
++        StringBuilder out = new StringBuilder();
++        writeCompact(node, out);
++        return out.toString();
++    }
++
++    private static void writeCompact(Object node, StringBuilder out) {
++        if (node == null) {
++            out.append("null");
++        } else if (node instanceof Boolean bool) {
++            out.append(bool);
++        } else if (node instanceof Number number) {
++            out.append(number);
++        } else if (node instanceof String string) {
++            quote(string, out);
++        } else if (node instanceof Map<?, ?> map) {
++            out.append("{");
++            int index = 0;
++            for (Map.Entry<?, ?> entry : map.entrySet()) {
++                if (index++ > 0) {
++                    out.append(", ");
++                }
++                quote(String.valueOf(entry.getKey()), out);
++                out.append(": ");
++                writeCompact(entry.getValue(), out);
++            }
++            out.append("}");
++        } else if (node instanceof List<?> list) {
++            out.append("[");
++            for (int i = 0; i < list.size(); i++) {
++                if (i > 0) {
++                    out.append(", ");
++                }
++                writeCompact(list.get(i), out);
++            }
++            out.append("]");
++        } else {
++            throw new IllegalArgumentException("不可序列化的类型：" + node.getClass());
++        }
++    }
++
+     private static void write(Object node, int depth, StringBuilder out) {
+         if (node == null) {
+             out.append("null");
+diff --git a/src/main/java/workbench/cli/Main.java b/src/main/java/workbench/cli/Main.java
+index fa63fce..9264c5d 100644
+--- a/src/main/java/workbench/cli/Main.java
++++ b/src/main/java/workbench/cli/Main.java
+@@ -4,6 +4,7 @@ import workbench.bootstrap.Args;
+ import workbench.bootstrap.BootstrapCommands;
+ import workbench.bootstrap.Command;
+ import workbench.bootstrap.JsonOut;
++import workbench.execution.ExecutionCommands;
+ import workbench.spec.SpecCommands;
+ 
+ /**
+@@ -22,6 +23,9 @@ public final class Main {
+         // L03：spec 命令经同一条注册缝接入（适配器在 workbench.spec.SpecCommands，
+         // 镜像 cli.py 的 L03 注册段：只加注册调用，缝位置不变）。
+         SpecCommands.register(REGISTRY);
++        // L04：受控执行三命令经同一条缝注册（适配器在 workbench.execution.ExecutionCommands，
++        // 镜像 cli.py 的 L04 注册段：复用 bootstrap 存储入口）。
++        ExecutionCommands.register(REGISTRY);
+     }
+ 
+     public static void main(String[] args) {
+diff --git a/src/main/java/workbench/execution/ExecutionCommands.java b/src/main/java/workbench/execution/ExecutionCommands.java
+new file mode 100644
+index 0000000..bc6556f
+--- /dev/null
++++ b/src/main/java/workbench/execution/ExecutionCommands.java
+@@ -0,0 +1,342 @@
++package workbench.execution;
++
++import workbench.bootstrap.Args;
++import workbench.bootstrap.JsonOut;
++import workbench.bootstrap.Ledger;
++import workbench.bootstrap.PyJson;
++import workbench.cli.CommandRegistry;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.sql.PreparedStatement;
++import java.sql.ResultSet;
++import java.sql.SQLException;
++import java.sql.Statement;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * Workbench V0 受控执行三命令（镜像 workbench/execution.py 的 _cmd_task_run /
++ * _cmd_task_review / _cmd_task_show / register_commands，L04 合同，附录 A2）。
++ *
++ * <p>把 L03 能读的合同变成能组织的一次执行：绑定候选工作区、限制写集、调用执行器、
++ * 收回 invocation / change_manifest / diff / 双流输出（逐项 SHA-256）、运行最小
++ * Eval、停在 review 等人审。执行记录与上游 07-real-codex-executor.json 同形
++ * （ADR-0002：执行器合同形状不变，适配器为语言无关子进程）。校验类拒绝（缺写集/
++ * 坏候选/review 态重跑/自批/前置未接受）不写任何记录；执行类失败（失败/超时/越界/
++ * eval 失败）如实落账，旧记录保留不覆盖。存储只经 Ledger 单一入口（读侧）与同一
++ * 连接（写侧直插，Python execution.py 同层位），不建第二套账本；写集检查的局限如实
++ * 声明：事前约束靠候选工作区绑定 + argv 注入提示词，事后以候选 git 状态实测比对——
++ * 提示词约定不等于事前全部防住（讲义 D4）。
++ */
++public final class ExecutionCommands {
++
++    private ExecutionCommands() {}
++
++    /** REGISTRY 缝第二批注册（与 BootstrapCommands.register 同形，cli.py L04 注册段镜像）。 */
++    public static void register(CommandRegistry registry) {
++        registry.register("workbench-task-run", ExecutionCommands::taskRun);
++        registry.register("workbench-task-review", ExecutionCommands::taskReview);
++        registry.register("workbench-task-show", ExecutionCommands::taskShow);
++    }
++
++    // ---- workbench-task-run -----------------------------------------------------
++
++    private static int taskRun(String[] argv) throws Exception {
++        Args args = new Args(argv,
++                Set.of("--runtime-dir", "--workspace", "--mode", "--executor-command",
++                        "--executor-prompt-file", "--eval-command", "--execution-timeout",
++                        "--actor"),
++                Set.of(),
++                List.of("task_id"),
++                Set.of("--write-scope"));
++        String mode = args.optional("--mode", "verify");
++        if (!mode.equals("verify") && !mode.equals("code")) {
++            throw new Args.UsageException("argument --mode: invalid choice: '" + mode
++                    + "' (choose from 'verify', 'code')");
++        }
++        try (Ledger ledger = Ledger.open(Path.of(args.require("--runtime-dir")), false)) {
++            if (ledger == null || ledger.workbenchRow() == null) {
++                return JsonOut.fail(Ledger.UNINITIALIZED);
++            }
++            String taskId = args.positional(0);
++            if (!ledger.taskExists(taskId)) {
++                return JsonOut.fail("required_task_missing: 任务不存在：" + taskId + "，记录未追加");
++            }
++            Path workspace = Path.of(args.require("--workspace"));
++            String invalid = WorkspaceInspector.workspaceError(workspace);
++            if (invalid != null) {
++                return JsonOut.fail(invalid);
++            }
++            List<String> scope = WriteScope.normalize(args.repeatingList("--write-scope"));
++            // shell 形命令串经 shlex 解析为 argv（Python 复查轮 §3-15：单串 + shlex 是冻结终态口径）
++            List<String> evalArgv;
++            try {
++                evalArgv = Shlex.split(args.require("--eval-command"));
++            } catch (Shlex.Unparseable error) {
++                return JsonOut.fail(
++                        "eval_command_unparseable: --eval-command 不是合法的 shell 形命令串，执行未启动");
++            }
++            List<String> executorCommand = null;
++            if (args.has("--executor-command")) {
++                try {
++                    executorCommand = Shlex.split(args.require("--executor-command"));
++                } catch (Shlex.Unparseable error) {
++                    return JsonOut.fail(
++                            "executor_command_unparseable: --executor-command 不是合法的 shell 形命令串，执行未启动");
++                }
++            }
++            Integer executionTimeout = args.has("--execution-timeout")
++                    ? args.requireInt("--execution-timeout") : null;
++            String promptText = "";
++            if (mode.equals("code")) {
++                if (scope.isEmpty()) {
++                    return JsonOut.fail("write_scope_required: code 模式必须声明允许写集，拒绝启动");
++                }
++                if (executorCommand == null) {
++                    return JsonOut.fail("executor_command_required: code 模式必须给出执行器命令，拒绝启动");
++                }
++            } else if (executorCommand != null) {
++                return JsonOut.fail("verify_rejects_executor_command: 仅复验模式不调用执行器进程，拒绝执行器命令");
++            }
++            if (executionTimeout == null) {
++                // 建设合同"工作目录、写集、超时三者缺一拒绝启动"；预算是执行器合同的
++                // 组成部分（ADR-0002），verify 模式同样须显式声明（Eval 也受它约束）
++                return JsonOut.fail("execution_timeout_required: 必须显式声明 --execution-timeout，执行未启动");
++            }
++            if (!args.optional("--executor-prompt-file", "").isEmpty()) {
++                String promptFile = args.require("--executor-prompt-file");
++                try {
++                    promptText = Files.readString(Path.of(promptFile));
++                } catch (IOException error) {
++                    return JsonOut.fail("executor_prompt_unreadable: 提示词文件不可读取："
++                            + promptFile + "，执行未启动");
++                }
++            }
++            String actor = args.require("--actor");
++            if (actor.strip().isEmpty()) {
++                return JsonOut.fail("required_actor_missing: 执行发起人必须具名，执行未启动");
++            }
++            String state = ledger.taskState(taskId);
++            if (state.equals("review")) {
++                return JsonOut.fail("task_in_review: 任务处于人工复核态，拒绝再次运行：" + taskId);
++            }
++
++            Path realWorkspace = workspace.toRealPath();
++            Map<String, Object> record = JsonOut.ordered(
++                    "task_id", taskId, "mode", mode,
++                    "workspace", realWorkspace.toString(),
++                    "write_scope", scope,
++                    "executor_command", executorCommand,
++                    "executor_prompt", promptText,
++                    "eval_command", evalArgv);
++            if (mode.equals("verify")) {
++                ProcessRunner.Outcome eval = ProcessRunner.run(evalArgv, realWorkspace,
++                        executionTimeout, null);
++                Integer evalRc = eval.returncode();
++                record.put("returncode", null);
++                record.put("timed_out", false);
++                record.put("stdout_text", "");
++                record.put("stderr_text", "");
++                record.put("changed_files", List.of());
++                record.put("out_of_scope_files", List.of());
++                record.put("change_manifest", List.of());
++                record.put("diff_text", "");
++                record.put("eval_returncode", evalRc);
++                record.put("eval_output_text", eval.stdoutText() + eval.stderrText());
++                record.put("eval_timed_out", eval.timedOut());
++                record.put("status", evalRc != null && evalRc == 0 ? "verify_completed" : "eval_failed");
++            } else {
++                ProcessRunner.Outcome outcome = ProcessRunner.run(executorCommand, realWorkspace,
++                        executionTimeout, promptText);
++                WorkspaceInspector.Changes changes =
++                        WorkspaceInspector.collectChanges(realWorkspace, scope);
++                record.put("returncode", outcome.returncode());
++                record.put("timed_out", outcome.timedOut());
++                record.put("stdout_text", outcome.stdoutText());
++                record.put("stderr_text", outcome.stderrText());
++                record.put("changed_files", changes.changedFiles());
++                record.put("out_of_scope_files", changes.outOfScopeFiles());
++                record.put("change_manifest", changes.manifest());
++                record.put("diff_text", changes.diffText());
++                if (outcome.timedOut()) {
++                    record.put("status", "timeout");       // 超时：Eval 前停止，输出与 Diff 已留证
++                } else if (outcome.returncode() == null || outcome.returncode() != 0) {
++                    record.put("status", "failed");        // 执行器失败（含启动失败）：不冒充成功
++                } else if (!changes.outOfScopeFiles().isEmpty()) {
++                    record.put("status", "out_of_scope");  // 越界：Eval 前停止，不自动回滚
++                } else {
++                    ProcessRunner.Outcome eval = ProcessRunner.run(evalArgv, realWorkspace,
++                            executionTimeout, null);
++                    Integer evalRc = eval.returncode();
++                    record.put("eval_returncode", evalRc);
++                    record.put("eval_output_text", eval.stdoutText() + eval.stderrText());
++                    record.put("eval_timed_out", eval.timedOut());
++                    record.put("status", evalRc != null && evalRc == 0 ? "completed" : "eval_failed");
++                }
++            }
++            record.put("stdout_sha256", Ledger.sha256((String) record.get("stdout_text")));
++            record.put("stderr_sha256", Ledger.sha256((String) record.get("stderr_text")));
++            record.put("diff_sha256", Ledger.sha256((String) record.get("diff_text")));
++            record.put("eval_output_sha256",
++                    Ledger.sha256((String) record.getOrDefault("eval_output_text", "")));
++            long executionId = insertExecution(ledger, record, actor.strip());
++            boolean ok = Ledger.EXECUTION_COMPLETE_STATUSES.contains(
++                    String.valueOf(record.get("status")));
++            Map<String, Object> payload = new LinkedHashMap<>(record);
++            payload.put("execution_id", executionId);
++            payload.put("actor", actor.strip());
++            payload.put("observed_at", Ledger.now());
++            JsonOut.emit(JsonOut.ordered("ok", ok, "flowerp_connected", Ledger.FLOWERP_CONNECTED,
++                    "execution", payload, "task_state", ledger.taskState(taskId)));
++            return ok ? 0 : 1;
++        }
++    }
++
++    /** 执行记录入库（镜像 execution.py 的 _insert_execution：JSON 列紧凑形，摘要对存储文本）。 */
++    private static long insertExecution(Ledger ledger, Map<String, Object> record,
++                                        String actor) throws SQLException {
++        String writeScopeJson = PyJson.dumpsCompact(record.get("write_scope"));
++        String executorCommandJson = record.get("executor_command") == null
++                ? null : PyJson.dumpsCompact(record.get("executor_command"));
++        String changedJson = PyJson.dumpsCompact(record.get("changed_files"));
++        String outOfScopeJson = PyJson.dumpsCompact(record.get("out_of_scope_files"));
++        String manifestJson = PyJson.dumpsCompact(record.get("change_manifest"));
++        String evalCommandJson = PyJson.dumpsCompact(record.get("eval_command"));
++        String evalOutputText = (String) record.getOrDefault("eval_output_text", "");
++        try (PreparedStatement ps = ledger.connection().prepareStatement(
++                "INSERT INTO executions (task_id, mode, workspace, write_scope, executor_command,"
++                        + " executor_prompt, returncode, timed_out, stdout_text, stderr_text,"
++                        + " stdout_sha256, stderr_sha256, changed_files, out_of_scope_files,"
++                        + " change_manifest, change_manifest_sha256, diff_text, diff_sha256,"
++                        + " eval_command, eval_returncode, eval_output_text, eval_output_sha256,"
++                        + " eval_timed_out, status, actor, observed_at, recorded_at)"
++                        + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
++                Statement.RETURN_GENERATED_KEYS)) {
++            ps.setString(1, (String) record.get("task_id"));
++            ps.setString(2, (String) record.get("mode"));
++            ps.setString(3, (String) record.get("workspace"));
++            ps.setString(4, writeScopeJson);
++            ps.setString(5, executorCommandJson);
++            ps.setString(6, (String) record.get("executor_prompt"));
++            ps.setObject(7, record.get("returncode"));
++            ps.setInt(8, (Boolean) record.get("timed_out") ? 1 : 0);
++            ps.setString(9, (String) record.get("stdout_text"));
++            ps.setString(10, (String) record.get("stderr_text"));
++            ps.setString(11, (String) record.get("stdout_sha256"));
++            ps.setString(12, (String) record.get("stderr_sha256"));
++            ps.setString(13, changedJson);
++            ps.setString(14, outOfScopeJson);
++            ps.setString(15, manifestJson);
++            ps.setString(16, Ledger.sha256(manifestJson));
++            ps.setString(17, (String) record.get("diff_text"));
++            ps.setString(18, (String) record.get("diff_sha256"));
++            ps.setString(19, evalCommandJson);
++            ps.setObject(20, record.get("eval_returncode"));
++            ps.setString(21, evalOutputText);
++            ps.setString(22, (String) record.get("eval_output_sha256"));
++            ps.setInt(23, Boolean.TRUE.equals(record.get("eval_timed_out")) ? 1 : 0);
++            ps.setString(24, (String) record.get("status"));
++            ps.setString(25, actor);
++            ps.setString(26, Ledger.now());
++            ps.setString(27, Ledger.now());
++            ps.executeUpdate();
++            try (ResultSet keys = ps.getGeneratedKeys()) {
++                keys.next();
++                return keys.getLong(1);
++            }
++        }
++    }
++
++    // ---- workbench-task-review --------------------------------------------------
++
++    private static int taskReview(String[] argv) throws Exception {
++        Args args = new Args(argv,
++                Set.of("--runtime-dir", "--reviewer", "--decision", "--note"),
++                Set.of(), List.of("task_id"));
++        String decision = args.require("--decision");
++        if (!decision.equals("approve") && !decision.equals("reject")) {
++            throw new Args.UsageException("argument --decision: invalid choice: '" + decision
++                    + "' (choose from 'approve', 'reject')");
++        }
++        try (Ledger ledger = Ledger.open(Path.of(args.require("--runtime-dir")), false)) {
++            if (ledger == null || ledger.workbenchRow() == null) {
++                return JsonOut.fail(Ledger.UNINITIALIZED);
++            }
++            String taskId = args.positional(0);
++            if (!ledger.taskExists(taskId)) {
++                return JsonOut.fail("required_task_missing: 任务不存在：" + taskId + "，记录未追加");
++            }
++            String reviewer = args.require("--reviewer").strip();
++            if (reviewer.isEmpty()) {
++                return JsonOut.fail("required_reviewer_missing: 复核人必须具名，记录未追加");
++            }
++            Map<String, Object> latest = ledger.latestExecution(taskId);
++            if (latest == null) {
++                return JsonOut.fail("no_execution_to_review: 任务尚无执行记录，不能复核：" + taskId);
++            }
++            if (reviewer.equals(String.valueOf(latest.get("actor")))) {
++                return JsonOut.fail("self_review_rejected: 复核人与最近一次执行者是同一人（" + reviewer
++                        + "），执行者不能批准自己，记录未追加");
++            }
++            if (!ledger.taskState(taskId).equals("review")) {
++                return JsonOut.fail("task_not_in_review: 任务不处于人工复核态，不能复核：" + taskId);
++            }
++            long executionId = ((Number) latest.get("execution_id")).longValue();
++            long reviewId;
++            try (PreparedStatement ps = ledger.connection().prepareStatement(
++                    "INSERT INTO reviews (task_id, execution_id, reviewer, decision, note,"
++                            + " reviewed_at) VALUES (?,?,?,?,?,?)",
++                    Statement.RETURN_GENERATED_KEYS)) {
++                ps.setString(1, taskId);
++                ps.setLong(2, executionId);
++                ps.setString(3, reviewer);
++                ps.setString(4, decision);
++                ps.setString(5, args.optional("--note", ""));
++                ps.setString(6, Ledger.now());
++                ps.executeUpdate();
++                try (ResultSet keys = ps.getGeneratedKeys()) {
++                    keys.next();
++                    reviewId = keys.getLong(1);
++                }
++            }
++            JsonOut.emit(JsonOut.ordered("ok", true, "flowerp_connected", Ledger.FLOWERP_CONNECTED,
++                    "review", JsonOut.ordered("review_id", reviewId, "task_id", taskId,
++                            "execution_id", executionId, "reviewer", reviewer,
++                            "decision", decision, "note", args.optional("--note", "")),
++                    "task_state", ledger.taskState(taskId)));
++            return 0;
++        }
++    }
++
++    // ---- workbench-task-show ----------------------------------------------------
++
++    private static int taskShow(String[] argv) throws Exception {
++        Args args = new Args(argv, Set.of("--runtime-dir"), Set.of(), List.of("task_id"));
++        try (Ledger ledger = Ledger.open(Path.of(args.require("--runtime-dir")), false)) {
++            if (ledger == null || ledger.workbenchRow() == null) {
++                return JsonOut.fail(Ledger.UNINITIALIZED);
++            }
++            String taskId = args.positional(0);
++            Map<String, Object> task = ledger.taskRow(taskId);
++            if (task == null) {
++                return JsonOut.fail("required_task_missing: 任务不存在：" + taskId);
++            }
++            Object prerequisite = task.get("prerequisite_task_id");
++            JsonOut.emit(JsonOut.ordered("ok", true, "flowerp_connected", Ledger.FLOWERP_CONNECTED,
++                    "task", JsonOut.ordered(
++                            "task_id", task.get("task_id"),
++                            "request", task.get("request"),
++                            "requirement_id", task.get("requirement_id"),
++                            "actor", task.get("actor"),
++                            "prerequisite_task_id", prerequisite == null ? "" : prerequisite,
++                            "state", ledger.taskState(taskId),
++                            "executions", ledger.executionsFor(taskId),
++                            "reviews", ledger.reviewsFor(taskId))));
++            return 0;
++        }
++    }
++}
+diff --git a/src/main/java/workbench/execution/ProcessRunner.java b/src/main/java/workbench/execution/ProcessRunner.java
+new file mode 100644
+index 0000000..2cc3760
+--- /dev/null
++++ b/src/main/java/workbench/execution/ProcessRunner.java
+@@ -0,0 +1,100 @@
++package workbench.execution;
++
++import java.io.IOException;
++import java.io.InputStream;
++import java.io.OutputStream;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Path;
++import java.util.List;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * 执行器与 Eval 共用的进程运行器（镜像 execution.py 的 _run_process，L04 讲义 JD1）。
++ *
++ * <p>超时：预算到点杀进程，保留已产出部分输出（timed_out 独立成事实，不与业务失败
++ * 混淆——复查轮 S-c6）；启动失败（二进制不存在等）必须落账而非裸崩——B 门实跑教训：
++ * 崩在插入前会把执行器已发生的工作记录尽失（上游 V0 同形 launch error preserved，
++ * 复查轮 §3-16）。输出一律按 UTF-8 解码留证（不可解码字节以替换符呈现，
++ * Python errors="replace" 同形）。errno 词面系语言绑定（Python FileNotFoundError vs
++ * Java 异常类名），按移植注记 JD6 如实记录偏差、不伪装同形。
++ */
++public final class ProcessRunner {
++
++    /** returncode 为 null 表示超时或启动失败（与 Python _ProcessOutcome 同形）。 */
++    public record Outcome(Integer returncode, boolean timedOut, String stdoutText, String stderrText) {}
++
++    private ProcessRunner() {}
++
++    public static Outcome run(List<String> command, Path cwd, int timeoutSeconds, String stdinText) {
++        Process process;
++        try {
++            ProcessBuilder builder = new ProcessBuilder(command).directory(cwd.toFile());
++            process = builder.start();
++        } catch (IOException error) {
++            return new Outcome(null, false, "",
++                    "启动失败：" + error.getClass().getSimpleName() + ": " + error.getMessage());
++        }
++        StreamCollector stdout = new StreamCollector(process.getInputStream());
++        StreamCollector stderr = new StreamCollector(process.getErrorStream());
++        Thread outThread = new Thread(stdout, "process-stdout");
++        Thread errThread = new Thread(stderr, "process-stderr");
++        outThread.start();
++        errThread.start();
++        if (stdinText != null) {
++            try (OutputStream stdin = process.getOutputStream()) {
++                stdin.write(stdinText.getBytes(StandardCharsets.UTF_8));
++                stdin.flush();
++            } catch (IOException ignored) {
++                // 执行器先退导致管道断开：stdin 送达失败不改变结局判定
++            }
++        }
++        boolean timedOut = false;
++        Integer returncode = null;
++        try {
++            if (process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
++                returncode = process.exitValue();
++            } else {
++                timedOut = true;
++                process.destroyForcibly();
++                process.waitFor(5, TimeUnit.SECONDS);
++            }
++        } catch (InterruptedException interrupted) {
++            Thread.currentThread().interrupt();
++            process.destroyForcibly();
++        }
++        try {
++            outThread.join(TimeUnit.SECONDS.toMillis(5));
++            errThread.join(TimeUnit.SECONDS.toMillis(5));
++        } catch (InterruptedException interrupted) {
++            Thread.currentThread().interrupt();
++        }
++        return new Outcome(returncode, timedOut, stdout.text(), stderr.text());
++    }
++
++    /** 收集一路输出到缓冲（部分输出在进程被杀后仍随管道收尾可读）。 */
++    private static final class StreamCollector implements Runnable {
++        private final InputStream input;
++        private final java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
++
++        private StreamCollector(InputStream input) {
++            this.input = input;
++        }
++
++        @Override
++        public void run() {
++            byte[] chunk = new byte[8192];
++            try {
++                int read;
++                while ((read = input.read(chunk)) >= 0) {
++                    buffer.write(chunk, 0, read);
++                }
++            } catch (IOException ignored) {
++                // 进程被杀时管道中断：以已收集字节为准
++            }
++        }
++
++        private String text() {
++            return new String(buffer.toByteArray(), StandardCharsets.UTF_8);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/execution/Shlex.java b/src/main/java/workbench/execution/Shlex.java
+new file mode 100644
+index 0000000..485db10
+--- /dev/null
++++ b/src/main/java/workbench/execution/Shlex.java
+@@ -0,0 +1,95 @@
++package workbench.execution;
++
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * shell 形单串 → argv（镜像 Python {@code shlex.split} 的 POSIX 规则子集，L04 讲义 JD1）。
++ *
++ * <p>规则面：空白切分；单引号内逐字取字（无转义）；双引号内反斜杠仅转义 ``\`` ``"`` ``````
++ * ``$`` 与换行（其余保留原字）；引号外反斜杠转义下一字符。引号不闭合即解析失败
++ * （Python ValueError 同位；错误词面由调用方固定给出，本类只承载失败事实）。
++ * 服务于 ``--executor-command`` / ``--eval-command`` 的单串命令形（Python 复查轮
++ * §3-15：nargs='+' 会把选项形 token 误当旗标，单串 + shlex 是冻结终态口径）。
++ */
++public final class Shlex {
++
++    /** 解析失败（引号不闭合/悬空转义）：调用方转固定错误词面，异常文本不外泄。 */
++    public static final class Unparseable extends Exception {
++        public Unparseable(String message) {
++            super(message);
++        }
++    }
++
++    private Shlex() {}
++
++    public static List<String> split(String line) throws Unparseable {
++        List<String> tokens = new ArrayList<>();
++        StringBuilder current = new StringBuilder();
++        boolean hasCurrent = false;
++        int index = 0;
++        while (index < line.length()) {
++            char c = line.charAt(index);
++            if (isWhitespace(c)) {
++                if (hasCurrent) {
++                    tokens.add(current.toString());
++                    current.setLength(0);
++                    hasCurrent = false;
++                }
++                index++;
++            } else if (c == '\'') {
++                hasCurrent = true;
++                index++;
++                int close = line.indexOf('\'', index);
++                if (close < 0) {
++                    throw new Unparseable("No closing quotation");
++                }
++                current.append(line, index, close);
++                index = close + 1;
++            } else if (c == '"') {
++                hasCurrent = true;
++                index++;
++                boolean closed = false;
++                while (index < line.length()) {
++                    char d = line.charAt(index);
++                    if (d == '"') {
++                        closed = true;
++                        index++;
++                        break;
++                    }
++                    if (d == '\\' && index + 1 < line.length()
++                            && ("\\\"`$\n".indexOf(line.charAt(index + 1)) >= 0)) {
++                        current.append(line.charAt(index + 1));
++                        index += 2;
++                    } else {
++                        current.append(d);
++                        index++;
++                    }
++                }
++                if (!closed) {
++                    throw new Unparseable("No closing quotation");
++                }
++            } else if (c == '\\') {
++                if (index + 1 >= line.length()) {
++                    throw new Unparseable("No escaped character");
++                }
++                hasCurrent = true;
++                current.append(line.charAt(index + 1));
++                index += 2;
++            } else {
++                hasCurrent = true;
++                current.append(c);
++                index++;
++            }
++        }
++        if (hasCurrent) {
++            tokens.add(current.toString());
++        }
++        return tokens;
++    }
++
++    /** shlex 默认空白集：空格、\t、\r、\n。 */
++    private static boolean isWhitespace(char c) {
++        return c == ' ' || c == '\t' || c == '\r' || c == '\n';
++    }
++}
+diff --git a/src/main/java/workbench/execution/WorkspaceInspector.java b/src/main/java/workbench/execution/WorkspaceInspector.java
+new file mode 100644
+index 0000000..c9a3b36
+--- /dev/null
++++ b/src/main/java/workbench/execution/WorkspaceInspector.java
+@@ -0,0 +1,134 @@
++package workbench.execution;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.TreeSet;
++
++/**
++ * 候选工作区校验与改动采集（镜像 execution.py 的 _workspace_error/_collect_changes，L04 讲义 JD1）。
++ *
++ * <p>校验拒于进程前：目录存在 → .git 在场 → 有起点提交（能力信封"候选 + 起点版本"，
++ * 复查轮 S-c4）。采集以候选 git 状态实测为准：``status --porcelain -z -uall`` 逐文件
++ * 列改动（新目录不折叠——复查轮 S-c8）；``add -N .`` 意图添加仅写索引标记（不改文件
++ * 内容，候选是 scratch 副本）让未跟踪文件进入 diff；前后摘要一律对原始字节
++ * （复查轮 S6b，decode 同形篡改不可逃逸）。词面中的路径为传入形。
++ */
++public final class WorkspaceInspector {
++
++    public record Change(String path, String change, String beforeSha256, String afterSha256) {}
++
++    public record Changes(List<String> changedFiles, List<Map<String, Object>> manifest,
++                          List<String> outOfScopeFiles, String diffText) {}
++
++    private WorkspaceInspector() {}
++
++    /** 候选不可用时的错误词面；null = 可用。 */
++    public static String workspaceError(Path workspace) {
++        if (!Files.isDirectory(workspace)) {
++            return "workspace_invalid: 工作目录不存在：" + workspace;
++        }
++        if (!Files.exists(workspace.resolve(".git"))) {
++            return "workspace_invalid: 工作目录不是 git 候选（缺 .git）：" + workspace;
++        }
++        if (git(workspace, "rev-parse", "--verify", "HEAD").exitCode() != 0) {
++            return "workspace_invalid: 候选没有起点提交（缺 HEAD）：" + workspace;
++        }
++        return null;
++    }
++
++    public static Changes collectChanges(Path workspace, List<String> scope) throws IOException {
++        GitResult status = git(workspace, "status", "--porcelain", "-z", "-uall");
++        String raw = new String(status.stdout, StandardCharsets.UTF_8);
++        List<String> entries = new ArrayList<>();
++        for (String entry : raw.split("\0", -1)) {
++            if (!entry.isEmpty()) {
++                entries.add(entry);
++            }
++        }
++        TreeSet<String> changed = new TreeSet<>();
++        int index = 0;
++        while (index < entries.size()) {
++            String entry = entries.get(index);
++            changed.add(normalizePath(entry.substring(3)));
++            if (index + 1 < entries.size() && isRename(entry)) {
++                changed.add(normalizePath(entries.get(index + 1))); // 重命名的原路径也算改动
++                index++;
++            }
++            index++;
++        }
++        git(workspace, "add", "-N", ".");
++        GitResult diff = git(workspace, "diff", "HEAD");
++        String diffText = new String(diff.stdout, StandardCharsets.UTF_8);
++        List<Map<String, Object>> manifest = new ArrayList<>();
++        List<String> outOfScope = new ArrayList<>();
++        for (String path : changed) {
++            GitResult head = git(workspace, "show", "HEAD:" + path);
++            String before = head.exitCode() == 0 ? sha256Bytes(head.stdout) : null;
++            Path file = workspace.resolve(path);
++            String after = Files.isRegularFile(file) ? sha256Bytes(Files.readAllBytes(file)) : null;
++            String change = before == null ? "added" : (after == null ? "deleted" : "modified");
++            Map<String, Object> row = new LinkedHashMap<>();
++            row.put("path", path);
++            row.put("change", change);
++            row.put("before_sha256", before);
++            row.put("after_sha256", after);
++            manifest.add(row);
++            if (!WriteScope.inScope(path, scope)) {
++                outOfScope.add(path);
++            }
++        }
++        return new Changes(new ArrayList<>(changed), manifest, outOfScope, diffText);
++    }
++
++    /** porcelain 字段：XY 后随一个空格；R/C 表示 XY 之一带重命名标记。 */
++    private static boolean isRename(String entry) {
++        return "RC".indexOf(entry.charAt(0)) >= 0 || "RC".indexOf(entry.charAt(1)) >= 0;
++    }
++
++    private static String normalizePath(String raw) {
++        return raw.replace('\\', '/');
++    }
++
++    // ---- git 子进程（镜像 _git；输出按字节留证）---------------------------------
++
++    public record GitResult(int exitCode, byte[] stdout, byte[] stderr) {}
++
++    static GitResult git(Path workspace, String... argv) {
++        try {
++            List<String> command = new ArrayList<>(List.of("git", "-C", workspace.toString()));
++            command.addAll(List.of(argv));
++            Process process = new ProcessBuilder(command).start();
++            byte[] stdout = process.getInputStream().readAllBytes();
++            byte[] stderr = process.getErrorStream().readAllBytes();
++            int exit = process.waitFor();
++            return new GitResult(exit, stdout, stderr);
++        } catch (IOException | InterruptedException error) {
++            if (error instanceof InterruptedException) {
++                Thread.currentThread().interrupt();
++            }
++            return new GitResult(-1, new byte[0], new byte[0]);
++        }
++    }
++
++    /** 前后值摘要一律对原始字节（复查轮 S6b）。 */
++    static String sha256Bytes(byte[] data) {
++        try {
++            byte[] digest = MessageDigest.getInstance("SHA-256").digest(data);
++            StringBuilder out = new StringBuilder();
++            for (byte b : digest) {
++                out.append("%02x".formatted(b & 0xff));
++            }
++            return out.toString();
++        } catch (NoSuchAlgorithmException error) {
++            throw new IllegalStateException(error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/execution/WriteScope.java b/src/main/java/workbench/execution/WriteScope.java
+new file mode 100644
+index 0000000..8fae8c4
+--- /dev/null
++++ b/src/main/java/workbench/execution/WriteScope.java
+@@ -0,0 +1,57 @@
++package workbench.execution;
++
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Set;
++
++/**
++ * 写集归一化与越界判定（镜像 execution.py 的 _normalize_scope/_in_scope，L04 讲义 JD1）。
++ *
++ * <p>空条目忽略；绝对路径与越出候选（含 ``..``）的条目不构成有效写集（静默剔除，
++ * 全剔后 code 模式落写集校验拒绝）；只剥 ``./`` 前缀本身，不动 ``.hidden`` 这类
++ * 合法名字（Python 复查轮 S6a）；保序去重。
++ */
++public final class WriteScope {
++
++    private WriteScope() {}
++
++    public static List<String> normalize(List<String> entries) {
++        Set<String> scope = new LinkedHashSet<>();
++        for (String entry : entries) {
++            Path path = Path.of(entry.strip());
++            if (path.getNameCount() == 0) {
++                continue; // 空条目忽略
++            }
++            if (path.isAbsolute() || namePartsContain(path, "..")) {
++                continue;
++            }
++            String posix = path.toString(); // POSIX 载体：分隔符本就是 /
++            while (posix.startsWith("./")) {
++                posix = posix.substring(2);
++            }
++            scope.add(posix.isEmpty() ? "." : posix);
++        }
++        return new ArrayList<>(scope);
++    }
++
++    public static boolean inScope(String path, List<String> scope) {
++        for (String item : scope) {
++            String prefix = item.endsWith("/") ? item : item + "/";
++            if (path.equals(item) || path.startsWith(prefix)) {
++                return true;
++            }
++        }
++        return false;
++    }
++
++    private static boolean namePartsContain(Path path, String part) {
++        for (int i = 0; i < path.getNameCount(); i++) {
++            if (path.getName(i).toString().equals(part)) {
++                return true;
++            }
++        }
++        return false;
++    }
++}
+diff --git a/src/test/java/workbench/execution/L04ExecutionContractTest.java b/src/test/java/workbench/execution/L04ExecutionContractTest.java
+index 1748c27..39ab7e5 100644
+--- a/src/test/java/workbench/execution/L04ExecutionContractTest.java
++++ b/src/test/java/workbench/execution/L04ExecutionContractTest.java
+@@ -157,9 +157,11 @@ class L04ExecutionContractTest {
+         assertThat(execution.get("diff_text").asText()).contains("diff --git", "delivery.csv");
+         assertThat(execution.get("returncode").asInt()).isZero();
+         assertThat(execution.get("timed_out").asBoolean()).isFalse();
+-        assertThat(execution.get("stdout_text").asText()).isEqualTo("created\n");
++        // 冻结 Python 实测：反斜杠在未引号 shell 词内转义 'n'，stdout 即 "createdn"（golden s06 同值）
++        assertThat(execution.get("stdout_text").asText()).isEqualTo("createdn");
+         assertThat(execution.get("stdout_sha256").asText()).hasSize(64);
+-        assertThat(execution.get("change_manifest_sha256").asText()).hasSize(64);
++        // change_manifest_sha256 只入库不入 task-run 出账（冻结 golden s06 键位），出账见 task-show 投影
++        assertThat(execution.has("change_manifest_sha256")).isFalse();
+         assertThat(execution.get("eval_returncode").asInt()).isZero();
+         assertThat(execution.get("status").asText()).isEqualTo("completed");
+         assertThat(payload.get("task_state").asText()).isEqualTo("review");
+@@ -419,6 +421,9 @@ class L04ExecutionContractTest {
+         JsonNode execution = task.get("executions").get(0);
+         assertThat(execution.get("changed_files").toString()).contains("delivery.csv");
+         assertThat(execution.get("eval_command").toString()).contains("sh");
++        assertThat(execution.get("change_manifest_sha256").asText())
++                .as("S-c1：DB 投影带 change_manifest_sha256（status 摘要复核的入账位）").hasSize(64);
++        assertThat(execution.get("change_manifest_json").asText()).contains("delivery.csv");
+         assertThat(task.get("reviews").get(0).get("reviewer").asText()).isEqualTo(REVIEWER);
+         assertThat(task.get("reviews").get(0).get("execution_id").asInt()).isEqualTo(1);
+     }

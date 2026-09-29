@@ -23,6 +23,7 @@ public final class Args {
     private final Map<String, String> values = new HashMap<>();
     private final Set<String> present = new java.util.HashSet<>();
     private final List<String> positionals = new ArrayList<>();
+    private final Map<String, List<String>> repeating = new java.util.LinkedHashMap<>();
 
     /**
      * @param argv         子命令名之后的参数
@@ -41,6 +42,17 @@ public final class Args {
      */
     public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags,
                 List<String> positionalNames) {
+        this(argv, valueFlags, booleanFlags, positionalNames, Set.of());
+    }
+
+    /**
+     * @param repeatingValueFlags 可重复收集的取值选项（L04 --write-scope 的 nargs="+" 同形，
+     *     移植注记 JD1）：选项后连续的非选项令牌逐一收入列表，遇下一 ``--`` 选项停止；
+     *     出现多次则各次收集值按出现序拼接。四参构造器行为零变化（回归保证：既有命令
+     *     不声明可重复选项）。
+     */
+    public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags,
+                List<String> positionalNames, Set<String> repeatingValueFlags) {
         for (int i = 0; i < argv.length; i++) {
             String token = argv[i];
             if (!token.startsWith("--")) {
@@ -62,6 +74,18 @@ public final class Args {
                     throw new UsageException("argument " + name + ": ignored explicit argument");
                 }
                 present.add(name);
+            } else if (repeatingValueFlags.contains(name)) {
+                if (value == null) {
+                    if (i + 1 >= argv.length) {
+                        throw new UsageException(
+                                "argument " + name + ": expected at least one argument");
+                    }
+                    value = argv[++i];
+                }
+                repeating.put(name, new ArrayList<>(List.of(value)));
+                while (i + 1 < argv.length && !argv[i + 1].startsWith("--")) {
+                    repeating.get(name).add(argv[++i]);
+                }
             } else if (valueFlags.contains(name)) {
                 if (value == null) {
                     if (i + 1 >= argv.length) {
@@ -99,7 +123,12 @@ public final class Args {
 
     /** 选项是否出现过（含取值选项）。 */
     public boolean has(String name) {
-        return present.contains(name) || values.containsKey(name);
+        return present.contains(name) || values.containsKey(name) || repeating.containsKey(name);
+    }
+
+    /** 可重复选项的收集值（按出现序；未出现返回空列表——argparse nargs='+' default=[] 同形）。 */
+    public List<String> repeatingList(String name) {
+        return repeating.getOrDefault(name, List.of());
     }
 
     public String optional(String name, String defaultValue) {
