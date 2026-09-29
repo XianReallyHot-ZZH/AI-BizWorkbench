@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * C7     → rejectsDuplicateSection              → 重复"## 目标"夹具 → rc 1 + 重复词面
  * C7     → rejectsWrongOrder                    → 来源/目标互换夹具 → rc 1 + 顺序词面（应为/实际，→ 连接）
  * C7     → rejectsUnknownHeading                → "## 备注"夹具 → rc 1 + 未知词面
+ * C7     → u2028SeparatedHeadingsRejectedLikeFrozenParser → U+2028 连接夹具 → rc 1 + 冻结 Python 实测词面（复查轮 S-1；标题行界仅 \n）
  * C7     → rejectsUnclosedFence                 → ``` 未闭合夹具 → rc 1 + 围栏未闭合词面（不吞后续正式章节）
  * C7     → acceptsHeadingInsideFence            → 围栏内含"## 目标"夹具 → rc 0 且围栏正文在约束字段保留原文（检查点 0002 教学节）
  * C3     → preservesSixFieldsVerbatim           → 六段夹具 → 六字段与各节正文逐字一致
@@ -84,14 +85,12 @@ class L03SpecContractTest {
             SIX_SECTIONS + section("目标", "重复出现的目标段，应触发重复检查。");
 
     /** 来源与目标互换（顺序词面给出应为/实际）。 */
-    private static final String WRONG_ORDER = sixSectionsForOrderProbe();
-
-    private static String sixSectionsForOrderProbe() {
-        return section("目标", "合同测试夹具目标段。") + section("来源", "合同测试夹具来源段。")
-                + section("非目标", "合同测试夹具非目标段。") + section("约束", "合同测试夹具约束段。")
-                + section("验收用例", "合同测试夹具验收用例段。")
-                + section("完成定义", "合同测试夹具完成定义段。");
-    }
+    private static final String WRONG_ORDER = section("目标", "合同测试夹具目标段。")
+            + section("来源", "合同测试夹具来源段。")
+            + section("非目标", "合同测试夹具非目标段。")
+            + section("约束", "合同测试夹具约束段。")
+            + section("验收用例", "合同测试夹具验收用例段。")
+            + section("完成定义", "合同测试夹具完成定义段。");
 
     /** 六段 + "## 备注"（未知检查最先触发）。 */
     private static final String UNKNOWN_HEADING =
@@ -153,6 +152,23 @@ class L03SpecContractTest {
     void rejectsUnknownHeading() {
         assertThat(rejectionMessage(Cli.run("spec", writeFixture(UNKNOWN_HEADING))))
                 .isEqualTo("Spec 包含未知章节：备注");
+    }
+
+    /** U+2028（Unicode 行分隔符）连接的标题与正文：Python re.MULTILINE 只认 \n 行界，
+     * 整段成为未知标题——期望词面为冻结 Python CLI 对同一夹具的实测输出（复查轮 S-1）。 */
+    @Test
+    void u2028SeparatedHeadingsRejectedLikeFrozenParser() {
+        String sep = "\u2028";
+        String fixture = "## 来源" + sep + "来源正文。\n"
+                + "## 目标" + sep + "目标正文。\n"
+                + "## 非目标" + sep + "非目标正文。\n"
+                + "## 约束" + sep + "约束正文。\n"
+                + "## 验收用例" + sep + "验收正文。\n"
+                + "## 完成定义" + sep + "完成正文。\n";
+        assertThat(rejectionMessage(Cli.run("spec", writeFixture(fixture))))
+                .isEqualTo("Spec 包含未知章节：来源" + sep + "来源正文。, 目标" + sep + "目标正文。, "
+                        + "非目标" + sep + "非目标正文。, 约束" + sep + "约束正文。, "
+                        + "验收用例" + sep + "验收正文。, 完成定义" + sep + "完成正文。");
     }
 
     @Test
@@ -248,7 +264,9 @@ class L03SpecContractTest {
 
     @Test
     void frozenTemplateNoInventoryResidue() throws Exception {
-        String template = read(Cli.repoRoot().resolve("workbench/templates/SPEC_TEMPLATE.md"));
+        // C5 断言读 Java 面拷贝（移植注记 A2 C5 字面）；双载体机检已锁其与 Python 原件逐字等价
+        String template = read(Cli.repoRoot()
+                .resolve("src/main/resources/templates/SPEC_TEMPLATE.md"));
         for (String heading : new String[] {"## 来源", "## 目标", "## 非目标", "## 约束",
                 "## 验收用例", "## 完成定义"}) {
             assertThat(template).as("模板六标题在场（C5）").contains(heading);

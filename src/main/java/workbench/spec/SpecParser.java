@@ -55,8 +55,10 @@ public final class SpecParser {
 
     private static final Pattern FENCE_LINE =
             Pattern.compile("^[ ]{0,3}(`{3,}|~{3,})([^\\r\\n]*)");
+    // 无 MULTILINE：标题行界由调用方按 \n 手工分行给出（Python re.MULTILINE 的 $ 只认 \n；
+    // Java Pattern.MULTILINE 会把 \u0085/\u2028/\u2029 也当行界，宽于 Python——复查轮 S-1 对齐）
     private static final Pattern HEADING_LINE =
-            Pattern.compile("^##[ \\t]+([^\\r\\n]+?)[ \\t]*\\r?$", Pattern.MULTILINE);
+            Pattern.compile("^##[ \\t]+([^\\r\\n]+?)[ \\t]*\\r?$");
 
     private SpecParser() {}
 
@@ -147,13 +149,32 @@ public final class SpecParser {
         if (inFence) {
             throw new SpecParseException("Spec 代码围栏未闭合，请补齐示例的结束标记");
         }
+        // 标题半边按 \n 分行（Python re.MULTILINE 行界语义）；围栏半边仍用 splitlines 全集
+        // （splitLinesKeepingEnds），两个半边行界与 Python 逐字同形（复查轮 S-1）
         List<Heading> headings = new ArrayList<>();
-        Matcher heading = HEADING_LINE.matcher(masked.toString());
-        while (heading.find()) {
-            headings.add(new Heading(heading.start(), heading.end(),
-                    heading.start(1), heading.end(1)));
+        String maskText = masked.toString();
+        int lineStart = 0;
+        for (int index = 0; index < maskText.length(); index++) {
+            if (maskText.charAt(index) != '\n') {
+                continue;
+            }
+            collectHeadingIfPresent(maskText, lineStart, index + 1, headings);
+            lineStart = index + 1;
+        }
+        if (lineStart < maskText.length()) {
+            collectHeadingIfPresent(maskText, lineStart, maskText.length(), headings);
         }
         return headings;
+    }
+
+    /** 对一行（[from, to)，to 含结尾 \n 时由正则的 $ 在终止符前匹配）收集标题匹配。 */
+    private static void collectHeadingIfPresent(String text, int from, int to,
+                                                List<Heading> headings) {
+        Matcher heading = HEADING_LINE.matcher(text.substring(from, to));
+        if (heading.lookingAt()) {
+            headings.add(new Heading(from + heading.start(), from + heading.end(),
+                    from + heading.start(1), from + heading.end(1)));
+        }
     }
 
     /** 围栏内行掩码：仅保留 \r\n 以维持行结构与 offset，其余字符替换为空格。 */
