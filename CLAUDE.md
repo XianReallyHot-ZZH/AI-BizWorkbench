@@ -13,7 +13,7 @@ CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：�
 1. **`vendors/` 只读**。CodexFDE 与 flowERP 是 submodule，任何复刻产物不得写回。`git -C vendors/CodexFDE status --short` 与 flowERP 同查必须恒空。
 2. **待审核 ≠ 已接受**（逐字使用）。候选通过全部门槛也只是待审核，直到用户具名验收。Claude 不代签、不自行 merge。
 3. **证据 = 命令 + 退出码 + 失败后权威状态**。AI 自述、绿色截图不算证据；失败记录一律保留，不删不改凑通过。
-4. **冻结合同 fixture**（`workbench/course_contracts.py`）是上游 LESSONS 数据的逐字拷贝，不许"修好"它——发现与上游分歧走检查点显式采纳。
+4. **冻结合同 fixture** 是上游 LESSONS 数据的逐字数据，不许"修好"它——发现与上游分歧走检查点显式采纳。载体（ADR-0006）：Python 阶段为 `workbench/course_contracts.py` 逐字拷贝；Java 重走后为 `CourseContracts.java` 常量类，以**字符串内容逐字等价 + 完整性机检测试**锁定，重走完成前双载体不得分歧。
 5. **用户显式技能**（`/mattpocock-skills:to-spec`、`:implement`、`:handoff`、`:teach`）到点必须停下提醒用户调用；降级路径仅在用户明确同意后走（见 docs/lessons/README.md 技能编排表）。
 6. 换会话用 `/mattpocock-skills:handoff` 生成交接文档，不以裸 `/clear` 为默认。
 
