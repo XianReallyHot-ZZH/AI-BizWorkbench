@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    "echo \"probe: false-green variant (blocking_failed=0) swapped in\"; exec .venv/bin/python -X utf8 -m unittest tests.test_l06_eval_harness -v"
+  ],
+  "command": "[\"sh\", \"-c\", \"echo \\\"probe: false-green variant (blocking_failed=0) swapped in\\\"; exec .venv/bin/python -X utf8 -m unittest tests.test_l06_eval_harness -v\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-28T13:53:26.364990+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/06-observations/20260928T135326364990Z-a1999c3d/output.txt",
+  "sha256": "1e6623d607c2b2a88b1f01e99187d424bdaed2fe67ca65a0a27ce3b9358d3fac",
+  "provenance": "local_teaching_capture"
+}

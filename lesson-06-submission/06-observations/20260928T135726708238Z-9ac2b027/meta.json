@@ -1,0 +1,31 @@
+{
+  "phase": "observation",
+  "argv": [
+    ".venv/bin/python",
+    "-X",
+    "utf8",
+    "-m",
+    "workbench.cli",
+    "workbench-task-run",
+    "CASE-WB-L06-001",
+    "--runtime-dir",
+    ".runtime/course/L01-workbench",
+    "--workspace",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate",
+    "--mode",
+    "verify",
+    "--eval-command",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m evals.l06.checks --no-report",
+    "--execution-timeout",
+    "900",
+    "--actor",
+    "Claude"
+  ],
+  "command": "[\".venv/bin/python\", \"-X\", \"utf8\", \"-m\", \"workbench.cli\", \"workbench-task-run\", \"CASE-WB-L06-001\", \"--runtime-dir\", \".runtime/course/L01-workbench\", \"--workspace\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate\", \"--mode\", \"verify\", \"--eval-command\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m evals.l06.checks --no-report\", \"--execution-timeout\", \"900\", \"--actor\", \"Claude\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T13:57:26.708238+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/06-observations/20260928T135726708238Z-9ac2b027/output.txt",
+  "sha256": "65f2c85f5d545d70fcde9d9deebb3548eb3d6729b9b3c9937ee61343afac14cf",
+  "provenance": "local_teaching_capture"
+}

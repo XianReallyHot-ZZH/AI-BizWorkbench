@@ -1,0 +1,16 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "-C",
+    ".runtime/course/L06-defect-baseline",
+    "diff"
+  ],
+  "command": "[\"git\", \"-C\", \".runtime/course/L06-defect-baseline\", \"diff\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T13:54:00.889964+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/04-diff/20260928T135400889964Z-34be6624/output.txt",
+  "sha256": "1d7e9e825944bc8832255aa0d53220f2b3b2e778321038eecce8fc1eb54d04b3",
+  "provenance": "local_teaching_capture"
+}

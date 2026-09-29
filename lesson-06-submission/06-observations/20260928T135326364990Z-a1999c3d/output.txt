@@ -1,0 +1,33 @@
+probe: false-green variant (blocking_failed=0) swapped in
+test_01_pass_and_report (tests.test_l06_eval_harness.RunnerContract.test_01_pass_and_report) ... ok
+test_02_blocking_is_not_majority_vote (tests.test_l06_eval_harness.RunnerContract.test_02_blocking_is_not_majority_vote) ... FAIL
+test_03_observing_keeps_warning (tests.test_l06_eval_harness.RunnerContract.test_03_observing_keeps_warning) ... ok
+test_04_exception_keeps_reason_and_continues (tests.test_l06_eval_harness.RunnerContract.test_04_exception_keeps_reason_and_continues) ... FAIL
+test_05_observing_exception_is_not_silently_promoted (tests.test_l06_eval_harness.RunnerContract.test_05_observing_exception_is_not_silently_promoted) ... ok
+test_06_invalid_selection (tests.test_l06_eval_harness.RunnerContract.test_06_invalid_selection) ... ok
+test_07_subset_is_explicit (tests.test_l06_eval_harness.RunnerContract.test_07_subset_is_explicit) ... ok
+test_08_write_failure_cannot_reuse_old_report (tests.test_l06_eval_harness.RunnerContract.test_08_write_failure_cannot_reuse_old_report) ... ok
+test_09_consumer_rejects_summary_or_exit_contradiction (tests.test_l06_eval_harness.RunnerContract.test_09_consumer_rejects_summary_or_exit_contradiction) ... ok
+
+======================================================================
+FAIL: test_02_blocking_is_not_majority_vote (tests.test_l06_eval_harness.RunnerContract.test_02_blocking_is_not_majority_vote)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l06_eval_harness.py", line 57, in test_02_blocking_is_not_majority_vote
+    self.assertEqual(code, 1, "HARNESS-BLOCK: 一项 blocking 失败必须阻断交付")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1 : HARNESS-BLOCK: 一项 blocking 失败必须阻断交付
+
+======================================================================
+FAIL: test_04_exception_keeps_reason_and_continues (tests.test_l06_eval_harness.RunnerContract.test_04_exception_keeps_reason_and_continues)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/tests/test_l06_eval_harness.py", line 72, in test_04_exception_keeps_reason_and_continues
+    self.assertEqual(code, 1, "HARNESS-ERROR")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1 : HARNESS-ERROR
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.013s
+
+FAILED (failures=2)

@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    "shasum -a 256 vendors/flowERP/eval/harness.py vendors/flowERP/eval/cases.py .runtime/course/L06-defect-baseline/eval/harness.py .runtime/course/L06-defect-baseline/eval/cases.py .runtime/course/L06-candidate/eval/harness.py .runtime/course/L06-candidate/eval/cases.py"
+  ],
+  "command": "[\"sh\", \"-c\", \"shasum -a 256 vendors/flowERP/eval/harness.py vendors/flowERP/eval/cases.py .runtime/course/L06-defect-baseline/eval/harness.py .runtime/course/L06-defect-baseline/eval/cases.py .runtime/course/L06-candidate/eval/harness.py .runtime/course/L06-candidate/eval/cases.py\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-28T13:56:44.927594+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/06-observations/20260928T135644927594Z-93532191/output.txt",
+  "sha256": "165dd506208b06c90743950952cee4d8a22ea2d601f490300baff5f312a4e4b5",
+  "provenance": "local_teaching_capture"
+}

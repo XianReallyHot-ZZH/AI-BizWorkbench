@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "flowerp_connected": false,
+  "execution": {
+    "task_id": "CASE-WB-L06-001",
+    "mode": "verify",
+    "workspace": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate",
+    "write_scope": [],
+    "executor_command": null,
+    "executor_prompt": "",
+    "eval_command": [
+      "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python",
+      "-X",
+      "utf8",
+      "-m",
+      "evals.l06.checks",
+      "--no-report"
+    ],
+    "returncode": null,
+    "timed_out": false,
+    "stdout_text": "",
+    "stderr_text": "",
+    "changed_files": [],
+    "out_of_scope_files": [],
+    "change_manifest": [],
+    "diff_text": "",
+    "eval_returncode": 0,
+    "eval_output_text": "{\n  \"schema_version\": \"1.0\",\n  \"suite\": \"all\",\n  \"requested_cases\": [\n    \"l06_stock_consistency\",\n    \"l05_receiving_regression\",\n    \"l06_customer_stock_case\",\n    \"l06_frozen_checks\",\n    \"teaching_observation\"\n  ],\n  \"generated_at\": \"2026-09-28T13:57:27.934232+00:00\",\n  \"summary\": {\n    \"total\": 5,\n    \"passed\": 4,\n    \"blocking_failed\": 0,\n    \"observing_failed\": 1,\n    \"decision\": \"pass\"\n  },\n  \"results\": [\n    {\n      \"name\": \"l06_stock_consistency\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 405,\n      \"evidence\": \"{\\\"case\\\": \\\"stock_consistency\\\", \\\"status\\\": \\\"pass\\\", \\\"opening\\\": 8, \\\"reserved\\\": 3, \\\"available\\\": 5, \\\"query\\\": [8, 3, 5], \\\"csv\\\": [8, 3, 5], \\\"rejected_reserve\\\": 6, \\\"state_unchanged\\\": true}\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l05_receiving_regression\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 281,\n      \"evidence\": \"{\\\"total\\\": 1, \\\"passed\\\": 1, \\\"blocking_failed\\\": 0, \\\"observing_failed\\\": 0, \\\"decision\\\": \\\"pass\\\"}\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l06_customer_stock_case\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 288,\n      \"evidence\": \"{\\\"total\\\": 1, \\\"passed\\\": 1, \\\"blocking_failed\\\": 0, \\\"observing_failed\\\": 0, \\\"decision\\\": \\\"pass\\\"}\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l06_frozen_checks\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 1,\n      \"evidence\": \"冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e\",\n      \"error\": null\n    },\n    {\n      \"name\": \"teaching_observation\",\n      \"level\": \"observing\",\n      \"passed\": false,\n      \"duration_ms\": 0,\n      \"evidence\": \"教学观察项：模拟非阻断提示，不代表实际缺陷\",\n      \"error\": {\n        \"type\": \"AssertionError\",\n        \"message\": \"教学观察项：模拟非阻断提示，不代表实际缺陷\"\n      }\n    }\n  ]\n}\n",
+    "eval_timed_out": false,
+    "status": "verify_completed",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "eval_output_sha256": "b7746a1e5fe03343a1dab6e203c28f3f56c864ace60b996d881c008475254449",
+    "execution_id": 6,
+    "actor": "Claude",
+    "observed_at": "2026-09-28T13:57:27+00:00"
+  },
+  "task_state": "review"
+}

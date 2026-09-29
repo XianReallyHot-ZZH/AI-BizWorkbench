@@ -1,0 +1,6 @@
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  vendors/flowERP/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  vendors/flowERP/eval/cases.py
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  .runtime/course/L06-defect-baseline/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  .runtime/course/L06-defect-baseline/eval/cases.py
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  .runtime/course/L06-candidate/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  .runtime/course/L06-candidate/eval/cases.py
