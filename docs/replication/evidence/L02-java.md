@@ -46,3 +46,22 @@ golden 前置生成，连同生成器与本 §G 随前置提交落 master（L01 
 `.runtime/golden-l02/raw/`（gitignore，不入库）：15 组 stdout/stderr + inputs 固定件。重跑生成器即可复现，不依赖本机留存。
 
 ---
+
+## R. 候选 lesson-02-java 证据（2026-09-29，implement 授权前阶段）
+
+### R0 环境与分支形状
+
+- 环境：JBR Java 21.0.10（javac 21.0.10）、Maven 3.9.6、macOS（Darwin 25.6.0）；Python 侧 .venv（3.13，anaconda 托管——L00 既记偏离）
+- 分支 `lesson-02-java` 自 master@`f445da0` 分出（继承前置 golden）
+- 决策记录：**配合点 1 复认（2026-09-29）**——用户显式选择降级路径：讲义 §2 合同表 + 冻结合同 fixture 即 Spec，不调用 `/mattpocock-skills:to-spec`（Python 时代同意不延续，本次重新确认）；A6 候选表 R1–R5 写入、R6 不写入随同批量确认
+
+### R1 起始红（C1）
+
+- **红封条**：`lesson-02-submission/java/03-failure/20260929T051448833581Z-5b184e93/`（`mvn test`，rc=1）
+- 红形态：40 跑 **3 红**（`JavaLineRuleFactsTest` 全部三条——CLAUDE.md 缺 Java 重走线规则要素：`mvn test` 词面缺席 / `src/main` 结构组缺席 / 冻结面组缺席，全部目标能力缺失类）+ **37 绿**（就位类：L02 翻译件 5 绿【Python L02 ReferencedCommandsAreReal 先例，映射表声明】、fixture 5 绿、既有合同 25 绿）
+- **golden 双重放绿于红中**：GoldenL02ReplayTest 15 场景首次 Java 重放即字节级一致（就位类语义面锁定，移植注记 A3 预期）；GoldenL01ReplayTest 委托重构后行为不变
+- 采红前失败两次（按"先修再采"处理，现场如实保留）：
+  1. **golden 重放支撑重构滑手**：`GoldenReplay.goldenResource` 对已含前导 `/` 的资源名再补 `/`，双斜杠 classpath 查不到 → GoldenL01/L02ReplayTest 双双"必须在测试 classpath"红（预检跑，`target/test-classes` 中资源实存、manifest 可读，定位到拼接 bug）→ 修复后两重放绿
+  2. **采集参数误读**：`--submission-root` 是完整相对路径而非父根下子名，首采落仓库根 `java/03-failure/20260929T051109701433Z-accdd5fa/`（rc=1，封条本身有效但位置错）——按写集纪律不入库、原样保留于工作树不删，处置待人审裁定；重采以正确子根落位
+
+---
