@@ -2,9 +2,6 @@ package workbench.rules;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -29,100 +26,65 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class L02WorkbenchRulesTest {
 
-    private static final Path REPO = Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
-    private static final Path RULES = REPO.resolve("CLAUDE.md");
-
-    private static String rulesText() {
-        try {
-            return Files.readString(RULES);
-        } catch (java.io.IOException error) {
-            throw new java.io.UncheckedIOException(error);
-        }
-    }
-
-    /** 逐组检查：组内任一关键词出现即算该组在场；返回全部缺席的组。 */
-    @SafeVarargs
-    private static List<String[]> missingGroups(String text, String[]... groups) {
-        List<String[]> missing = new ArrayList<>();
-        for (String[] group : groups) {
-            boolean present = false;
-            for (String word : group) {
-                if (text.contains(word)) {
-                    present = true;
-                    break;
-                }
-            }
-            if (!present) {
-                missing.add(group);
-            }
-        }
-        return missing;
-    }
-
-    private static void assertAllGroupsPresent(String label, List<String[]> missing) {
-        assertThat(missing).as("%s 语义要素缺席组数", label).isEmpty();
-    }
-
     @Test
     void fiveBusinessInvariantsPresent() {
-        String text = rulesText();
+        String text = RuleText.rulesText();
         List<List<String[]>> perInvariant = List.of(
                 // 库存非负 + 原子预占
-                missingGroups(text, new String[] {"库存"}, new String[] {"不能为负", "不为负", "永不为负", "非负"},
+                RuleText.missingGroups(text, new String[] {"库存"}, new String[] {"不能为负", "不为负", "永不为负", "非负"},
                         new String[] {"预占"}, new String[] {"原子"}),
                 // 同一幂等键只生效一次
-                missingGroups(text, new String[] {"幂等"}, new String[] {"一次"}),
+                RuleText.missingGroups(text, new String[] {"幂等"}, new String[] {"一次"}),
                 // 状态机迁移 + 取消释放预占
-                missingGroups(text, new String[] {"状态机"}, new String[] {"取消"}, new String[] {"释放"}),
+                RuleText.missingGroups(text, new String[] {"状态机"}, new String[] {"取消"}, new String[] {"释放"}),
                 // 具名审批后才入库
-                missingGroups(text, new String[] {"审批"}, new String[] {"入库"},
+                RuleText.missingGroups(text, new String[] {"审批"}, new String[] {"入库"},
                         new String[] {"具名", "批准", "人工批准"}),
                 // 记录可追溯，失败不伪装成成功
-                missingGroups(text, new String[] {"可追溯"}, new String[] {"失败"},
+                RuleText.missingGroups(text, new String[] {"可追溯"}, new String[] {"失败"},
                         new String[] {"不能显示成成功", "不伪装", "不能伪装", "不得把失败", "失败不能"}));
         for (int i = 0; i < perInvariant.size(); i++) {
-            assertAllGroupsPresent("业务边界第 %d 条".formatted(i + 1), perInvariant.get(i));
+            assertThat(perInvariant.get(i)).as("业务边界第 %d 条语义要素缺席组数", i + 1).isEmpty();
         }
     }
 
     @Test
     void invariantsCarryApplicability() {
         // 适用条件：边界是给"涉及 FlowERP 业务实现"的场景预埋的，不是日常文档改动的负担
-        assertThat(Pattern.compile("涉及.{0,8}[Ff]lowERP.{0,12}业务").matcher(rulesText()).find())
+        assertThat(Pattern.compile("涉及.{0,8}[Ff]lowERP.{0,12}业务").matcher(RuleText.rulesText()).find())
                 .as("边界适用条件（涉及 FlowERP 业务实现时）在场").isTrue();
     }
 
     @Test
     void structureConventionPresent() {
-        String text = rulesText();
-        assertAllGroupsPresent("结构约定", missingGroups(text,
+        assertThat(RuleText.missingGroups(RuleText.rulesText(),
                 new String[] {"调用方向", "调用关系", "分层"},
                 new String[] {"命令入口", "入口"},
                 new String[] {"存储"},
-                new String[] {"复用"}));
+                new String[] {"复用"})).as("结构约定语义要素缺席组数").isEmpty();
     }
 
     @Test
     void definitionOfDonePresent() {
-        String text = rulesText();
+        String text = RuleText.rulesText();
         assertThat(Pattern.compile("完成定义|Definition of Done").matcher(text).find())
                 .as("完成定义标题在场").isTrue();
-        assertAllGroupsPresent("完成定义", missingGroups(text,
+        assertThat(RuleText.missingGroups(text,
                 new String[] {"正常路径"},
                 new String[] {"失败路径", "失败用例", "反例"},
                 new String[] {"退出码"},
                 new String[] {"未解决", "待办", "待确认"},
-                new String[] {"不写成已实现", "不能写成已经实现", "不得写成已实现", "未实现不得", "不冒充"}));
+                new String[] {"不写成已实现", "不能写成已经实现", "不得写成已实现", "未实现不得", "不冒充"}))
+                .as("完成定义语义要素缺席组数").isEmpty();
     }
 
     @Test
     void referencedCommandsAreReal() {
         // C4 Python 侧半边：规则里的验证入口必须指向仓库真实存在的被引用物（防虚构路径的回归护栏）
-        String text = rulesText();
-        assertThat(text).as("unittest discover 入口字面量在场").contains("unittest discover");
+        assertThat(RuleText.rulesText()).as("unittest discover 入口字面量在场").contains("unittest discover");
         for (String relative : new String[] {"tests", "workbench/cli.py", "workbench/course_contracts.py"}) {
-            assertThat(REPO.resolve(relative)).as("规则引用的路径存在：%s", relative).exists();
+            assertThat(RuleText.REPO.resolve(relative)).as("规则引用的路径存在：%s", relative).exists();
         }
-        assertThat(RULES).as("规则文件为仓库根 CLAUDE.md").isRegularFile();
+        assertThat(RuleText.rulesPath()).as("规则文件为仓库根 CLAUDE.md").isRegularFile();
     }
 }

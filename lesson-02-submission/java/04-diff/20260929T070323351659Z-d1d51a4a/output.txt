@@ -1,0 +1,267 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 454d9b4..4e20465 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -105,10 +105,12 @@ Java 重走线（ADR-0006，重走期唯一活动实现；状态唯一事实源
+ │   ├── coursecontracts/           CourseContracts.java 冻结合同 fixture 双载体（与 Python 载体逐字等价 + 机检锁定）
+ │   └── tools/                     ImportEvidence（复刻 vendor import_evidence.py 语义，重算 SHA-256 验封）
+ ├── src/test/java/                 合同测试 + golden 重放（testsupport/Cli 经真实 CLI 子进程驱动，不绕入口直调）
+-├── src/test/resources/golden/     对照基准 l01（22 场景）/ l02（15 场景）——Python 冻结版采出，永不手改
++├── src/test/resources/golden/     对照基准 l01 / l02 两套（场景清单见各 manifest.json）——Python 冻结版采出，永不手改
+ ├── src/test/resources/coursecontracts/frozen-python-projection.json  Python 载体全字段投影（机检对照件）
+ ├── pom.xml                        Maven + Java 21 + JUnit5/AssertJ；运行时依赖白名单：Jackson、sqlite-jdbc
+ └── bin/wb                         CLI 包装脚本（classpath = target/classes + build-classpath 落盘清单）
++
++（Python 冻结面新增能力——evals/ 评测、记忆系统、工作台看板——见 docs/replication/README.md 对应行，不在此展开）
+ ```
+ 
+ **结构约定**：
+diff --git a/src/test/java/workbench/rules/JavaLineRuleFactsTest.java b/src/test/java/workbench/rules/JavaLineRuleFactsTest.java
+index 8a4e8c6..1ddb250 100644
+--- a/src/test/java/workbench/rules/JavaLineRuleFactsTest.java
++++ b/src/test/java/workbench/rules/JavaLineRuleFactsTest.java
+@@ -2,9 +2,6 @@ package workbench.rules;
+ 
+ import org.junit.jupiter.api.Test;
+ 
+-import java.nio.file.Files;
+-import java.nio.file.Path;
+-
+ import static org.assertj.core.api.Assertions.assertThat;
+ 
+ /**
+@@ -26,64 +23,36 @@ import static org.assertj.core.api.Assertions.assertThat;
+  */
+ class JavaLineRuleFactsTest {
+ 
+-    private static final Path REPO = Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
+-
+-    private static String rulesText() {
+-        try {
+-            return Files.readString(REPO.resolve("CLAUDE.md"));
+-        } catch (java.io.IOException error) {
+-            throw new java.io.UncheckedIOException(error);
+-        }
+-    }
+-
+     @Test
+     void javaVerificationCommandsPresent() {
+         // J1：Java 验证命令在场（词面 + 引用物，双向——C4 精神：不照抄不存在的命令）
+-        String text = rulesText();
++        String text = RuleText.rulesText();
+         assertThat(text).as("mvn test 全量门词面在场").contains("mvn test");
+         assertThat(text).as("./bin/wb CLI 包装入口词面在场").contains("./bin/wb");
+-        assertThat(REPO.resolve("pom.xml")).as("规则引用的 pom.xml 存在").isRegularFile();
+-        assertThat(REPO.resolve("bin/wb")).as("规则引用的 bin/wb 存在").isRegularFile();
+-        assertThat(REPO.resolve("src/main/java")).as("规则引用的 src/main/java 存在").isDirectory();
+-        assertThat(REPO.resolve("src/test/java")).as("规则引用的 src/test/java 存在").isDirectory();
++        assertThat(RuleText.REPO.resolve("pom.xml")).as("规则引用的 pom.xml 存在").isRegularFile();
++        assertThat(RuleText.REPO.resolve("bin/wb")).as("规则引用的 bin/wb 存在").isRegularFile();
++        assertThat(RuleText.REPO.resolve("src/main/java")).as("规则引用的 src/main/java 存在").isDirectory();
++        assertThat(RuleText.REPO.resolve("src/test/java")).as("规则引用的 src/test/java 存在").isDirectory();
+     }
+ 
+     @Test
+     void javaStructureFactsPresent() {
+         // J2：Java 线结构事实语义组（分层载体/包装入口/golden 资源位；双载体子组已就位——铁律 4）
+-        String text = rulesText();
+-        for (String[] group : new String[][] {
+-                {"src/main", "src/main/java"},
+-                {"CourseContracts", "coursecontracts", "双载体"},
+-                {"bin/wb",},
+-                {"golden/l01", "golden/l02", "对照基准"}}) {
+-            boolean present = false;
+-            for (String word : group) {
+-                if (text.contains(word)) {
+-                    present = true;
+-                    break;
+-                }
+-            }
+-            assertThat(present).as("Java 结构事实语义组在场：%s", String.join(" / ", group)).isTrue();
+-        }
++        assertThat(RuleText.missingGroups(RuleText.rulesText(),
++                new String[] {"src/main", "src/main/java"},
++                new String[] {"CourseContracts", "coursecontracts", "双载体"},
++                new String[] {"bin/wb",},
++                new String[] {"golden/l01", "golden/l02", "对照基准"}))
++                .as("Java 结构事实语义组缺席组数").isEmpty();
+     }
+ 
+     @Test
+     void dualTrackFreezeDisciplinePresent() {
+         // J3：双轨冻结纪律语义组（冻结面 / Python 账本零写入 / 重走线指针）
+-        String text = rulesText();
+-        for (String[] group : new String[][] {
+-                {"冻结不触碰", "冻结面", "零触碰", "冻结实现面"},
+-                {".runtime/course/L01-workbench", "Python 时代账本", "Python 账本"},
+-                {"重走线",}}) {
+-            boolean present = false;
+-            for (String word : group) {
+-                if (text.contains(word)) {
+-                    present = true;
+-                    break;
+-                }
+-            }
+-            assertThat(present).as("双轨冻结纪律语义组在场：%s", String.join(" / ", group)).isTrue();
+-        }
++        assertThat(RuleText.missingGroups(RuleText.rulesText(),
++                new String[] {"冻结不触碰", "冻结面", "零触碰", "冻结实现面"},
++                new String[] {".runtime/course/L01-workbench", "Python 时代账本", "Python 账本"},
++                new String[] {"重走线",}))
++                .as("双轨冻结纪律语义组缺席组数").isEmpty();
+     }
+ }
+diff --git a/src/test/java/workbench/rules/L02WorkbenchRulesTest.java b/src/test/java/workbench/rules/L02WorkbenchRulesTest.java
+index 16f9372..9e25747 100644
+--- a/src/test/java/workbench/rules/L02WorkbenchRulesTest.java
++++ b/src/test/java/workbench/rules/L02WorkbenchRulesTest.java
+@@ -2,9 +2,6 @@ package workbench.rules;
+ 
+ import org.junit.jupiter.api.Test;
+ 
+-import java.nio.file.Files;
+-import java.nio.file.Path;
+-import java.util.ArrayList;
+ import java.util.List;
+ import java.util.regex.Pattern;
+ 
+@@ -29,100 +26,65 @@ import static org.assertj.core.api.Assertions.assertThat;
+  */
+ class L02WorkbenchRulesTest {
+ 
+-    private static final Path REPO = Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
+-    private static final Path RULES = REPO.resolve("CLAUDE.md");
+-
+-    private static String rulesText() {
+-        try {
+-            return Files.readString(RULES);
+-        } catch (java.io.IOException error) {
+-            throw new java.io.UncheckedIOException(error);
+-        }
+-    }
+-
+-    /** 逐组检查：组内任一关键词出现即算该组在场；返回全部缺席的组。 */
+-    @SafeVarargs
+-    private static List<String[]> missingGroups(String text, String[]... groups) {
+-        List<String[]> missing = new ArrayList<>();
+-        for (String[] group : groups) {
+-            boolean present = false;
+-            for (String word : group) {
+-                if (text.contains(word)) {
+-                    present = true;
+-                    break;
+-                }
+-            }
+-            if (!present) {
+-                missing.add(group);
+-            }
+-        }
+-        return missing;
+-    }
+-
+-    private static void assertAllGroupsPresent(String label, List<String[]> missing) {
+-        assertThat(missing).as("%s 语义要素缺席组数", label).isEmpty();
+-    }
+-
+     @Test
+     void fiveBusinessInvariantsPresent() {
+-        String text = rulesText();
++        String text = RuleText.rulesText();
+         List<List<String[]>> perInvariant = List.of(
+                 // 库存非负 + 原子预占
+-                missingGroups(text, new String[] {"库存"}, new String[] {"不能为负", "不为负", "永不为负", "非负"},
++                RuleText.missingGroups(text, new String[] {"库存"}, new String[] {"不能为负", "不为负", "永不为负", "非负"},
+                         new String[] {"预占"}, new String[] {"原子"}),
+                 // 同一幂等键只生效一次
+-                missingGroups(text, new String[] {"幂等"}, new String[] {"一次"}),
++                RuleText.missingGroups(text, new String[] {"幂等"}, new String[] {"一次"}),
+                 // 状态机迁移 + 取消释放预占
+-                missingGroups(text, new String[] {"状态机"}, new String[] {"取消"}, new String[] {"释放"}),
++                RuleText.missingGroups(text, new String[] {"状态机"}, new String[] {"取消"}, new String[] {"释放"}),
+                 // 具名审批后才入库
+-                missingGroups(text, new String[] {"审批"}, new String[] {"入库"},
++                RuleText.missingGroups(text, new String[] {"审批"}, new String[] {"入库"},
+                         new String[] {"具名", "批准", "人工批准"}),
+                 // 记录可追溯，失败不伪装成成功
+-                missingGroups(text, new String[] {"可追溯"}, new String[] {"失败"},
++                RuleText.missingGroups(text, new String[] {"可追溯"}, new String[] {"失败"},
+                         new String[] {"不能显示成成功", "不伪装", "不能伪装", "不得把失败", "失败不能"}));
+         for (int i = 0; i < perInvariant.size(); i++) {
+-            assertAllGroupsPresent("业务边界第 %d 条".formatted(i + 1), perInvariant.get(i));
++            assertThat(perInvariant.get(i)).as("业务边界第 %d 条语义要素缺席组数", i + 1).isEmpty();
+         }
+     }
+ 
+     @Test
+     void invariantsCarryApplicability() {
+         // 适用条件：边界是给"涉及 FlowERP 业务实现"的场景预埋的，不是日常文档改动的负担
+-        assertThat(Pattern.compile("涉及.{0,8}[Ff]lowERP.{0,12}业务").matcher(rulesText()).find())
++        assertThat(Pattern.compile("涉及.{0,8}[Ff]lowERP.{0,12}业务").matcher(RuleText.rulesText()).find())
+                 .as("边界适用条件（涉及 FlowERP 业务实现时）在场").isTrue();
+     }
+ 
+     @Test
+     void structureConventionPresent() {
+-        String text = rulesText();
+-        assertAllGroupsPresent("结构约定", missingGroups(text,
++        assertThat(RuleText.missingGroups(RuleText.rulesText(),
+                 new String[] {"调用方向", "调用关系", "分层"},
+                 new String[] {"命令入口", "入口"},
+                 new String[] {"存储"},
+-                new String[] {"复用"}));
++                new String[] {"复用"})).as("结构约定语义要素缺席组数").isEmpty();
+     }
+ 
+     @Test
+     void definitionOfDonePresent() {
+-        String text = rulesText();
++        String text = RuleText.rulesText();
+         assertThat(Pattern.compile("完成定义|Definition of Done").matcher(text).find())
+                 .as("完成定义标题在场").isTrue();
+-        assertAllGroupsPresent("完成定义", missingGroups(text,
++        assertThat(RuleText.missingGroups(text,
+                 new String[] {"正常路径"},
+                 new String[] {"失败路径", "失败用例", "反例"},
+                 new String[] {"退出码"},
+                 new String[] {"未解决", "待办", "待确认"},
+-                new String[] {"不写成已实现", "不能写成已经实现", "不得写成已实现", "未实现不得", "不冒充"}));
++                new String[] {"不写成已实现", "不能写成已经实现", "不得写成已实现", "未实现不得", "不冒充"}))
++                .as("完成定义语义要素缺席组数").isEmpty();
+     }
+ 
+     @Test
+     void referencedCommandsAreReal() {
+         // C4 Python 侧半边：规则里的验证入口必须指向仓库真实存在的被引用物（防虚构路径的回归护栏）
+-        String text = rulesText();
+-        assertThat(text).as("unittest discover 入口字面量在场").contains("unittest discover");
++        assertThat(RuleText.rulesText()).as("unittest discover 入口字面量在场").contains("unittest discover");
+         for (String relative : new String[] {"tests", "workbench/cli.py", "workbench/course_contracts.py"}) {
+-            assertThat(REPO.resolve(relative)).as("规则引用的路径存在：%s", relative).exists();
++            assertThat(RuleText.REPO.resolve(relative)).as("规则引用的路径存在：%s", relative).exists();
+         }
+-        assertThat(RULES).as("规则文件为仓库根 CLAUDE.md").isRegularFile();
++        assertThat(RuleText.rulesPath()).as("规则文件为仓库根 CLAUDE.md").isRegularFile();
+     }
+ }
+diff --git a/src/test/java/workbench/testsupport/GoldenReplay.java b/src/test/java/workbench/testsupport/GoldenReplay.java
+index 95c7b64..34dcb8a 100644
+--- a/src/test/java/workbench/testsupport/GoldenReplay.java
++++ b/src/test/java/workbench/testsupport/GoldenReplay.java
+@@ -80,7 +80,7 @@ public final class GoldenReplay {
+                     .isEqualTo(scenario.path("exit_code").asInt());
+             assertThat(Cli.normalize(result.stdout()))
+                     .as("%s 规范化输出逐字节对照", id)
+-                    .isEqualTo(goldenResource(resourceDir + scenario.path("stdout_file").asText()));
++                    .isEqualTo(goldenContent(resourceDir + scenario.path("stdout_file").asText()));
+             if (scenario.hasNonNull("assert_db_absent")) {
+                 Path db = Cli.repoRoot().resolve(scenario.get("assert_db_absent").asText());
+                 assertThat(db).as("%s 不得偷偷建库（WB-10）", id).doesNotExist();
+@@ -88,7 +88,7 @@ public final class GoldenReplay {
+         }
+     }
+ 
+-    private static String goldenResource(String name) throws IOException {
++    private static String goldenContent(String name) throws IOException {
+         // name 已含前导 "/"（由 manifestResource 目录段拼出），不再补斜杠——双斜杠在 classpath 查不到
+         try (InputStream in = GoldenReplay.class.getResourceAsStream(name)) {
+             assertThat(in).as("%s 必须在测试 classpath".formatted(name)).isNotNull();

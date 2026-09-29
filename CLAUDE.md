@@ -105,10 +105,12 @@ Java 重走线（ADR-0006，重走期唯一活动实现；状态唯一事实源 
 │   ├── coursecontracts/           CourseContracts.java 冻结合同 fixture 双载体（与 Python 载体逐字等价 + 机检锁定）
 │   └── tools/                     ImportEvidence（复刻 vendor import_evidence.py 语义，重算 SHA-256 验封）
 ├── src/test/java/                 合同测试 + golden 重放（testsupport/Cli 经真实 CLI 子进程驱动，不绕入口直调）
-├── src/test/resources/golden/     对照基准 l01（22 场景）/ l02（15 场景）——Python 冻结版采出，永不手改
+├── src/test/resources/golden/     对照基准 l01 / l02 两套（场景清单见各 manifest.json）——Python 冻结版采出，永不手改
 ├── src/test/resources/coursecontracts/frozen-python-projection.json  Python 载体全字段投影（机检对照件）
 ├── pom.xml                        Maven + Java 21 + JUnit5/AssertJ；运行时依赖白名单：Jackson、sqlite-jdbc
 └── bin/wb                         CLI 包装脚本（classpath = target/classes + build-classpath 落盘清单）
+
+（Python 冻结面新增能力——evals/ 评测、记忆系统、工作台看板——见 docs/replication/README.md 对应行，不在此展开）
 ```
 
 **结构约定**：

@@ -113,4 +113,40 @@ golden 前置生成，连同生成器与本 §G 随前置提交落 master（L01 
 - **C12 非目标核查**：`git diff master...lesson-02-java --name-only` 仅 CLAUDE.md / src/test / lesson-02-submission/java / evidence——无 FlowERP 业务、无 eval.harness、无 Hook/MCP 路径命中；**Python 冻结面零触碰**（`git diff master...lesson-02-java -- workbench tests pyproject.toml tools/capture_evidence.py` 为空）；vendor 双查恒空
 - **待验收裁定项**：① 采红参数误读的错位封条（仓库根 `java/03-failure/…accdd5fa`，未入库原样保留于工作树）处置；② `.idea/` 未跟踪目录系 IDE 产物，非本讲写集，不入库
 
+## C1–C12 逐项结论（Java 口径，复查轮后终态）
+
+| # | 结论 | 证据 |
+|---|---|---|
+| C1 | ✓ | 起始红 `03-failure/…5b184e93` rc=1：40 跑 3 红全为 JavaLineRuleFactsTest 目标规则要素缺失类；就位类 5 绿映射表声明（Python L02 ReferencedCommandsAreReal 先例）；补救见复查轮 R-1 |
+| C2 | ✓ | 文本层绿（红点组 J2 就位子组 + 新增 Java 结构组）；「架构大图」补 Java 双轨块（R2 增量 + 复查轮 R-1 补指针行） |
+| C3 | ✓ | 翻译件 fiveBusinessInvariantsPresent / invariantsCarryApplicability 双绿（五条+适用条件逐字在场，零重写）；红点组 J3 冻结纪律绿 |
+| C4 | ✓ | referencedCommandsAreReal（Python 侧）+ javaVerificationCommandsPresent（Java 侧双向：词面 + pom.xml/bin/wb/src 引用物实存）双绿；R4 过期陈述双处修正（文本层人审可复核） |
+| C5 | ✓ | definitionOfDonePresent 绿（DoD 三要素在场，零改动） |
+| C6 | ✓ | 既有禁令文本零触碰；新增文本唯一禁令（双轨纪律）带"仍然允许面 + 失败后状态"同段写明；文本层人审终核待具名验收 |
+| C7 | ✓ | N0 `…9b7d6952`（06:01:26Z，五判拒）早于 CLAUDE.md 修改（diff 封条 06:12:41 已含改动）；agents-before.md 与 f445da0 版逐字同（git + meta.json 双证） |
+| C8 | ✓ | N1 `…aa696e32`：指认根 CLAUDE.md + 行号级引用条款（铁律/边界/信用内核），五条逐项引条款判拒 |
+| C9 | ✓ | 边界对照 `…6773b692`（独立会话原文逐字）："可以继续设计"+ 四句正向映射 |
+| C10 | ✓ | 全量 `mvn test` observation `…2db66206` rc 0（40/40）；复查后再采 `…489ba33d` rc 0；三层分检声明保持 |
+| C11 | ✓ | 写集 = CLAUDE.md / src/test / lesson-02-submission/java / docs（分支文件清单核过）；CASE-WB-L02-JAVA-001 链完整（R4 节），终态四词面密封 `…6ae4bdb4`；复查轮后追加导入重密封（§5） |
+| C12 | ✓ | 无 FlowERP 业务 / eval.harness / Hook / MCP；Python 冻结面 diff 为空；N0→N1 差异仅声称引用粒度变化，未外推全任务有效 |
+| —（重走线增量） | ✓ | golden l02 15 场景双跑指纹 `ed8aad6c…`（§G）+ Java 重放字节级一致（commit 1 即绿 + 复查轮再绿） |
+
+## 5. 复查轮（code-review 双轴自调，2026-09-29）
+
+双轴子代理并行复查 `master...lesson-02-java`（Standards + Spec，报告全文见会话记录；此处存目与处置）。**处置原则：test-first 修复、旧证据全保留。**
+
+| # | 轴 | 发现 | 处置 |
+|---|---|---|---|
+| S1 | Standards·缺口 | A6 R2 审定子项"evals/记忆/看板指针一行"未写入 CLAUDE.md（候选表静默缩水） | ✅ 已修：架构大图 Java 块尾补指针行（按审定原文措辞）；计入下方重采 |
+| S2 | Standards·缺口 | 证据账缺 C1–C12 逐项结论表（讲义 §3.F 要求，L01-java 同构先例） | ✅ 已修：本账补上表 |
+| S3 | Standards·smell | JavaLineRuleFactsTest 内联语义组循环与 L02WorkbenchRulesTest.missingGroups 同形重复（翻译豁免不覆盖新增件） | ✅ 已修：提取 `workbench.rules.RuleText` 共享件，两类委托（行为零变化，40/40 复绿） |
+| S4 | Standards·smell（微） | GoldenReplay.goldenResource 名实不符（返回内容非句柄） | ✅ 已修：改名 goldenContent |
+| S5 | Standards·smell（轻） | 语义组用 String[]（Primitive Obsession） | 不改（既定取舍）：文本合同测试直读+与冻结 Python 同形，结构约定背书 |
+| P1 | Spec·蔓延 | 既有行两处小补记未声明：replication 行补"；重走证据 LNN-java.md"、测试口径行补"（Java 线同口径…）" | ✅ 已修（记录处置）：两处系 R2/R3 同块事实性增补，在此逐处声明（连同 adr 0006、lesson-02-submission 树行共四处"事实性补记"），**待人审裁定**——裁定驳回则回滚该行 |
+| P2 | Spec·可疑 | 架构图 golden 行写死"22/15 场景"计数，踩 R6"易变计数不入规则"边界 | ✅ 已修：计数移除、指 manifest（l02 计数已从审定 13→15 变过一次，实证易变） |
+| P3 | Spec·存疑（放行） | adr 行补 0006 与 R4"唯一改写项"表述相抵 | 澄清：adr 行系**追加**（"/ 0006 Java 重走"）非改写，R4 所指为 eval harness 陈述改写——两者并存不冲突，随 P1 四处补记一并待人审 |
+| P4 | Spec·存疑（放行） | diff→green observed_at 仅差 0.12s | 核实：capture_evidence.py 起始打戳机制（冻结工具复用），green output 为完整 40/0 跑全文，非造假——如实记录 |
+
+修复轮重采（红 `…5b184e93` 保持不变，链以修复轮绿收口）：**Diff** `04-diff/20260929T070323351659Z-d1d51a4a/`（rc 0）+ **后绿** `05-green/20260929T070323485059Z-489ba33d/`（`mvn test` 与起始红同命令，rc 0，40/40）——observed_at 严格递增，导入账本后全局最新红绿链合法。
+
 ---

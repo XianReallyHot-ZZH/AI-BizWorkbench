@@ -80,7 +80,7 @@ public final class GoldenReplay {
                     .isEqualTo(scenario.path("exit_code").asInt());
             assertThat(Cli.normalize(result.stdout()))
                     .as("%s 规范化输出逐字节对照", id)
-                    .isEqualTo(goldenResource(resourceDir + scenario.path("stdout_file").asText()));
+                    .isEqualTo(goldenContent(resourceDir + scenario.path("stdout_file").asText()));
             if (scenario.hasNonNull("assert_db_absent")) {
                 Path db = Cli.repoRoot().resolve(scenario.get("assert_db_absent").asText());
                 assertThat(db).as("%s 不得偷偷建库（WB-10）", id).doesNotExist();
@@ -88,7 +88,7 @@ public final class GoldenReplay {
         }
     }
 
-    private static String goldenResource(String name) throws IOException {
+    private static String goldenContent(String name) throws IOException {
         // name 已含前导 "/"（由 manifestResource 目录段拼出），不再补斜杠——双斜杠在 classpath 查不到
         try (InputStream in = GoldenReplay.class.getResourceAsStream(name)) {
             assertThat(in).as("%s 必须在测试 classpath".formatted(name)).isNotNull();
