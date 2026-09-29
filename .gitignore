@@ -10,3 +10,4 @@ __pycache__/
 # Java 构建产物（lesson-01-java 重走起，ADR-0006）
 target/
 
+/.idea/
