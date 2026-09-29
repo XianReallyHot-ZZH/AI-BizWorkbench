@@ -499,6 +499,7 @@ class WorkbenchBootstrapContractTest {
     void statusFlagsDigestMismatch() throws Exception {
         // F3：status 复核存储内容与摘要（上游 spec/output_digest_mismatch）
         assertThat(initWorkbench().exitCode()).isEqualTo(0);
+        assertThat(addProject().exitCode()).isEqualTo(0);
         Path spec = tmp.resolve("spec.md");
         Files.writeString(spec, SPEC_TEXT_V1, StandardCharsets.UTF_8);
         assertThat(createTask("T-1", "第一版请求", spec, null, "PROJECT-A").exitCode()).isEqualTo(0);
@@ -519,6 +520,7 @@ class WorkbenchBootstrapContractTest {
     void unreadableSpecFileReportsCleanError() throws Exception {
         // F4：非 UTF-8 文件 → JSON 错误，不裸 traceback
         assertThat(initWorkbench().exitCode()).isEqualTo(0);
+        assertThat(addProject().exitCode()).isEqualTo(0);
         Path bad = tmp.resolve("bad-spec.md");
         Files.write(bad, new byte[] {(byte) 0xff, (byte) 0xfe, 0x00, 0x62, 0x69, 0x6e, 0x61, 0x72, 0x79});
         Cli.Result proc = createTask("T-1", "第一版请求", bad, null, "PROJECT-A");

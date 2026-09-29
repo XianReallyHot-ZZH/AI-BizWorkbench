@@ -1,0 +1,74 @@
+diff --git a/src/main/java/workbench/cli/Main.java b/src/main/java/workbench/cli/Main.java
+index 040aa95..f56720c 100644
+--- a/src/main/java/workbench/cli/Main.java
++++ b/src/main/java/workbench/cli/Main.java
+@@ -1,15 +1,45 @@
+ package workbench.cli;
+ 
++import workbench.bootstrap.BootstrapCommands;
++
+ /**
+- * Workbench CLI 入口（镜像 Python workbench/cli.py 的注册表与分发缝）。
++ * Workbench CLI 入口：注册表 + 分发缝 + 顶层异常边界（镜像 Python workbench/cli.py）。
+  *
+- * <p>L01 骨架（commit 1）：注册表为空——任何子命令按 argparse 同形报 invalid choice，
+- * 退出码 2，即起始红的预期形态（目标能力缺失，非环境错误）。五个合同命令在实现提交
+- * 经 {@code BootstrapCommands.register(REGISTRY)} 接入本缝。
++ * <p>L01 五合同命令经 {@code BootstrapCommands.register} 接入本缝，后续讲次同形扩展；
++ * 分发与异常边界只认缝，不认具体命令。argparse 同形的用法错误（未知/缺参）走
++ * stderr + 退出码 2；基础设施失败保持 JSON 错误契约，不裸栈。
+  */
+ public final class Main {
+ 
++    static final CommandRegistry REGISTRY = new CommandRegistry();
++
++    static {
++        BootstrapCommands.register(REGISTRY);
++    }
++
+     public static void main(String[] args) {
++        if (args.length == 0 || REGISTRY.find(args[0]) == null) {
++            usage(args);
++        }
++        CommandRegistry.CliCommand command = REGISTRY.find(args[0]);
++        String[] rest = new String[args.length - 1];
++        System.arraycopy(args, 1, rest, 0, rest.length);
++        try {
++            System.exit(command.execute(rest));
++        } catch (Args.UsageException error) {
++            System.err.println("error: " + error.getMessage());
++            System.err.println("usage: python -m workbench.cli <command> [--options]");
++            System.exit(2);
++        } catch (Exception error) {
++            // 基础设施失败也保持 JSON 错误契约，不裸 traceback
++            JsonOut.emit(JsonOut.ordered("ok", false, "flowerp_connected", false,
++                    "error", "内部错误：%s: %s".formatted(
++                            error.getClass().getSimpleName(), error.getMessage())));
++            System.exit(1);
++        }
++    }
++
++    private static void usage(String[] args) {
+         String name = args.length > 0 ? args[0] : "<command>";
+         System.err.printf("invalid choice: \"%s\"%n", name);
+         System.exit(2);
+diff --git a/src/test/java/workbench/bootstrap/WorkbenchBootstrapContractTest.java b/src/test/java/workbench/bootstrap/WorkbenchBootstrapContractTest.java
+index d6050b6..2c521e6 100644
+--- a/src/test/java/workbench/bootstrap/WorkbenchBootstrapContractTest.java
++++ b/src/test/java/workbench/bootstrap/WorkbenchBootstrapContractTest.java
+@@ -499,6 +499,7 @@ class WorkbenchBootstrapContractTest {
+     void statusFlagsDigestMismatch() throws Exception {
+         // F3：status 复核存储内容与摘要（上游 spec/output_digest_mismatch）
+         assertThat(initWorkbench().exitCode()).isEqualTo(0);
++        assertThat(addProject().exitCode()).isEqualTo(0);
+         Path spec = tmp.resolve("spec.md");
+         Files.writeString(spec, SPEC_TEXT_V1, StandardCharsets.UTF_8);
+         assertThat(createTask("T-1", "第一版请求", spec, null, "PROJECT-A").exitCode()).isEqualTo(0);
+@@ -519,6 +520,7 @@ class WorkbenchBootstrapContractTest {
+     void unreadableSpecFileReportsCleanError() throws Exception {
+         // F4：非 UTF-8 文件 → JSON 错误，不裸 traceback
+         assertThat(initWorkbench().exitCode()).isEqualTo(0);
++        assertThat(addProject().exitCode()).isEqualTo(0);
+         Path bad = tmp.resolve("bad-spec.md");
+         Files.write(bad, new byte[] {(byte) 0xff, (byte) 0xfe, 0x00, 0x62, 0x69, 0x6e, 0x61, 0x72, 0x79});
+         Cli.Result proc = createTask("T-1", "第一版请求", bad, null, "PROJECT-A");
