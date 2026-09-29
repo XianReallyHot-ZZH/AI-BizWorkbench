@@ -103,4 +103,14 @@ golden 前置生成，连同生成器与本 §G 随前置提交落 master（L01 
 
 **链态（commit 2 采集后）**：red `…5b184e93`（05:14:48，rc 1）→ diff `…120054ad`（06:12:41）→ green `…c8c2ae2f`（06:12:42，rc 0）——同命令 `mvn test`、observed_at 严格递增、Diff 严格居间。
 
+### R4 任务账与终核（C11/C12）—— 2026-09-29
+
+- **具名**：`--owner`/`--actor` = `XianReallyHot-ZZH`（用户 AskUserQuestion 确认，不代填）；账本 `.runtime/course/L01-workbench-java/`（L01-java 活账本沿用，Python 时代账本零触碰）
+- **任务创建**：`./bin/wb workbench-task-create … CASE-WB-L02-JAVA-001 --spec-file docs/lessons/L02-仓库规则.md` → `ok:true`，requirement_summary `25dc5d1bb701…`（spec 快照）
+- **导入前缺链查询**（预期失败也是证据）：observation `06-observations/20260929T064745623806Z-8031aa30/`（rc **1**，缺链词面）✓
+- **链导入**：Java `workbench.tools.ImportEvidence` ×9 全 rc 0（重算 SHA-256 验封）——顺序 red→diff→green（链）→ observation×6（version→N0→N1→边界→迁移→回归，绿后导入不参与链判定）
+- **终态 status 密封采集**：`06-observations/20260929T064829178371Z-6ae4bdb4/`（rc 0）——`ok:true` / `evidence_complete:true` / `acceptance:pending_human_review` / `flowerp_connected:false`；本任务链 red(rc1)→diff→green 同命令，observation×6 在账不破坏链（golden t09/t10 语义的活账复现）
+- **C12 非目标核查**：`git diff master...lesson-02-java --name-only` 仅 CLAUDE.md / src/test / lesson-02-submission/java / evidence——无 FlowERP 业务、无 eval.harness、无 Hook/MCP 路径命中；**Python 冻结面零触碰**（`git diff master...lesson-02-java -- workbench tests pyproject.toml tools/capture_evidence.py` 为空）；vendor 双查恒空
+- **待验收裁定项**：① 采红参数误读的错位封条（仓库根 `java/03-failure/…accdd5fa`，未入库原样保留于工作树）处置；② `.idea/` 未跟踪目录系 IDE 产物，非本讲写集，不入库
+
 ---
