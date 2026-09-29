@@ -7,3 +7,6 @@ docs/research/diagrams/*.visual-check.*
 __pycache__/
 *.egg-info/
 
+# Java 构建产物（lesson-01-java 重走起，ADR-0006）
+target/
+

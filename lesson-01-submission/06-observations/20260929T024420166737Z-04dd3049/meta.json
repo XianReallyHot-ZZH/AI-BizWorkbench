@@ -1,0 +1,21 @@
+{
+  "phase": "observation",
+  "argv": [
+    "java",
+    "-cp",
+    "target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar",
+    "workbench.tools.ImportEvidence",
+    ".runtime/tamper-demo/meta.json",
+    "--runtime-dir",
+    ".runtime/course/L01-workbench-java",
+    "--task-id",
+    "CASE-WB-L01-JAVA-001"
+  ],
+  "command": "[\"java\", \"-cp\", \"target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar\", \"workbench.tools.ImportEvidence\", \".runtime/tamper-demo/meta.json\", \"--runtime-dir\", \".runtime/course/L01-workbench-java\", \"--task-id\", \"CASE-WB-L01-JAVA-001\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-29T02:44:20.166737+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-01-submission/06-observations/20260929T024420166737Z-04dd3049/output.txt",
+  "sha256": "4a4ffc8cebb6a6f5ffe2b7dc2add2d4c2af9a0cf8efdf28b0ba2b654e85e7314",
+  "provenance": "local_teaching_capture"
+}

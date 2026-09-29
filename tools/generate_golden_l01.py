@@ -170,7 +170,9 @@ def main() -> int:
     # ---- 会话二：rt-empty（未初始化查询，且验证不偷偷建库）------------------
     capture("s21_status_uninitialized", 1, "workbench-status", "--runtime-dir", RT_EMPTY,
             "--require-project", "PROJECT-A", "--require-task", "T-GOLDEN",
-            "--require-red-green-evidence")
+            "--require-red-green-evidence",
+            note="查询后目录仍空（WB-10，重放侧按 assert_db_absent 机检）")
+    records[-1]["assert_db_absent"] = ".runtime/golden-l01/rt-empty/workbench.db"
     if (REPO_ROOT / RT_EMPTY / "workbench.db").exists():
         raise SystemExit("s21 违反 WB-10：查询偷偷建了库")
 
@@ -181,6 +183,11 @@ def main() -> int:
     conn.close()
     capture("s22_status_after_tamper", 1, "workbench-status", "--runtime-dir", RT,
             note="status 每次重算 SHA-256 复核；期望 errors 含 output_digest_mismatch")
+    records[-1]["tamper_before"] = {
+        "db": ".runtime/golden-l01/rt/workbench.db",
+        "sql": "UPDATE evidence SET output_text = '篡改后的内容' WHERE record_id = 1",
+        "note": "白盒篡改（F3 先例）：直接 sqlite 改写存储内容，检验读取路径的摘要复核",
+    }
 
     # ---- manifest（确定性内容，不含墙钟）-----------------------------------
     manifest = {
@@ -194,6 +201,9 @@ def main() -> int:
             "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
             "non_json": "逐字保留",
         },
+        "inputs": {f"golden-l01/inputs/{name}": (INPUTS / name).read_text(encoding="utf-8")
+                   for name in ("spec.md", "red.txt", "diff.txt", "green.txt",
+                                "post-red.txt", "empty.txt")},
         "scenarios": records,
     }
     (GOLDEN_DIR / "manifest.json").write_text(

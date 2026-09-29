@@ -1,0 +1,10 @@
+ M src/main/java/workbench/cli/Main.java
+ M src/test/java/workbench/bootstrap/WorkbenchBootstrapContractTest.java
+?? lesson-01-submission/04-diff/20260929T022033435082Z-e29441c2/
+?? src/main/java/workbench/bootstrap/
+?? src/main/java/workbench/cli/Args.java
+?? src/main/java/workbench/cli/CommandRegistry.java
+?? src/main/java/workbench/cli/JsonOut.java
+?? src/main/java/workbench/cli/PyJson.java
+?? src/main/java/workbench/tools/
+?? tools/export_course_contracts_json.py
