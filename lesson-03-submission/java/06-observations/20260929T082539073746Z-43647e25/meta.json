@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "./bin/wb",
+    "spec",
+    "lesson-03-submission/wrong-formula.md"
+  ],
+  "command": "[\"./bin/wb\", \"spec\", \"lesson-03-submission/wrong-formula.md\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-29T08:25:39.073746+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/java/06-observations/20260929T082539073746Z-43647e25/output.txt",
+  "sha256": "65fccfa242a9a901abcbf336123217ba0c25ece002c738a8b398b3ecd1b35929",
+  "provenance": "local_teaching_capture"
+}

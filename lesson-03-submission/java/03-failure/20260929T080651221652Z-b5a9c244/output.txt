@@ -1,0 +1,266 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] skip non existing resourceDirectory /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 52 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 209.1 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Running workbench.spec.L03SpecContractTest
+[ERROR] Tests run: 16, Failures: 12, Errors: 0, Skipped: 0, Time elapsed: 1.780 s <<< FAILURE! -- in workbench.spec.L03SpecContractTest
+[ERROR] workbench.spec.L03SpecContractTest.rejectsUnclosedFence -- Time elapsed: 0.140 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.rejectionMessage(L03SpecContractTest.java:296)
+	at workbench.spec.L03SpecContractTest.rejectsUnclosedFence(L03SpecContractTest.java:160)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.rejectionLeavesFileUnchanged -- Time elapsed: 0.146 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.rejectionMessage(L03SpecContractTest.java:296)
+	at workbench.spec.L03SpecContractTest.rejectionLeavesFileUnchanged(L03SpecContractTest.java:193)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.successLeavesFileUnchanged -- Time elapsed: 0.143 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[解析通过应退出码 0] 
+expected: 0
+ but was: 2
+	at workbench.spec.L03SpecContractTest.okPayload(L03SpecContractTest.java:291)
+	at workbench.spec.L03SpecContractTest.successLeavesFileUnchanged(L03SpecContractTest.java:202)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.specCommandParsesValidContract -- Time elapsed: 0.148 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[解析通过应退出码 0] 
+expected: 0
+ but was: 2
+	at workbench.spec.L03SpecContractTest.okPayload(L03SpecContractTest.java:291)
+	at workbench.spec.L03SpecContractTest.specCommandParsesValidContract(L03SpecContractTest.java:120)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.acceptsHeadingInsideFence -- Time elapsed: 0.146 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[解析通过应退出码 0] 
+expected: 0
+ but was: 2
+	at workbench.spec.L03SpecContractTest.okPayload(L03SpecContractTest.java:291)
+	at workbench.spec.L03SpecContractTest.acceptsHeadingInsideFence(L03SpecContractTest.java:166)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.rejectsMissingSection -- Time elapsed: 0.144 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.rejectionMessage(L03SpecContractTest.java:296)
+	at workbench.spec.L03SpecContractTest.rejectsMissingSection(L03SpecContractTest.java:129)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.preservesSixFieldsVerbatim -- Time elapsed: 0.149 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[解析通过应退出码 0] 
+expected: 0
+ but was: 2
+	at workbench.spec.L03SpecContractTest.okPayload(L03SpecContractTest.java:291)
+	at workbench.spec.L03SpecContractTest.preservesSixFieldsVerbatim(L03SpecContractTest.java:179)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.rejectsUnknownHeading -- Time elapsed: 0.141 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.rejectionMessage(L03SpecContractTest.java:296)
+	at workbench.spec.L03SpecContractTest.rejectsUnknownHeading(L03SpecContractTest.java:154)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.rejectsEmptySection -- Time elapsed: 0.146 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.rejectionMessage(L03SpecContractTest.java:296)
+	at workbench.spec.L03SpecContractTest.rejectsEmptySection(L03SpecContractTest.java:135)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.missingPathReportsJsonContractShape -- Time elapsed: 0.151 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[缺失路径应拒绝（JSON 契约，rc 1）] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.missingPathReportsJsonContractShape(L03SpecContractTest.java:209)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.rejectsDuplicateSection -- Time elapsed: 0.146 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.rejectionMessage(L03SpecContractTest.java:296)
+	at workbench.spec.L03SpecContractTest.rejectsDuplicateSection(L03SpecContractTest.java:141)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.spec.L03SpecContractTest.rejectsWrongOrder -- Time elapsed: 0.143 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+	at workbench.spec.L03SpecContractTest.rejectionMessage(L03SpecContractTest.java:296)
+	at workbench.spec.L03SpecContractTest.rejectsWrongOrder(L03SpecContractTest.java:147)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.spec.SpecTemplateDualCarrierTest
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.004 s <<< FAILURE! -- in workbench.spec.SpecTemplateDualCarrierTest
+[ERROR] workbench.spec.SpecTemplateDualCarrierTest.javaFaceTemplateIsVerbatimEqualToFrozenOriginal -- Time elapsed: 0.002 s <<< FAILURE!
+java.lang.AssertionError: 
+[Java 面模板拷贝必须存在（JD3 双载体，commit 2 交付物）] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/src/main/resources/templates/SPEC_TEMPLATE.md
+to exist (symbolic links were followed).
+	at workbench.spec.SpecTemplateDualCarrierTest.javaFaceTemplateIsVerbatimEqualToFrozenOriginal(SpecTemplateDualCarrierTest.java:28)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.golden.GoldenL01ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 20.78 s -- in workbench.golden.GoldenL01ReplayTest
+[INFO] Running workbench.golden.GoldenL03ReplayTest
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.153 s <<< FAILURE! -- in workbench.golden.GoldenL03ReplayTest
+[ERROR] workbench.golden.GoldenL03ReplayTest.replayAllScenariosByteIdentically -- Time elapsed: 0.151 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[t01_spec_confirmed_ok 退出码] 
+expected: 0
+ but was: 2
+	at workbench.testsupport.GoldenReplay.replay(GoldenReplay.java:80)
+	at workbench.golden.GoldenL03ReplayTest.replayAllScenariosByteIdentically(GoldenL03ReplayTest.java:24)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.golden.GoldenL02ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.95 s -- in workbench.golden.GoldenL02ReplayTest
+[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Running workbench.rules.L02WorkbenchRulesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in workbench.rules.L02WorkbenchRulesTest
+[INFO] Running workbench.rules.JavaLineRuleFactsTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in workbench.rules.JavaLineRuleFactsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   GoldenL03ReplayTest.replayAllScenariosByteIdentically:24 [t01_spec_confirmed_ok 退出码] 
+expected: 0
+ but was: 2
+[ERROR]   L03SpecContractTest.acceptsHeadingInsideFence:166->okPayload:291 [解析通过应退出码 0] 
+expected: 0
+ but was: 2
+[ERROR]   L03SpecContractTest.missingPathReportsJsonContractShape:209 [缺失路径应拒绝（JSON 契约，rc 1）] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.preservesSixFieldsVerbatim:179->okPayload:291 [解析通过应退出码 0] 
+expected: 0
+ but was: 2
+[ERROR]   L03SpecContractTest.rejectionLeavesFileUnchanged:193->rejectionMessage:296 [结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.rejectsDuplicateSection:141->rejectionMessage:296 [结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.rejectsEmptySection:135->rejectionMessage:296 [结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.rejectsMissingSection:129->rejectionMessage:296 [结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.rejectsUnclosedFence:160->rejectionMessage:296 [结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.rejectsUnknownHeading:154->rejectionMessage:296 [结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.rejectsWrongOrder:147->rejectionMessage:296 [结构拒绝应退出码 1] 
+expected: 1
+ but was: 2
+[ERROR]   L03SpecContractTest.specCommandParsesValidContract:120->okPayload:291 [解析通过应退出码 0] 
+expected: 0
+ but was: 2
+[ERROR]   L03SpecContractTest.successLeavesFileUnchanged:202->okPayload:291 [解析通过应退出码 0] 
+expected: 0
+ but was: 2
+[ERROR]   SpecTemplateDualCarrierTest.javaFaceTemplateIsVerbatimEqualToFrozenOriginal:28 [Java 面模板拷贝必须存在（JD3 双载体，commit 2 交付物）] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/src/main/resources/templates/SPEC_TEMPLATE.md
+to exist (symbolic links were followed).
+[INFO] 
+[ERROR] Tests run: 58, Failures: 14, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  04:09 min
+[INFO] Finished at: 2026-09-29T16:11:03+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

@@ -1,0 +1,15 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "diff",
+    "--cached"
+  ],
+  "command": "[\"git\", \"diff\", \"--cached\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-29T08:49:58.695068+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/java/04-diff/20260929T084958695068Z-91c031bb/output.txt",
+  "sha256": "3453a9bd1b6d5b6602824ed23d1da0f9fe3e731aba4dc08e61fe9166a1af1708",
+  "provenance": "local_teaching_capture"
+}

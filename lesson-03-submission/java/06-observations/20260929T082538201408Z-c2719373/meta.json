@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "./bin/wb",
+    "spec",
+    "lesson-03-submission/FDE_SPEC.md"
+  ],
+  "command": "[\"./bin/wb\", \"spec\", \"lesson-03-submission/FDE_SPEC.md\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-29T08:25:38.201408+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-03-submission/java/06-observations/20260929T082538201408Z-c2719373/output.txt",
+  "sha256": "4e801a1dc6cb199625273a0b491e21914ee35e07e1c706be9c3a349ea1d2201e",
+  "provenance": "local_teaching_capture"
+}

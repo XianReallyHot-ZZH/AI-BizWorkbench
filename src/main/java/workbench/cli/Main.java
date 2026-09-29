@@ -4,6 +4,7 @@ import workbench.bootstrap.Args;
 import workbench.bootstrap.BootstrapCommands;
 import workbench.bootstrap.Command;
 import workbench.bootstrap.JsonOut;
+import workbench.spec.SpecCommands;
 
 /**
  * Workbench CLI 入口：注册表 + 分发缝 + 顶层异常边界（镜像 Python workbench/cli.py）。
@@ -18,6 +19,9 @@ public final class Main {
 
     static {
         BootstrapCommands.register(REGISTRY);
+        // L03：spec 命令经同一条注册缝接入（适配器在 workbench.spec.SpecCommands，
+        // 镜像 cli.py 的 L03 注册段：只加注册调用，缝位置不变）。
+        SpecCommands.register(REGISTRY);
     }
 
     public static void main(String[] args) {
