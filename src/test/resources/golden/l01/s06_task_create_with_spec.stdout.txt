@@ -1,0 +1,12 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "task": {
+    "prerequisite_task_id": "",
+    "project_id": "PROJECT-A",
+    "request": "对照基准第一版请求",
+    "requirement_id": "T-GOLDEN",
+    "requirement_summary": "e20b6eb941319b2c83496014d008f9697eec9e3afdf7a2e6d3dc6146419f4abb",
+    "task_id": "T-GOLDEN"
+  }
+}

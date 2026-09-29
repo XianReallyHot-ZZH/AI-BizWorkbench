@@ -1,0 +1,5 @@
+{
+  "error": "任务编号已存在：T-GOLDEN，原任务与记录保持不变",
+  "flowerp_connected": false,
+  "ok": false
+}

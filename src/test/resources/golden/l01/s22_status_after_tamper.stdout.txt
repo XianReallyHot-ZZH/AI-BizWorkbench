@@ -1,0 +1,91 @@
+{
+  "acceptance": "pending_human_review",
+  "errors": [
+    "output_digest_mismatch: 任务 T-GOLDEN 记录 1 的输出与摘要不一致"
+  ],
+  "evidence_complete": false,
+  "flowerp_connected": false,
+  "limitations": [
+    "用户导入的观察记录，未认证命令执行者和时间",
+    "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成"
+  ],
+  "ok": false,
+  "projects": [
+    {
+      "created_at": "<TS>",
+      "name": "合同测试项目",
+      "path": ".",
+      "project_id": "PROJECT-A",
+      "purpose": "golden 对照",
+      "tasks": [
+        {
+          "actor": "GOLDEN-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [
+            {
+              "command_text": "mvn test",
+              "observed_at": "2026-09-29T09:00:01+08:00",
+              "output_sha256": "d63aa26cd9cd17ac67f6407d62895db799dab75825fcf440b99e7d9528779023",
+              "output_text": "篡改后的内容",
+              "phase": "red",
+              "record_id": 1,
+              "recorded_at": "<TS>",
+              "returncode": 1,
+              "task_id": "T-GOLDEN"
+            },
+            {
+              "command_text": "mvn test",
+              "observed_at": "2026-09-29T09:00:02+08:00",
+              "output_sha256": "4148a56e53020d68733226509e2fe36a72f1aa085cb04799fceb3bf6f54864e9",
+              "output_text": "diff output\n",
+              "phase": "diff",
+              "record_id": 2,
+              "recorded_at": "<TS>",
+              "returncode": 0,
+              "task_id": "T-GOLDEN"
+            },
+            {
+              "command_text": "mvn test",
+              "observed_at": "2026-09-29T09:00:03+08:00",
+              "output_sha256": "03337c10bbba336cbe92c3c825133f37b8c14a8ee403dfc64d929d8daff79aa2",
+              "output_text": "green output\n",
+              "phase": "green",
+              "record_id": 3,
+              "recorded_at": "<TS>",
+              "returncode": 0,
+              "task_id": "T-GOLDEN"
+            },
+            {
+              "command_text": "mvn test",
+              "observed_at": "2026-09-29T09:00:04+08:00",
+              "output_sha256": "f96b45be4f78b45edfa5faa0faa3c8535e198f0156134aa3b1b165bd842d93fa",
+              "output_text": "post-green red output\n",
+              "phase": "red",
+              "record_id": 4,
+              "recorded_at": "<TS>",
+              "returncode": 1,
+              "task_id": "T-GOLDEN"
+            }
+          ],
+          "executions": [],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "PROJECT-A",
+          "request": "对照基准第一版请求",
+          "requirement_id": "T-GOLDEN",
+          "requirement_snapshot": "# 对照基准需求 V1\n\n查回任务当时依据的要求。\n",
+          "requirement_summary": "e20b6eb941319b2c83496014d008f9697eec9e3afdf7a2e6d3dc6146419f4abb",
+          "reviews": [],
+          "task_id": "T-GOLDEN"
+        }
+      ]
+    }
+  ],
+  "workbench": {
+    "name": "对照基准工作台",
+    "owner": "GOLDEN-OWNER",
+    "version": "V0.1",
+    "workbench_id": "<WORKBENCH_ID>"
+  }
+}

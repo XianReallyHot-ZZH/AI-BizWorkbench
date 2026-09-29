@@ -1,0 +1,421 @@
+{
+  "chain_command_text": "mvn test",
+  "generated_from": "frozen Python workbench @ master（见 evidence/L01-java.md §G 记录的 commit）",
+  "generator": "tools/generate_golden_l01.py",
+  "normalization": {
+    "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
+    "mask_fields": {
+      "created_at": "<TS>",
+      "recorded_at": "<TS>",
+      "workbench_id": "<WORKBENCH_ID>"
+    },
+    "mask_note": "墙钟与 uuid4 为不可复现字段；observed_at 是合同字段，逐字保留",
+    "non_json": "逐字保留"
+  },
+  "scenarios": [
+    {
+      "argv": [
+        "workbench-init",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--name",
+        "对照基准工作台",
+        "--owner",
+        "GOLDEN-OWNER"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s01_init_ok",
+      "stdout_file": "s01_init_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-init",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--name",
+        "换了名字也不生效",
+        "--owner",
+        "GOLDEN-OWNER"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s02_init_same_owner_idempotent",
+      "note": "同 owner 幂等，身份不变（F13 同形）",
+      "stdout_file": "s02_init_same_owner_idempotent.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-init",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--name",
+        "对照基准工作台",
+        "--owner",
+        "GOLDEN-OTHER"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s03_init_owner_clash",
+      "stdout_file": "s03_init_owner_clash.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-project-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--project-id",
+        "PROJECT-A",
+        "--name",
+        "合同测试项目",
+        "--path",
+        ".",
+        "--purpose",
+        "golden 对照"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s04_project_add_ok",
+      "stdout_file": "s04_project_add_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-project-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--project-id",
+        "PROJECT-A",
+        "--name",
+        "重复项目",
+        "--path",
+        ".",
+        "--purpose",
+        ""
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s05_project_add_duplicate",
+      "stdout_file": "s05_project_add_duplicate.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--project-id",
+        "PROJECT-A",
+        "--task-id",
+        "T-GOLDEN",
+        "--requirement-id",
+        "T-GOLDEN",
+        "--request",
+        "对照基准第一版请求",
+        "--actor",
+        "GOLDEN-ACTOR",
+        "--spec-file",
+        ".runtime/golden-l01/inputs/spec.md"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s06_task_create_with_spec",
+      "stdout_file": "s06_task_create_with_spec.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--project-id",
+        "GHOST-PROJECT",
+        "--task-id",
+        "T-GHOST",
+        "--request",
+        "无所属任务必须被拒",
+        "--actor",
+        "GOLDEN-ACTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s07_task_create_missing_project",
+      "stdout_file": "s07_task_create_missing_project.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--project-id",
+        "PROJECT-A",
+        "--task-id",
+        "T-GOLDEN",
+        "--request",
+        "换掉第一版的不同内容",
+        "--actor",
+        "GOLDEN-ACTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s08_task_create_duplicate",
+      "stdout_file": "s08_task_create_duplicate.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s09_status_plain",
+      "stdout_file": "s09_status_plain.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s10_status_chain_missing",
+      "stdout_file": "s10_status_chain_missing.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--task-id",
+        "T-GOLDEN",
+        "--phase",
+        "red",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l01/inputs/red.txt",
+        "--returncode",
+        "1",
+        "--observed-at",
+        "2026-09-29T09:00:01+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s11_evidence_add_red",
+      "stdout_file": "s11_evidence_add_red.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s12_status_chain_red_only",
+      "stdout_file": "s12_status_chain_red_only.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--task-id",
+        "T-GOLDEN",
+        "--phase",
+        "diff",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l01/inputs/diff.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:02+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s13_evidence_add_diff",
+      "stdout_file": "s13_evidence_add_diff.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--task-id",
+        "T-GOLDEN",
+        "--phase",
+        "green",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l01/inputs/green.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:03+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s14_evidence_add_green",
+      "stdout_file": "s14_evidence_add_green.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s15_status_chain_complete",
+      "stdout_file": "s15_status_chain_complete.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--task-id",
+        "T-GOLDEN",
+        "--phase",
+        "red",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l01/inputs/post-red.txt",
+        "--returncode",
+        "1",
+        "--observed-at",
+        "2026-09-29T09:00:04+08:00"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s16_evidence_add_post_green_red",
+      "note": "绿后新失败：追加本身成功（账本只追加），链由 s17 判失权",
+      "stdout_file": "s16_evidence_add_post_green_red.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s17_status_chain_stale_green",
+      "note": "全局最新 red/diff/green 须为成功绿（F2 跨命令同罪口径）",
+      "stdout_file": "s17_status_chain_stale_green.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "CASE-WB-L01-MISSING",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s18_status_missing_task",
+      "stdout_file": "s18_status_missing_task.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--task-id",
+        "T-GOLDEN",
+        "--phase",
+        "observation",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l01/inputs/green.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:00"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s19_evidence_add_naive_time",
+      "stdout_file": "s19_evidence_add_naive_time.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-evidence-add",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt",
+        "--task-id",
+        "T-GOLDEN",
+        "--phase",
+        "observation",
+        "--command-text",
+        "mvn test",
+        "--output-file",
+        ".runtime/golden-l01/inputs/empty.txt",
+        "--returncode",
+        "0",
+        "--observed-at",
+        "2026-09-29T09:00:05+08:00"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s20_evidence_add_empty_output",
+      "stdout_file": "s20_evidence_add_empty_output.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt-empty",
+        "--require-project",
+        "PROJECT-A",
+        "--require-task",
+        "T-GOLDEN",
+        "--require-red-green-evidence"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s21_status_uninitialized",
+      "stdout_file": "s21_status_uninitialized.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l01/rt"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s22_status_after_tamper",
+      "note": "status 每次重算 SHA-256 复核；期望 errors 含 output_digest_mismatch",
+      "stdout_file": "s22_status_after_tamper.stdout.txt"
+    }
+  ]
+}

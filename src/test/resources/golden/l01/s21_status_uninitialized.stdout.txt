@@ -1,0 +1,5 @@
+{
+  "error": "工作台尚未初始化，请先运行 workbench-init",
+  "flowerp_connected": false,
+  "ok": false
+}

@@ -1,0 +1,5 @@
+{
+  "error": "输出为空：.runtime/golden-l01/inputs/empty.txt，记录未追加",
+  "flowerp_connected": false,
+  "ok": false
+}

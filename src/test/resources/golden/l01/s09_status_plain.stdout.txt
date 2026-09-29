@@ -1,0 +1,44 @@
+{
+  "acceptance": "pending_human_review",
+  "errors": [],
+  "evidence_complete": false,
+  "flowerp_connected": false,
+  "limitations": [
+    "用户导入的观察记录，未认证命令执行者和时间",
+    "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成"
+  ],
+  "ok": true,
+  "projects": [
+    {
+      "created_at": "<TS>",
+      "name": "合同测试项目",
+      "path": ".",
+      "project_id": "PROJECT-A",
+      "purpose": "golden 对照",
+      "tasks": [
+        {
+          "actor": "GOLDEN-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "PROJECT-A",
+          "request": "对照基准第一版请求",
+          "requirement_id": "T-GOLDEN",
+          "requirement_snapshot": "# 对照基准需求 V1\n\n查回任务当时依据的要求。\n",
+          "requirement_summary": "e20b6eb941319b2c83496014d008f9697eec9e3afdf7a2e6d3dc6146419f4abb",
+          "reviews": [],
+          "task_id": "T-GOLDEN"
+        }
+      ]
+    }
+  ],
+  "workbench": {
+    "name": "对照基准工作台",
+    "owner": "GOLDEN-OWNER",
+    "version": "V0.1",
+    "workbench_id": "<WORKBENCH_ID>"
+  }
+}

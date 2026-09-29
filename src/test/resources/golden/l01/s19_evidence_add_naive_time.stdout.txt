@@ -1,0 +1,5 @@
+{
+  "error": "观察时间缺少时区或无法解析：2026-09-29T09:00:00，记录未追加",
+  "flowerp_connected": false,
+  "ok": false
+}

@@ -1,0 +1,5 @@
+{
+  "error": "工作台已存在（所有者 GOLDEN-OWNER），不能被另一个所有者覆盖",
+  "flowerp_connected": false,
+  "ok": false
+}

@@ -1,0 +1,10 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "project": {
+    "name": "合同测试项目",
+    "path": ".",
+    "project_id": "PROJECT-A",
+    "purpose": "golden 对照"
+  }
+}
