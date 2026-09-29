@@ -1,0 +1,40 @@
+{
+  "execution": {
+    "actor": "G-EXECUTOR",
+    "change_manifest": [],
+    "changed_files": [],
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff_text": "",
+    "eval_command": [
+      "sh",
+      "-c",
+      "exit 0"
+    ],
+    "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "execution_id": 6,
+    "executor_command": [
+      "sh",
+      "-c",
+      "printf partial-out; printf partial-err >&2; sleep 30"
+    ],
+    "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+    "mode": "code",
+    "observed_at": "<TS>",
+    "out_of_scope_files": [],
+    "returncode": null,
+    "status": "timeout",
+    "stderr_sha256": "84b6b61a0d54733b1d77b5ef4ef74328fd9981b6585b8a8686c49da1572faa64",
+    "stderr_text": "partial-err",
+    "stdout_sha256": "b4080be6395f13cc95d4a0b2716dc8f89b1171cf3d822de218cbefc2337a0541",
+    "stdout_text": "partial-out",
+    "task_id": "T-GOLDEN-L04-06",
+    "timed_out": true,
+    "workspace": "<WORKSPACE>",
+    "write_scope": [
+      "delivery.csv"
+    ]
+  },
+  "flowerp_connected": false,
+  "ok": false,
+  "task_state": "timeout"
+}

@@ -1,0 +1,5 @@
+{
+  "error": "required_task_missing: 任务不存在：T-NOPE，记录未追加",
+  "flowerp_connected": false,
+  "ok": false
+}

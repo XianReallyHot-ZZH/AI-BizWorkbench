@@ -1,0 +1,622 @@
+{
+  "acceptance": "pending_human_review",
+  "errors": [
+    "execution_digest_mismatch: 任务 T-GOLDEN-L04-01 执行 1 的 change_manifest 与摘要不一致"
+  ],
+  "evidence_complete": false,
+  "flowerp_connected": false,
+  "limitations": [
+    "用户导入的观察记录，未认证命令执行者和时间",
+    "有效红灯原因、Diff 写集与 Spec 签署仍须人工核验；完整性不等于验收完成"
+  ],
+  "ok": false,
+  "projects": [
+    {
+      "created_at": "<TS>",
+      "name": "受控执行对照项目",
+      "path": ".",
+      "project_id": "G-PROJ",
+      "purpose": "golden l04 对照",
+      "tasks": [
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-EXECUTOR",
+              "change_manifest": [],
+              "change_manifest_json": "[]",
+              "change_manifest_sha256": "6fdd1e795271504d45a8ec5872f21aab8105889048614d061c12a75fc6721973",
+              "changed_files": [
+                "delivery.csv"
+              ],
+              "diff_sha256": "290fb360dbd28141533eb9bfe3cb32f1300c3d44fd379c5698dd8e151f72c1ba",
+              "diff_text": "diff --git a/delivery.csv b/delivery.csv\nnew file mode 100644\nindex 0000000..28c218c\n--- /dev/null\n+++ b/delivery.csv\n@@ -0,0 +1 @@\n+v1\n\\ No newline at end of file\n",
+              "eval_command": [
+                "sh",
+                "-c",
+                "exit 0"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": 0,
+              "eval_timed_out": false,
+              "execution_id": 1,
+              "executor_command": [
+                "sh",
+                "-c",
+                "printf v1 > delivery.csv; printf created\\n"
+              ],
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "code",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": 0,
+              "status": "completed",
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_text": "",
+              "stdout_sha256": "7328041a404754b572cc6c61c3be5c560c24f27533717d1b1b4f5922335baa75",
+              "stdout_text": "createdn",
+              "task_id": "T-GOLDEN-L04-01",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": [
+                "delivery.csv"
+              ]
+            },
+            {
+              "actor": "G-EXECUTOR",
+              "change_manifest": [
+                {
+                  "after_sha256": "3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe",
+                  "before_sha256": null,
+                  "change": "added",
+                  "path": "delivery.csv"
+                }
+              ],
+              "change_manifest_json": "[{\"path\": \"delivery.csv\", \"change\": \"added\", \"before_sha256\": null, \"after_sha256\": \"3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe\"}]",
+              "change_manifest_sha256": "6fdd1e795271504d45a8ec5872f21aab8105889048614d061c12a75fc6721973",
+              "changed_files": [
+                "delivery.csv"
+              ],
+              "diff_sha256": "290fb360dbd28141533eb9bfe3cb32f1300c3d44fd379c5698dd8e151f72c1ba",
+              "diff_text": "diff --git a/delivery.csv b/delivery.csv\nnew file mode 100644\nindex 0000000..28c218c\n--- /dev/null\n+++ b/delivery.csv\n@@ -0,0 +1 @@\n+v1\n\\ No newline at end of file\n",
+              "eval_command": [
+                "sh",
+                "-c",
+                "exit 0"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": 0,
+              "eval_timed_out": false,
+              "execution_id": 2,
+              "executor_command": [
+                "sh",
+                "-c",
+                "printf v1 > delivery.csv; printf created\\n"
+              ],
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "code",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": 0,
+              "status": "completed",
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_text": "",
+              "stdout_sha256": "7328041a404754b572cc6c61c3be5c560c24f27533717d1b1b4f5922335baa75",
+              "stdout_text": "createdn",
+              "task_id": "T-GOLDEN-L04-01",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": [
+                "delivery.csv"
+              ]
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "受控执行对照基准 A 票",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [
+            {
+              "decision": "approve",
+              "execution_id": 1,
+              "note": "对照基准复核：接受第一次执行",
+              "review_id": 1,
+              "reviewed_at": "<TS>",
+              "reviewer": "G-REVIEWER",
+              "task_id": "T-GOLDEN-L04-01"
+            },
+            {
+              "decision": "approve",
+              "execution_id": 2,
+              "note": "对照基准复核：接受第二次执行",
+              "review_id": 2,
+              "reviewed_at": "<TS>",
+              "reviewer": "G-REVIEWER",
+              "task_id": "T-GOLDEN-L04-01"
+            }
+          ],
+          "task_id": "T-GOLDEN-L04-01"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-OPERATOR",
+              "change_manifest": [],
+              "change_manifest_json": "[]",
+              "change_manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "changed_files": [],
+              "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "diff_text": "",
+              "eval_command": [
+                "sh",
+                "-c",
+                "exit 0"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": 0,
+              "eval_timed_out": false,
+              "execution_id": 3,
+              "executor_command": null,
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "verify",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": null,
+              "status": "verify_completed",
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_text": "",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stdout_text": "",
+              "task_id": "T-GOLDEN-L04-02",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": []
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "复验对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [
+            {
+              "decision": "reject",
+              "execution_id": 3,
+              "note": "对照基准复核：退回",
+              "review_id": 3,
+              "reviewed_at": "<TS>",
+              "reviewer": "G-REVIEWER",
+              "task_id": "T-GOLDEN-L04-02"
+            }
+          ],
+          "task_id": "T-GOLDEN-L04-02"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [],
+          "prerequisite_task_id": "T-GOLDEN-L04-01",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "B 票对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-03"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-EXECUTOR",
+              "change_manifest": [
+                {
+                  "after_sha256": "3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe",
+                  "before_sha256": null,
+                  "change": "added",
+                  "path": "delivery.csv"
+                },
+                {
+                  "after_sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+                  "before_sha256": null,
+                  "change": "added",
+                  "path": "sneaked.txt"
+                }
+              ],
+              "change_manifest_json": "[{\"path\": \"delivery.csv\", \"change\": \"added\", \"before_sha256\": null, \"after_sha256\": \"3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe\"}, {\"path\": \"sneaked.txt\", \"change\": \"added\", \"before_sha256\": null, \"after_sha256\": \"2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881\"}]",
+              "change_manifest_sha256": "4e3de69e98f802daa311dd4e86580c9fbbffbc26b7e02a50f082c6e577582b88",
+              "changed_files": [
+                "delivery.csv",
+                "sneaked.txt"
+              ],
+              "diff_sha256": "75ff12b0a560d178bd29cff7348c449d3d528501f964426924c170d43d6b7bf0",
+              "diff_text": "diff --git a/delivery.csv b/delivery.csv\nnew file mode 100644\nindex 0000000..28c218c\n--- /dev/null\n+++ b/delivery.csv\n@@ -0,0 +1 @@\n+v1\n\\ No newline at end of file\ndiff --git a/sneaked.txt b/sneaked.txt\nnew file mode 100644\nindex 0000000..c1b0730\n--- /dev/null\n+++ b/sneaked.txt\n@@ -0,0 +1 @@\n+x\n\\ No newline at end of file\n",
+              "eval_command": [
+                "sh",
+                "-c",
+                "exit 0"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": null,
+              "eval_timed_out": false,
+              "execution_id": 4,
+              "executor_command": [
+                "sh",
+                "-c",
+                "printf x > sneaked.txt; printf v1 > delivery.csv; printf both\\n"
+              ],
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "code",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [
+                "sneaked.txt"
+              ],
+              "recorded_at": "<TS>",
+              "returncode": 0,
+              "status": "out_of_scope",
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_text": "",
+              "stdout_sha256": "b481f723e52312fd48121c203f49d016cdefea2a8fe2a765971a83ba8d78db8b",
+              "stdout_text": "bothn",
+              "task_id": "T-GOLDEN-L04-04",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": [
+                "delivery.csv"
+              ]
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "越界对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-04"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-EXECUTOR",
+              "change_manifest": [],
+              "change_manifest_json": "[]",
+              "change_manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "changed_files": [],
+              "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "diff_text": "",
+              "eval_command": [
+                "sh",
+                "-c",
+                "exit 0"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": null,
+              "eval_timed_out": false,
+              "execution_id": 5,
+              "executor_command": [
+                "sh",
+                "-c",
+                "echo boom-out; echo boom-err >&2; exit 3"
+              ],
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "code",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": 3,
+              "status": "failed",
+              "stderr_sha256": "f0d71b2c9c76fa01907bc3cb837912e4fe54d157bbfc6b685b1e95b95a163865",
+              "stderr_text": "boom-err\n",
+              "stdout_sha256": "a36d2c8d7a0de265fc10dace3546ccc93de694ccdcec0872bb36d29962f71686",
+              "stdout_text": "boom-out\n",
+              "task_id": "T-GOLDEN-L04-05",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": [
+                "delivery.csv"
+              ]
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "失败对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-05"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-EXECUTOR",
+              "change_manifest": [],
+              "change_manifest_json": "[]",
+              "change_manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "changed_files": [],
+              "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "diff_text": "",
+              "eval_command": [
+                "sh",
+                "-c",
+                "exit 0"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": null,
+              "eval_timed_out": false,
+              "execution_id": 6,
+              "executor_command": [
+                "sh",
+                "-c",
+                "printf partial-out; printf partial-err >&2; sleep 30"
+              ],
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "code",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": null,
+              "status": "timeout",
+              "stderr_sha256": "84b6b61a0d54733b1d77b5ef4ef74328fd9981b6585b8a8686c49da1572faa64",
+              "stderr_text": "partial-err",
+              "stdout_sha256": "b4080be6395f13cc95d4a0b2716dc8f89b1171cf3d822de218cbefc2337a0541",
+              "stdout_text": "partial-out",
+              "task_id": "T-GOLDEN-L04-06",
+              "timed_out": true,
+              "workspace": "<WORKSPACE>",
+              "write_scope": [
+                "delivery.csv"
+              ]
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "超时对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-06"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-EXECUTOR",
+              "change_manifest": [
+                {
+                  "after_sha256": "3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe",
+                  "before_sha256": null,
+                  "change": "added",
+                  "path": "delivery.csv"
+                }
+              ],
+              "change_manifest_json": "[{\"path\": \"delivery.csv\", \"change\": \"added\", \"before_sha256\": null, \"after_sha256\": \"3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe\"}]",
+              "change_manifest_sha256": "6fdd1e795271504d45a8ec5872f21aab8105889048614d061c12a75fc6721973",
+              "changed_files": [
+                "delivery.csv"
+              ],
+              "diff_sha256": "290fb360dbd28141533eb9bfe3cb32f1300c3d44fd379c5698dd8e151f72c1ba",
+              "diff_text": "diff --git a/delivery.csv b/delivery.csv\nnew file mode 100644\nindex 0000000..28c218c\n--- /dev/null\n+++ b/delivery.csv\n@@ -0,0 +1 @@\n+v1\n\\ No newline at end of file\n",
+              "eval_command": [
+                "sh",
+                "-c",
+                "echo eval-says-no >&2; exit 1"
+              ],
+              "eval_output_sha256": "289f8515172cb83ab3e5e3f7f2db5bfded22f203b5bc892f3a904527b82a6fb8",
+              "eval_output_text": "eval-says-no\n",
+              "eval_returncode": 1,
+              "eval_timed_out": false,
+              "execution_id": 7,
+              "executor_command": [
+                "sh",
+                "-c",
+                "printf v1 > delivery.csv; printf created\\n"
+              ],
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "code",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": 0,
+              "status": "eval_failed",
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_text": "",
+              "stdout_sha256": "7328041a404754b572cc6c61c3be5c560c24f27533717d1b1b4f5922335baa75",
+              "stdout_text": "createdn",
+              "task_id": "T-GOLDEN-L04-07",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": [
+                "delivery.csv"
+              ]
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "eval 失败对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-07"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-EXECUTOR",
+              "change_manifest": [],
+              "change_manifest_json": "[]",
+              "change_manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "changed_files": [],
+              "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "diff_text": "",
+              "eval_command": [
+                "sh",
+                "-c",
+                "sleep 30"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": null,
+              "eval_timed_out": true,
+              "execution_id": 8,
+              "executor_command": [
+                "sh",
+                "-c",
+                "exit 0"
+              ],
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "code",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": 0,
+              "status": "eval_failed",
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_text": "",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stdout_text": "",
+              "task_id": "T-GOLDEN-L04-08",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": [
+                "delivery.csv"
+              ]
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "eval 超时对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-08"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [
+            {
+              "actor": "G-OPERATOR",
+              "change_manifest": [],
+              "change_manifest_json": "[]",
+              "change_manifest_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "changed_files": [],
+              "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "diff_text": "",
+              "eval_command": [
+                "sh",
+                "-c",
+                "exit 7"
+              ],
+              "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "eval_output_text": "",
+              "eval_returncode": 7,
+              "eval_timed_out": false,
+              "execution_id": 9,
+              "executor_command": null,
+              "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+              "mode": "verify",
+              "observed_at": "<TS>",
+              "out_of_scope_files": [],
+              "recorded_at": "<TS>",
+              "returncode": null,
+              "status": "eval_failed",
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_text": "",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stdout_text": "",
+              "task_id": "T-GOLDEN-L04-09",
+              "timed_out": false,
+              "workspace": "<WORKSPACE>",
+              "write_scope": []
+            }
+          ],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "复验失败对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-09"
+        },
+        {
+          "actor": "G-ACTOR",
+          "created_at": "<TS>",
+          "evidence": [],
+          "executions": [],
+          "prerequisite_task_id": "",
+          "problem_snapshot": null,
+          "problem_summary": null,
+          "project_id": "G-PROJ",
+          "request": "无执行对照任务",
+          "requirement_id": "REQ-GOLDEN-L04",
+          "requirement_snapshot": "",
+          "requirement_summary": "",
+          "reviews": [],
+          "task_id": "T-GOLDEN-L04-10"
+        }
+      ]
+    }
+  ],
+  "workbench": {
+    "name": "对照基准工作台",
+    "owner": "G-OWNER",
+    "version": "V0.1",
+    "workbench_id": "<WORKBENCH_ID>"
+  }
+}

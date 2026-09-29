@@ -1,0 +1,13 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "review": {
+    "decision": "approve",
+    "execution_id": 1,
+    "note": "对照基准复核：接受第一次执行",
+    "review_id": 1,
+    "reviewer": "G-REVIEWER",
+    "task_id": "T-GOLDEN-L04-01"
+  },
+  "task_state": "accepted"
+}

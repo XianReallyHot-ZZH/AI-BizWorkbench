@@ -13,7 +13,9 @@ import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,7 +32,7 @@ public final class GoldenReplay {
 
     private GoldenReplay() {}
 
-    /** 重放一份 golden manifest（清场 → 物化输入 → 逐场景对照；l01/l02 同形）。 */
+    /** 重放一份 golden manifest（清场 → 物化输入 → setup → 逐场景对照；掩码按 manifest 声明驱动）。 */
     public static void replay(String manifestResource, List<String> scratchRelativeDirs) throws Exception {
         // 重放清场（与生成器同口径：一律重采，不做增量）
         for (String dir : scratchRelativeDirs) {
@@ -44,11 +46,19 @@ public final class GoldenReplay {
         }
         String resourceDir = manifestResource.substring(0, manifestResource.lastIndexOf('/') + 1);
 
-        // 规范化 spec 块与实现一致（防规范漂移：实现独立于该块，此处锁两者不分歧）
-        JsonNode maskFields = manifest.path("normalization").path("mask_fields");
-        assertThat(maskFields.path("created_at").asText()).isEqualTo("<TS>");
-        assertThat(maskFields.path("recorded_at").asText()).isEqualTo("<TS>");
-        assertThat(maskFields.path("workbench_id").asText()).isEqualTo("<WORKBENCH_ID>");
+        // 规范化 spec 块与实现一致（防规范漂移：实现独立于该块，此处锁两者不分歧）。
+        // 掩码集按 manifest 声明数据驱动（l04 起各套可扩展机器生成字段；l01–l03 三套
+        // 声明不变 → 掩码行为逐字节不变）；每个声明值必须是 <占位符> 形状。
+        JsonNode maskFieldsNode = manifest.path("normalization").path("mask_fields");
+        assertThat(maskFieldsNode.isObject()).as("normalization.mask_fields 必须在 manifest 在场").isTrue();
+        Map<String, String> maskFields = new LinkedHashMap<>();
+        maskFieldsNode.properties().forEach(entry -> {
+            String placeholder = entry.getValue().asText();
+            assertThat(placeholder)
+                    .as("掩码字段 %s 的占位符", entry.getKey())
+                    .matches("<[A-Z_]+>");
+            maskFields.put(entry.getKey(), placeholder);
+        });
 
         // 输入固定件：内容来自 manifest，测试不自带文本
         Path workRoot = Cli.repoRoot().resolve(".runtime");
@@ -62,6 +72,25 @@ public final class GoldenReplay {
                 throw new UncheckedIOException(error);
             }
         });
+
+        // setup 块（l04 起候选仓等非文本夹具）：有序步骤，write_file 物化固定内容件，
+        // run 执行 git 等 materialize 命令（与 Python 生成器按同一 setup 规格执行）
+        for (JsonNode step : manifest.path("setup")) {
+            if (step.hasNonNull("write_file")) {
+                Path target = workRoot.resolve(step.get("write_file").asText());
+                Files.createDirectories(target.getParent());
+                Files.writeString(target, step.get("content").asText(), StandardCharsets.UTF_8);
+            } else if (step.hasNonNull("run")) {
+                List<String> argv = new ArrayList<>();
+                step.get("run").forEach(item -> argv.add(item.asText()));
+                Process process = new ProcessBuilder(argv).directory(Cli.repoRoot().toFile())
+                        .redirectErrorStream(false).start();
+                int exit = process.waitFor();
+                assertThat(exit).as("setup 步骤退出码：%s", argv).isZero();
+            } else {
+                throw new IllegalStateException("setup 步骤缺 write_file/run：" + step);
+            }
+        }
 
         for (JsonNode scenario : manifest.path("scenarios")) {
             String id = scenario.path("id").asText();
@@ -78,7 +107,7 @@ public final class GoldenReplay {
             Cli.Result result = Cli.run(argv.toArray(String[]::new));
             assertThat(result.exitCode()).as("%s 退出码", id)
                     .isEqualTo(scenario.path("exit_code").asInt());
-            assertThat(Cli.normalize(result.stdout()))
+            assertThat(Cli.normalize(result.stdout(), maskFields))
                     .as("%s 规范化输出逐字节对照", id)
                     .isEqualTo(goldenContent(resourceDir + scenario.path("stdout_file").asText()));
             if (scenario.hasNonNull("assert_db_absent")) {

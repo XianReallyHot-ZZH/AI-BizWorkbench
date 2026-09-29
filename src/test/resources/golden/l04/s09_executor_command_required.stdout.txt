@@ -1,0 +1,5 @@
+{
+  "error": "executor_command_required: code 模式必须给出执行器命令，拒绝启动",
+  "flowerp_connected": false,
+  "ok": false
+}

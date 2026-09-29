@@ -1,0 +1,13 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "review": {
+    "decision": "reject",
+    "execution_id": 3,
+    "note": "对照基准复核：退回",
+    "review_id": 3,
+    "reviewer": "G-REVIEWER",
+    "task_id": "T-GOLDEN-L04-02"
+  },
+  "task_state": "rejected"
+}

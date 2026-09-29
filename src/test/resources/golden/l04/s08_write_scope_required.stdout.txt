@@ -1,0 +1,5 @@
+{
+  "error": "write_scope_required: code 模式必须声明允许写集，拒绝启动",
+  "flowerp_connected": false,
+  "ok": false
+}

@@ -1,0 +1,10 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "project": {
+    "name": "受控执行对照项目",
+    "path": ".",
+    "project_id": "G-PROJ",
+    "purpose": "golden l04 对照"
+  }
+}

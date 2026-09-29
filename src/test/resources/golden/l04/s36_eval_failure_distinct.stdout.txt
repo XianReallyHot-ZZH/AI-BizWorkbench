@@ -1,0 +1,52 @@
+{
+  "execution": {
+    "actor": "G-EXECUTOR",
+    "change_manifest": [
+      {
+        "after_sha256": "3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe",
+        "before_sha256": null,
+        "change": "added",
+        "path": "delivery.csv"
+      }
+    ],
+    "changed_files": [
+      "delivery.csv"
+    ],
+    "diff_sha256": "290fb360dbd28141533eb9bfe3cb32f1300c3d44fd379c5698dd8e151f72c1ba",
+    "diff_text": "diff --git a/delivery.csv b/delivery.csv\nnew file mode 100644\nindex 0000000..28c218c\n--- /dev/null\n+++ b/delivery.csv\n@@ -0,0 +1 @@\n+v1\n\\ No newline at end of file\n",
+    "eval_command": [
+      "sh",
+      "-c",
+      "echo eval-says-no >&2; exit 1"
+    ],
+    "eval_output_sha256": "289f8515172cb83ab3e5e3f7f2db5bfded22f203b5bc892f3a904527b82a6fb8",
+    "eval_output_text": "eval-says-no\n",
+    "eval_returncode": 1,
+    "eval_timed_out": false,
+    "execution_id": 7,
+    "executor_command": [
+      "sh",
+      "-c",
+      "printf v1 > delivery.csv; printf created\\n"
+    ],
+    "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+    "mode": "code",
+    "observed_at": "<TS>",
+    "out_of_scope_files": [],
+    "returncode": 0,
+    "status": "eval_failed",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_text": "",
+    "stdout_sha256": "7328041a404754b572cc6c61c3be5c560c24f27533717d1b1b4f5922335baa75",
+    "stdout_text": "createdn",
+    "task_id": "T-GOLDEN-L04-07",
+    "timed_out": false,
+    "workspace": "<WORKSPACE>",
+    "write_scope": [
+      "delivery.csv"
+    ]
+  },
+  "flowerp_connected": false,
+  "ok": false,
+  "task_state": "eval_failed"
+}

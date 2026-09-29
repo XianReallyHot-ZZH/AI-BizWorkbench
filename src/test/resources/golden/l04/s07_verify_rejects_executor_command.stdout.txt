@@ -1,0 +1,5 @@
+{
+  "error": "verify_rejects_executor_command: 仅复验模式不调用执行器进程，拒绝执行器命令",
+  "flowerp_connected": false,
+  "ok": false
+}

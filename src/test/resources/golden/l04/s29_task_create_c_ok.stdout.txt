@@ -1,0 +1,12 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "task": {
+    "prerequisite_task_id": "",
+    "project_id": "G-PROJ",
+    "request": "越界对照任务",
+    "requirement_id": "REQ-GOLDEN-L04",
+    "requirement_summary": "",
+    "task_id": "T-GOLDEN-L04-04"
+  }
+}

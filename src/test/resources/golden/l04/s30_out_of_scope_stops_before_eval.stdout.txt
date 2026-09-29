@@ -1,0 +1,58 @@
+{
+  "execution": {
+    "actor": "G-EXECUTOR",
+    "change_manifest": [
+      {
+        "after_sha256": "3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe",
+        "before_sha256": null,
+        "change": "added",
+        "path": "delivery.csv"
+      },
+      {
+        "after_sha256": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881",
+        "before_sha256": null,
+        "change": "added",
+        "path": "sneaked.txt"
+      }
+    ],
+    "changed_files": [
+      "delivery.csv",
+      "sneaked.txt"
+    ],
+    "diff_sha256": "75ff12b0a560d178bd29cff7348c449d3d528501f964426924c170d43d6b7bf0",
+    "diff_text": "diff --git a/delivery.csv b/delivery.csv\nnew file mode 100644\nindex 0000000..28c218c\n--- /dev/null\n+++ b/delivery.csv\n@@ -0,0 +1 @@\n+v1\n\\ No newline at end of file\ndiff --git a/sneaked.txt b/sneaked.txt\nnew file mode 100644\nindex 0000000..c1b0730\n--- /dev/null\n+++ b/sneaked.txt\n@@ -0,0 +1 @@\n+x\n\\ No newline at end of file\n",
+    "eval_command": [
+      "sh",
+      "-c",
+      "exit 0"
+    ],
+    "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "execution_id": 4,
+    "executor_command": [
+      "sh",
+      "-c",
+      "printf x > sneaked.txt; printf v1 > delivery.csv; printf both\\n"
+    ],
+    "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+    "mode": "code",
+    "observed_at": "<TS>",
+    "out_of_scope_files": [
+      "sneaked.txt"
+    ],
+    "returncode": 0,
+    "status": "out_of_scope",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_text": "",
+    "stdout_sha256": "b481f723e52312fd48121c203f49d016cdefea2a8fe2a765971a83ba8d78db8b",
+    "stdout_text": "bothn",
+    "task_id": "T-GOLDEN-L04-04",
+    "timed_out": false,
+    "workspace": "<WORKSPACE>",
+    "write_scope": [
+      "delivery.csv"
+    ]
+  },
+  "flowerp_connected": false,
+  "ok": false,
+  "task_state": "out_of_scope"
+}

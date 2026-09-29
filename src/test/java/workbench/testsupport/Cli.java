@@ -75,32 +75,43 @@ public final class Cli {
         }
     }
 
-    // ---- golden 规范化（独立实现，规则见 golden/l01/manifest.json normalization 块）----
+    // ---- golden 规范化（独立实现，规则见各 manifest.json normalization 块）----
+
+    /** l01–l03 三套 manifest 的统一掩码集（默认重载保持既有口径，行为零变化）。 */
+    private static final Map<String, String> DEFAULT_MASKS = Map.of(
+            "created_at", "<TS>",
+            "recorded_at", "<TS>",
+            "workbench_id", "<WORKBENCH_ID>");
 
     /** JSON 输出：掩码 + canonical 序列化 + 末尾换行；非 JSON 逐字保留（防御性）。 */
     public static String normalize(String raw) {
+        return normalize(raw, DEFAULT_MASKS);
+    }
+
+    /**
+     * 同上，掩码字段由 manifest normalization 声明驱动（l04 起各套可扩展：机器生成时间戳、
+     * 机器绝对路径等不可复现字段；声明即掩码，与 Python 生成器按同一块复现）。
+     */
+    public static String normalize(String raw, Map<String, String> maskFields) {
         try {
-            return canonical(mask(MAPPER.readValue(raw, Object.class))) + "\n";
+            return canonical(mask(MAPPER.readValue(raw, Object.class), maskFields)) + "\n";
         } catch (IOException notJson) {
             return raw;
         }
     }
 
-    private static Object mask(Object node) {
+    private static Object mask(Object node, Map<String, String> maskFields) {
         if (node instanceof Map<?, ?> map) {
             Map<Object, Object> masked = new LinkedHashMap<>();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
-                Object value = switch (String.valueOf(entry.getKey())) {
-                    case "created_at", "recorded_at" -> "<TS>";
-                    case "workbench_id" -> "<WORKBENCH_ID>";
-                    default -> mask(entry.getValue());
-                };
-                masked.put(entry.getKey(), value);
+                String placeholder = maskFields.get(String.valueOf(entry.getKey()));
+                masked.put(entry.getKey(),
+                        placeholder != null ? placeholder : mask(entry.getValue(), maskFields));
             }
             return masked;
         }
         if (node instanceof List<?> list) {
-            return list.stream().map(Cli::mask).toList();
+            return list.stream().map(item -> mask(item, maskFields)).toList();
         }
         return node;
     }

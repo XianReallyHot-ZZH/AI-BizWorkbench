@@ -1,0 +1,5 @@
+{
+  "error": "workspace_invalid: 候选没有起点提交（缺 HEAD）：.runtime/golden-l04/ws/nohead",
+  "flowerp_connected": false,
+  "ok": false
+}

@@ -1,0 +1,1381 @@
+{
+  "generated_from": "frozen Python workbench @ master（见 evidence/L04-java.md §G 记录的 commit）",
+  "generator": "tools/generate_golden_l04.py",
+  "inputs": {
+    "golden-l04/inputs/prompt.txt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n"
+  },
+  "normalization": {
+    "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
+    "mask_fields": {
+      "created_at": "<TS>",
+      "observed_at": "<TS>",
+      "recorded_at": "<TS>",
+      "reviewed_at": "<TS>",
+      "workbench_id": "<WORKBENCH_ID>",
+      "workspace": "<WORKSPACE>"
+    },
+    "mask_note": "l04 特有：observed_at/reviewed_at 系本讲场景面机器生成（_now()），不可复现，故掩码——与 l01/l02 的「observed_at 是操作者合同字段，逐字保留」不同；workspace 执行记录含机器绝对路径（resolve()），掩码为 <WORKSPACE>；created_at/recorded_at/workbench_id 与 l01/l02/l03 三套统一",
+    "non_json": "逐字保留"
+  },
+  "scenarios": [
+    {
+      "argv": [
+        "workbench-init",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--name",
+        "对照基准工作台",
+        "--owner",
+        "G-OWNER"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s01_init_ok",
+      "stdout_file": "s01_init_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-project-add",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--name",
+        "受控执行对照项目",
+        "--path",
+        ".",
+        "--purpose",
+        "golden l04 对照"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s02_project_add_ok",
+      "stdout_file": "s02_project_add_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-01",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "受控执行对照基准 A 票",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s03_task_create_a_ok",
+      "stdout_file": "s03_task_create_a_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-X",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "前置不存在应拒绝",
+        "--actor",
+        "G-ACTOR",
+        "--prerequisite-task",
+        "T-NOPE"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s04_prerequisite_missing_rejected",
+      "note": "C9：prerequisite_task_missing，任务未创建",
+      "stdout_file": "s04_prerequisite_missing_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-X",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "前置未接受应拒绝",
+        "--actor",
+        "G-ACTOR",
+        "--prerequisite-task",
+        "T-GOLDEN-L04-01"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s05_prerequisite_not_accepted_rejected",
+      "note": "C9：prerequisite_not_accepted（此时 T-A 尚无执行，不算已接受）",
+      "stdout_file": "s05_prerequisite_not_accepted_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s06_code_run_completed_to_review",
+      "note": "C3：invocation/write_scope/change_manifest（added，前值 null）/diff/双流 SHA；eval 绿停 review",
+      "stdout_file": "s06_code_run_completed_to_review.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "verify",
+        "--executor-command",
+        "sh -c 'exit 0'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s07_verify_rejects_executor_command",
+      "note": "仅复验模式不调用执行器进程",
+      "stdout_file": "s07_verify_rejects_executor_command.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s08_write_scope_required",
+      "note": "code 模式缺写集拒绝启动",
+      "stdout_file": "s08_write_scope_required.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s09_executor_command_required",
+      "note": "code 模式缺执行器命令拒绝启动",
+      "stdout_file": "s09_executor_command_required.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s10_execution_timeout_required",
+      "note": "预算是执行器合同组成部分：缺显式超时声明拒绝启动",
+      "stdout_file": "s10_execution_timeout_required.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'unbalanced",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s11_eval_command_unparseable",
+      "note": "shell 形命令串解析失败（不平衡引号）",
+      "stdout_file": "s11_eval_command_unparseable.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'unbalanced",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s12_executor_command_unparseable",
+      "note": "执行器命令串解析失败",
+      "stdout_file": "s12_executor_command_unparseable.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        " "
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s13_required_actor_missing",
+      "note": "执行发起人必须具名",
+      "stdout_file": "s13_required_actor_missing.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-NOPE",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "verify",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s14_required_task_missing",
+      "note": "任务不存在，记录未追加",
+      "stdout_file": "s14_required_task_missing.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/ghost",
+        "--mode",
+        "verify",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s15_workspace_missing_rejected",
+      "note": "工作目录不存在，拒于进程前",
+      "stdout_file": "s15_workspace_missing_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/nogit",
+        "--mode",
+        "verify",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s16_workspace_without_git_rejected",
+      "note": "非 git 候选（缺 .git），拒于进程前",
+      "stdout_file": "s16_workspace_without_git_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/nohead",
+        "--mode",
+        "verify",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s17_workspace_without_head_rejected",
+      "note": "候选没有起点提交（缺 HEAD）：Diff/前值摘要无从谈起",
+      "stdout_file": "s17_workspace_without_head_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/no-such-prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s18_executor_prompt_unreadable",
+      "note": "提示词文件不可读取，执行未启动",
+      "stdout_file": "s18_executor_prompt_unreadable.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c2",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s19_task_in_review_rejects_rerun",
+      "note": "review 态拒绝再次运行且不毁待审状态（c2 未被触碰）",
+      "stdout_file": "s19_task_in_review_rejects_rerun.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-review",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--reviewer",
+        "G-EXECUTOR",
+        "--decision",
+        "approve"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s20_self_review_rejected",
+      "note": "执行者不能批准自己（名义级比较）",
+      "stdout_file": "s20_self_review_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-review",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--reviewer",
+        " ",
+        "--decision",
+        "approve"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s21_required_reviewer_missing",
+      "note": "复核人必须具名",
+      "stdout_file": "s21_required_reviewer_missing.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-review",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--reviewer",
+        "G-REVIEWER",
+        "--decision",
+        "approve",
+        "--note",
+        "对照基准复核：接受第一次执行"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s22_review_approve_accepts",
+      "note": "复核按 execution_id 锚定；task_state → accepted",
+      "stdout_file": "s22_review_approve_accepts.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c2",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s23_code_rerun_after_accept_invalidates",
+      "note": "C8 版本锚定：接受后再执行，旧接受失效回 review",
+      "stdout_file": "s23_code_rerun_after_accept_invalidates.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-review",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--reviewer",
+        "G-REVIEWER",
+        "--decision",
+        "approve",
+        "--note",
+        "对照基准复核：接受第二次执行"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s24_review_approve_accepts_again",
+      "note": "approve/reject 只追加",
+      "stdout_file": "s24_review_approve_accepts_again.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-02",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "复验对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s25_task_create_j_ok",
+      "stdout_file": "s25_task_create_j_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-02",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "verify",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-OPERATOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s26_verify_completed",
+      "note": "C5 仅复验：executor_command 为 null 键形；task_state → review",
+      "stdout_file": "s26_verify_completed.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-review",
+        "T-GOLDEN-L04-02",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--reviewer",
+        "G-REVIEWER",
+        "--decision",
+        "reject",
+        "--note",
+        "对照基准复核：退回"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s27_review_reject",
+      "note": "reject → task_state rejected",
+      "stdout_file": "s27_review_reject.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-03",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "B 票对照任务",
+        "--actor",
+        "G-ACTOR",
+        "--prerequisite-task",
+        "T-GOLDEN-L04-01"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s28_prerequisite_accepted_ok",
+      "note": "C9 正面：A 已具名接受后放行，prerequisite_task_id 入账",
+      "stdout_file": "s28_prerequisite_accepted_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-04",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "越界对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s29_task_create_c_ok",
+      "stdout_file": "s29_task_create_c_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-04",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c3",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf x > sneaked.txt; printf v1 > delivery.csv; printf both\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s30_out_of_scope_stops_before_eval",
+      "note": "越界：eval 前停止（eval 键缺位形）、不自动回滚、越界文件留证",
+      "stdout_file": "s30_out_of_scope_stops_before_eval.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-05",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "失败对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s31_task_create_d_ok",
+      "stdout_file": "s31_task_create_d_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-05",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c4",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'echo boom-out; echo boom-err >&2; exit 3'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s32_executor_failure_preserved",
+      "note": "C6：执行器失败不冒充成功，stdout/stderr 原文入账（rc 3）",
+      "stdout_file": "s32_executor_failure_preserved.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-06",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "超时对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s33_task_create_e_ok",
+      "stdout_file": "s33_task_create_e_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-06",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c5",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf partial-out; printf partial-err >&2; sleep 30'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 0'",
+        "--execution-timeout",
+        "1",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s34_timeout_preserves_partial_output",
+      "note": "超时：Eval 前停止，部分输出与 Diff 保留",
+      "stdout_file": "s34_timeout_preserves_partial_output.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-07",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "eval 失败对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s35_task_create_f_ok",
+      "stdout_file": "s35_task_create_f_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-07",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c6",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'printf v1 > delivery.csv; printf created\\n'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'echo eval-says-no >&2; exit 1'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s36_eval_failure_distinct",
+      "note": "eval 业务失败如实落账（eval_timed_out 为 false）",
+      "stdout_file": "s36_eval_failure_distinct.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-08",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "eval 超时对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s37_task_create_g_ok",
+      "stdout_file": "s37_task_create_g_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-08",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c7",
+        "--mode",
+        "code",
+        "--write-scope",
+        "delivery.csv",
+        "--executor-command",
+        "sh -c 'exit 0'",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'sleep 30'",
+        "--execution-timeout",
+        "1",
+        "--actor",
+        "G-EXECUTOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s38_eval_timeout_distinguishable",
+      "note": "eval 超时与业务失败可分辨（eval_timed_out 为 true，复查轮 S-c6）",
+      "stdout_file": "s38_eval_timeout_distinguishable.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-09",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "复验失败对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s39_task_create_h_ok",
+      "stdout_file": "s39_task_create_h_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-run",
+        "T-GOLDEN-L04-09",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--workspace",
+        ".runtime/golden-l04/ws/c1",
+        "--mode",
+        "verify",
+        "--executor-prompt-file",
+        ".runtime/golden-l04/inputs/prompt.txt",
+        "--eval-command",
+        "sh -c 'exit 7'",
+        "--execution-timeout",
+        "30",
+        "--actor",
+        "G-OPERATOR"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s40_verify_eval_failure",
+      "note": "verify 模式 eval 失败 → eval_failed（verify 形）",
+      "stdout_file": "s40_verify_eval_failure.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-review",
+        "T-GOLDEN-L04-07",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--reviewer",
+        "G-REVIEWER",
+        "--decision",
+        "approve"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s41_review_eval_failed_rejected",
+      "note": "eval_failed 态不处于人工复核态，不能复核",
+      "stdout_file": "s41_review_eval_failed_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-create",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--project-id",
+        "G-PROJ",
+        "--task-id",
+        "T-GOLDEN-L04-10",
+        "--requirement-id",
+        "REQ-GOLDEN-L04",
+        "--request",
+        "无执行对照任务",
+        "--actor",
+        "G-ACTOR"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s42_task_create_i_ok",
+      "stdout_file": "s42_task_create_i_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-review",
+        "T-GOLDEN-L04-10",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt",
+        "--reviewer",
+        "G-REVIEWER",
+        "--decision",
+        "approve"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s43_review_without_execution_rejected",
+      "note": "任务尚无执行记录，不能复核",
+      "stdout_file": "s43_review_without_execution_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-show",
+        "T-GOLDEN-L04-01",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s44_task_show_full",
+      "note": "摘要：状态、两条执行记录与两条复核记录（掩码后字节锁）",
+      "stdout_file": "s44_task_show_full.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-task-show",
+        "T-NOPE",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s45_task_show_missing",
+      "stdout_file": "s45_task_show_missing.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s46_status_full_ledger",
+      "note": "全账面投影：10 任务 + 全部执行/复核记录（掩码后字节锁）",
+      "stdout_file": "s46_status_full_ledger.stdout.txt"
+    },
+    {
+      "argv": [
+        "workbench-status",
+        "--runtime-dir",
+        ".runtime/golden-l04/rt"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s47_status_after_tamper",
+      "note": "篡改 change_manifest 后 status 重算 SHA-256 复核：execution_digest_mismatch（复查轮 S-c1）",
+      "stdout_file": "s47_status_after_tamper.stdout.txt",
+      "tamper_before": {
+        "db": ".runtime/golden-l04/rt/workbench.db",
+        "sql": "UPDATE executions SET change_manifest = '[]' WHERE task_id = 'T-GOLDEN-L04-01' AND execution_id = 1"
+      }
+    }
+  ],
+  "setup": [
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/c1/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/c1"
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c1",
+        "add",
+        "."
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c1",
+        "-c",
+        "user.name=G",
+        "-c",
+        "user.email=golden@example",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "seed"
+      ]
+    },
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/c2/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/c2"
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c2",
+        "add",
+        "."
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c2",
+        "-c",
+        "user.name=G",
+        "-c",
+        "user.email=golden@example",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "seed"
+      ]
+    },
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/c3/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/c3"
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c3",
+        "add",
+        "."
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c3",
+        "-c",
+        "user.name=G",
+        "-c",
+        "user.email=golden@example",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "seed"
+      ]
+    },
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/c4/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/c4"
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c4",
+        "add",
+        "."
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c4",
+        "-c",
+        "user.name=G",
+        "-c",
+        "user.email=golden@example",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "seed"
+      ]
+    },
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/c5/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/c5"
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c5",
+        "add",
+        "."
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c5",
+        "-c",
+        "user.name=G",
+        "-c",
+        "user.email=golden@example",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "seed"
+      ]
+    },
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/c6/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/c6"
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c6",
+        "add",
+        "."
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c6",
+        "-c",
+        "user.name=G",
+        "-c",
+        "user.email=golden@example",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "seed"
+      ]
+    },
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/c7/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/c7"
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c7",
+        "add",
+        "."
+      ]
+    },
+    {
+      "run": [
+        "git",
+        "-C",
+        ".runtime/golden-l04/ws/c7",
+        "-c",
+        "user.name=G",
+        "-c",
+        "user.email=golden@example",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-q",
+        "-m",
+        "seed"
+      ]
+    },
+    {
+      "content": "seed-v1\n",
+      "write_file": "golden-l04/ws/nogit/seed.txt"
+    },
+    {
+      "run": [
+        "git",
+        "init",
+        "-q",
+        ".runtime/golden-l04/ws/nohead"
+      ]
+    }
+  ]
+}

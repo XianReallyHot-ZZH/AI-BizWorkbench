@@ -1,0 +1,43 @@
+{
+  "execution": {
+    "actor": "G-EXECUTOR",
+    "change_manifest": [],
+    "changed_files": [],
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff_text": "",
+    "eval_command": [
+      "sh",
+      "-c",
+      "sleep 30"
+    ],
+    "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "eval_output_text": "",
+    "eval_returncode": null,
+    "eval_timed_out": true,
+    "execution_id": 8,
+    "executor_command": [
+      "sh",
+      "-c",
+      "exit 0"
+    ],
+    "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+    "mode": "code",
+    "observed_at": "<TS>",
+    "out_of_scope_files": [],
+    "returncode": 0,
+    "status": "eval_failed",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_text": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_text": "",
+    "task_id": "T-GOLDEN-L04-08",
+    "timed_out": false,
+    "workspace": "<WORKSPACE>",
+    "write_scope": [
+      "delivery.csv"
+    ]
+  },
+  "flowerp_connected": false,
+  "ok": false,
+  "task_state": "eval_failed"
+}

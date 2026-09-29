@@ -1,0 +1,40 @@
+{
+  "execution": {
+    "actor": "G-EXECUTOR",
+    "change_manifest": [],
+    "changed_files": [],
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff_text": "",
+    "eval_command": [
+      "sh",
+      "-c",
+      "exit 0"
+    ],
+    "eval_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "execution_id": 5,
+    "executor_command": [
+      "sh",
+      "-c",
+      "echo boom-out; echo boom-err >&2; exit 3"
+    ],
+    "executor_prompt": "按绑定合同在允许写集内交付，完成后停止推进等待人审。\n",
+    "mode": "code",
+    "observed_at": "<TS>",
+    "out_of_scope_files": [],
+    "returncode": 3,
+    "status": "failed",
+    "stderr_sha256": "f0d71b2c9c76fa01907bc3cb837912e4fe54d157bbfc6b685b1e95b95a163865",
+    "stderr_text": "boom-err\n",
+    "stdout_sha256": "a36d2c8d7a0de265fc10dace3546ccc93de694ccdcec0872bb36d29962f71686",
+    "stdout_text": "boom-out\n",
+    "task_id": "T-GOLDEN-L04-05",
+    "timed_out": false,
+    "workspace": "<WORKSPACE>",
+    "write_scope": [
+      "delivery.csv"
+    ]
+  },
+  "flowerp_connected": false,
+  "ok": false,
+  "task_state": "failed"
+}

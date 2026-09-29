@@ -1,0 +1,5 @@
+{
+  "error": "eval_command_unparseable: --eval-command 不是合法的 shell 形命令串，执行未启动",
+  "flowerp_connected": false,
+  "ok": false
+}

@@ -1,0 +1,5 @@
+{
+  "error": "workspace_invalid: 工作目录不是 git 候选（缺 .git）：.runtime/golden-l04/ws/nogit",
+  "flowerp_connected": false,
+  "ok": false
+}

@@ -1,0 +1,10 @@
+{
+  "flowerp_connected": false,
+  "ok": true,
+  "workbench": {
+    "name": "对照基准工作台",
+    "owner": "G-OWNER",
+    "version": "V0.1",
+    "workbench_id": "<WORKBENCH_ID>"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "error": "workspace_invalid: 工作目录不存在：.runtime/golden-l04/ws/ghost",
+  "flowerp_connected": false,
+  "ok": false
+}
