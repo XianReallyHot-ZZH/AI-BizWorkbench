@@ -18,7 +18,7 @@
 | 支线二 | 工作台看板——验收人的观察窗（L06 前插入；观察窗定位：零 POST、零验收按钮、四屏只读） | — | 起服务真账可读；只读三层实测（mode=ro + 仅 GET + 起停 sha256 一致） | 已完成（2026-09-28 验收：合同 C1–C6 十二用例，复查轮双轴 + 验收期链语义三态修复（真账抓获），94/94 全量绿；证据账 [evidence/S02.md](evidence/S02.md)，方案见 [docs/lessons/支线-工作台看板.md](../lessons/支线-工作台看板.md)） |
 | 4 | 质量链：失败优先 Eval → Harness 分级 → Hook → CI | L05-L08 | 本地/远端同一 Eval 身份；L08 收口设上游检查点 | 进行中（L05 已完成：2026-09-28 验收，缺陷基线两连红+同命令绿+冻结指纹+盲区留痕，eval 用例身份 receiving_is_idempotent 已固定；证据账 [evidence/L05.md](evidence/L05.md)。L06 已完成：2026-09-29 验收，evals/harness+report_contract 统一裁判落地、双链红绿+假绿探针+客户 eval 盲区实证，schema 1.0 对齐客户为 L08 铺垫；证据账 [evidence/L06.md](evidence/L06.md)） |
 | 5 | 后半程协作与产品化（粒度在 L08 检查点定） | L09-L16 | 见 L08 检查点结论 | 未开始 |
-| 重走线 | Java 全量重走 L01–L06（ADR-0006）：每讲候选分支 + 起始红 + 具名验收，golden 对照入验收门 | L01-L06 | 原讲合同逐条在 Java 重新满足 + 对照基准字节级一致 | 进行中（**L01 重走已完成：2026-09-29 验收**——31/31 绿（25 合同 + golden 22 场景字节级一致 + fixture 全字段投影机检），自举四查通过，ImportEvidence 拒收实证；证据账 [evidence/L01-java.md](evidence/L01-java.md)。下一讲 L02 重走待启动） |
+| 重走线 | Java 全量重走 L01–L06（ADR-0006）：每讲候选分支 + 起始红 + 具名验收，golden 对照入验收门 | L01-L06 | 原讲合同逐条在 Java 重新满足 + 对照基准字节级一致 | 进行中（**L01 重走已完成：2026-09-29 验收**——31/31 绿（25 合同 + golden 22 场景字节级一致 + fixture 全字段投影机检），自举四查通过，ImportEvidence 拒收实证；证据账 [evidence/L01-java.md](evidence/L01-java.md)。**L02 重走已完成：2026-09-29 验收**——40/40 绿（31 既有 + L02 翻译件 5 + Java 线红点组 3 + golden l02 重放 1），CLAUDE.md 增量补 Java 重走线规则要素（候选表 R1–R5，红点三断言转绿），N0/N1/边界/迁移四会话行为对照齐（C7/C8/C9），golden l02 15 场景字节级一致（双跑指纹 ed8aad6c…）；证据账 [evidence/L02-java.md](evidence/L02-java.md)。下一讲 L03 重走待启动） |
 
 原定向文档中的"阶段 1：重建基线链"已被 ADR-0001（vendor 冻结合同）与 ADR-0003（检查点跟进）取代，不再是一条路线阶段。
 
