@@ -16,7 +16,7 @@
 | 3 | V0 受控执行：写集、Diff 摘要、最小 Eval；登记 flowERP（换挡点） | L04 | 候选分支走完具名验收；客户真理可调 | 已完成（2026-09-27 验收：A/B 双票，真实 claude -p 交付，probe 六场景 rc 0；证据账 C1–C15） |
 | 支线 | 记忆系统最小闭环（L04 后串行插入；六步口径对齐上游，memory 类全链） | — | 召回→采用→复验→失效证据链走通一次 | 已完成（2026-09-28 验收：15 条合同测试，四链真实任务走通，主账完成五表迁移；证据账 [evidence/S01.md](evidence/S01.md)，方案见 [docs/lessons/支线-记忆系统最小闭环.md](../lessons/支线-记忆系统最小闭环.md)） |
 | 支线二 | 工作台看板——验收人的观察窗（L06 前插入；观察窗定位：零 POST、零验收按钮、四屏只读） | — | 起服务真账可读；只读三层实测（mode=ro + 仅 GET + 起停 sha256 一致） | 已完成（2026-09-28 验收：合同 C1–C6 十二用例，复查轮双轴 + 验收期链语义三态修复（真账抓获），94/94 全量绿；证据账 [evidence/S02.md](evidence/S02.md)，方案见 [docs/lessons/支线-工作台看板.md](../lessons/支线-工作台看板.md)） |
-| 4 | 质量链：失败优先 Eval → Harness 分级 → Hook → CI | L05-L08 | 本地/远端同一 Eval 身份；L08 收口设上游检查点 | 进行中（L05 已完成：2026-09-28 验收，缺陷基线两连红+同命令绿+冻结指纹+盲区留痕，eval 用例身份 receiving_is_idempotent 已固定；证据账 [evidence/L05.md](evidence/L05.md)） |
+| 4 | 质量链：失败优先 Eval → Harness 分级 → Hook → CI | L05-L08 | 本地/远端同一 Eval 身份；L08 收口设上游检查点 | 进行中（L05 已完成：2026-09-28 验收，缺陷基线两连红+同命令绿+冻结指纹+盲区留痕，eval 用例身份 receiving_is_idempotent 已固定；证据账 [evidence/L05.md](evidence/L05.md)。L06 已完成：2026-09-29 验收，evals/harness+report_contract 统一裁判落地、双链红绿+假绿探针+客户 eval 盲区实证，schema 1.0 对齐客户为 L08 铺垫；证据账 [evidence/L06.md](evidence/L06.md)） |
 | 5 | 后半程协作与产品化（粒度在 L08 检查点定） | L09-L16 | 见 L08 检查点结论 | 未开始 |
 
 原定向文档中的"阶段 1：重建基线链"已被 ADR-0001（vendor 冻结合同）与 ADR-0003（检查点跟进）取代，不再是一条路线阶段。
