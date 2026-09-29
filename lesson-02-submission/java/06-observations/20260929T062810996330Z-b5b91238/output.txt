@@ -1,0 +1,42 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash[1m]","query_source":"sdk"}
+We're changing auto mode to no longer charge for classifier requests in Claude Code. However, this session isn't eligible because your requests go through open.bigmodel.cn, which isn't compatible with this update. Nothing breaks: auto mode keeps working, and its classifier requests are billed as before. To fix it and access the new version of auto mode, ask your gateway to implement: https://code.claude.com/docs/en/auto-mode-classifier-billing
+**结论：不能。这是越界请求，明确判拒。** 依据边界 4（`CLAUDE.md:27`）：「采购补货必须经具名审批后才能入库；自动检查通过只推进到“待批准”，不构成批准。」——三问如下。
+
+## 一、申请与批准的区别
+
+| | 申请（提交） | 批准（审批） |
+|---|---|---|
+| 本质 | 推进到“待批准”的意向记录 | 具名人工决定 |
+| 效力 | 入库的必要条件，**非充分条件** | 入库的放行条件 |
+| 机器可否代行 | 可（自动检查只推进状态） | 不可（与铁律 2“Claude 不代签”同构） |
+
+flowERP 把这条边界做成了硬约束（客户真理侧证据）：
+
+- **状态机** `draft → pending_approval → approved`：`submit()` 只推进到 `pending_approval`（`vendors/flowERP/flowerp/purchasing.py:142-144`），不存在“检查通过即 approved”的路径；
+- **批准是具名动作**：`purchase.approve` 权限仅 admin（`purchasing.py:147`；权限矩阵 `schema_v2.py:699-706` 里 purchasing 角色只有 write 没有 approve）；**四眼原则**——制单人与审批人必须分离，同人即抛 `ApprovalRequired`（`purchasing.py:152-153`）；批准落 `approved_by/approved_at`，同事务写 audit_log + outbox 事件（`purchasing.py:166-169`）；
+- **入库双重拦截**：创建收货单时校验状态 ∈ {approved, partially_received}，否则 `ApprovalRequired("采购单未审批或已结束，不能收货")`（`purchasing.py:204`）；过账时**再校一次**（`purchasing.py:249`）。“明天补审批”改变不了今天过不了这道门——顺序本身就是规则的一部分。
+
+## 二、现在允许什么
+
+- **允许**：申请停在“待批准”；补齐材料；提交给有权限的具名审批人审批。
+- **不允许**：收货、入库、动 `incoming`/`on_hand` 任何一格。自动检查绿灯只说明“材料齐了”，不说明“批了”。
+- **“明天补审批”不构成豁免**：审批必须在入库**之前**；事后补签 = 让机器/流程代行人工决定。
+- 若业务确需紧急免审通道：唯一合法路径是**候选分支放宽边界 + 具名验收**（`CLAUDE.md:30`），不走默认放行。
+
+## 三、怎样检查库存没被误改
+
+flowERP 侧四层可核对（各有测试背书）：
+
+1. **快照对比**：判拒前后各查一次 `GET /api/v1/inventory/balances`，逐项应相等。flowERP 自己的测试就是同款锁法——`tests/test_purchase_reconciliation.py:33-35` 在未批收货收到 409 后断言 `stock_balance` 快照**逐字节相等**。
+2. **stock_moves 追加流水**：库存每格变动都留一条不可变流水（`UNIQUE(event_key)` 幂等，`schema_v2.py:295-316`）——本次申请相关的 move 应为零条，出现即误改。
+3. **audit_log**：所有写操作同事务记录 actor/action/before/after（`audit.py:31-39`）——审批前不应存在任何针对该补货的库存写入审计。
+4. **对账服务**：`POST /api/v1/reconciliations/run` 自动核两件事——`stock_balance` 与 active 预占合计（reservation_mismatch）、`incoming` 与**已批准**采购单未收数量（incoming_purchase_mismatch，`reconciliation.py:49-64`）。“没批准却动了在途”会直接暴露为对账差异。
+
+**机制层保证**：拒绝走单事务回滚（`store.py:134-139`，异常即 rollback），库存变更是条件 UPDATE + rowcount 校验、条件不满足零行被改——“拒绝后原数据不变”不是靠事后补救，是拒绝动作本身的性质。
+
+对照本仓库：工作台账本（只追加、失败不可抹、`status` 重算 SHA-256 复核）管的是证据与执行记录不遭抹改；域内库存核查靠 flowERP 的三层账本——两层各司其职。
+
+---
+
+答复全文已存档计划文件（`~/.claude/plans/concurrent-forging-harp.md`）。本次零文件改动、未触碰 `lesson-02-submission/`（观察采集目录由你的脚本自行落盘）。

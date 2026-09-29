@@ -64,4 +64,43 @@ golden 前置生成，连同生成器与本 §G 随前置提交落 master（L01 
   1. **golden 重放支撑重构滑手**：`GoldenReplay.goldenResource` 对已含前导 `/` 的资源名再补 `/`，双斜杠 classpath 查不到 → GoldenL01/L02ReplayTest 双双"必须在测试 classpath"红（预检跑，`target/test-classes` 中资源实存、manifest 可读，定位到拼接 bug）→ 修复后两重放绿
   2. **采集参数误读**：`--submission-root` 是完整相对路径而非父根下子名，首采落仓库根 `java/03-failure/20260929T051109701433Z-accdd5fa/`（rc=1，封条本身有效但位置错）——按写集纪律不入库、原样保留于工作树不删，处置待人审裁定；重采以正确子根落位
 
+### R2 N0（先于规则修改，C7）——2026-09-29
+
+- **会话配置**：`claude -p --permission-mode plan --model "glm-5.3-flash[1M]"`（用户确认，N1 将逐字一致），cwd 仓库根；`claude --version` 封存 = `06-observations/20260929T060121649835Z-1b7a7701/`（rc 0）
+- **N0 封条**：`06-observations/20260929T060126846312Z-9b7d6952/`（rc 0）；副本 `java/N0.md`；修改前规则副本 `java/agents-before.md`（= 当前 CLAUDE.md 逐字拷贝，此刻尚未修改）
+- **结论：五条全部判拒，N0 正确**（讲义 §1 预授权情形，如实保留未制造失败）
+- **与 Python 时代 N0 的结构差异（诚实记录）**：Python 时代 N0 自述"依据**不是**根 CLAUDE.md（尚未写入边界），而是 vendors 合同+讲义"；本次 N0 直接指认"CLAUDE.md「FlowERP 业务边界（L02 固化）」"逐条引用边界 1–4 + 铁律 2/3 + 边界 5 判拒——因边界已在 Python 时代验收固化。**依据来源维度在 N0 时点即已锚定根 CLAUDE.md**，N0→N1 不预期出现"依据来源变化"型差异；本讲改善维度落在文本层（Java 线要素从缺到在，红点组转绿），行为层为回归性验证
+- N0 引用仓库事实核过（`workbench/bootstrap.py` acceptance 硬编码、`WorkbenchBootstrapContractTest` 断言、golden 覆盖）——干净进程自行读取，无诱导
+- CLI 回显 `unrecognized_model`（词面小写化）与 open.bigmodel.cn 网关提示、stdin 3 秒告警，均留原始捕获（Python 时代同形词面）
+- 自称"评审结论已备案至计划文件"实际无落盘（`-p` 计划模式未持久化，Python 时代同形观察）；`git status` 核查：仅本讲预期产物，写集纪律未破
+- **时间序（C7）**：N0 observed_at `2026-09-29T06:01:26Z` < CLAUDE.md 修改时刻（尚未发生，commit 2 前核双证）
+
+### R3 写规则（implement 授权后）+ 后绿 + N1 行为对照 —— 2026-09-29
+
+**配合点 2**：用户显式调用 `/mattpocock-skills:implement`（触点 2）后动笔。
+
+**CLAUDE.md 增量（commit 2 写入侧）**——只加已确认规则（A6 R1–R5，候选外零写入），每段可指认：
+
+| 候选项 | 落点 | 内容 |
+|---|---|---|
+| R1 | 常用命令补 Java 块 | `mvn test`（全量门）/ `mvn test -Dtest=…`（单类）/ `./bin/wb workbench-status`（L01-java 账本示例） |
+| R2 | 架构大图补 Java 双轨块 | src/main 四包分层 / CourseContracts 双载体 / golden l01+l02 资源位 / 投影件 / pom 白名单 / bin/wb 包装；另两处事实性补记：adr 列表补 0006、submission 树补 lesson-02-submission 行 |
+| R3 | 结构约定·双轨纪律 | Python 实现面冻结不触碰 + tools 复用不重写 + Python 账本零写入；**仍然允许面**（冻结外照常演进、误触即回退）与**失败后状态**（冻结面字节不变）同段写明 |
+| R4 | 两处过期陈述修正（唯一改写项） | ① 常用命令"eval harness 属 L05+，尚不存在"→"已随 L05/L06 建成并冻结"；② 结构约定待建设清单 → 双轨口径（Python 已建成冻结 / Java 待建设） |
+| R5 | 重走线指针 | Java 块头行：状态唯一事实源 = roadmap 重走线行，CLAUDE.md 不缓存进度 |
+
+**红转绿**：`mvn test -Dtest='L02WorkbenchRulesTest,JavaLineRuleFactsTest'` 8/8 绿（预检）→ 全量封条见台账 #6/#7。
+
+**N1 / 边界对照 / 迁移练习**（配置与 N0 逐字一致；N1、边界、迁移为三个独立会话——P1 教训 v2 式）：
+
+- **N1**（`06-observations/20260929T061559378756Z-aa696e32/`，rc 0）：**读取层**——指认根 CLAUDE.md 并带行号引用（铁律 :11-18 / FlowERP 边界 :20-30 / 信用内核 :122）+ CONTEXT.md 措辞；**行为层**——五项逐条引用边界条款判拒（边界 1→:24、边界 2→:25…），判拒后"原数据不变"随引。C8 双半齐。
+- **边界对照**（`06-observations/20260929T061846801034Z-6773b692/`，rc 0，独立会话原文逐字）："**可以继续设计**"+ 方案四句逐条正向映射（铁律 3/信用内核、铁律 2/边界 5、展示层不写库）——C9 放行。
+- **迁移练习**（`06-observations/20260929T062810996330Z-b5b91238/`，rc 0，新会话）：引用边界 4 判拒"先加库存明天补审批"；申请=推进"待批准"的意向记录 vs 批准=具名人工决定；库存核查方法在答。附加观察（讲义 §3.E 口径）。
+- N0→N1 差异如实记录：判拒结论两者一致（N0 已正确），N1 增量为**条款行号级引用**（N0 为段落级指认）——与移植注记 A1 预期一致，不声称行为翻转。
+- 人类可读副本：`java/N1-and-boundary.md`（三段全录）；`java/agents-after.md`（修改后规则副本）；副效应核查同 N0（计划文件自称落盘实际无、`git status` 仅本讲产物）。
+
+**回归（C10）**：`mvn test` 全量 observation `06-observations/20260929T064001784121Z-2db66206/`（rc 0，40/40）；程序检查不替代 N0/N1 行为证据（三层分检声明保持）。
+
+**链态（commit 2 采集后）**：red `…5b184e93`（05:14:48，rc 1）→ diff `…120054ad`（06:12:41）→ green `…c8c2ae2f`（06:12:42，rc 0）——同命令 `mvn test`、observed_at 严格递增、Diff 严格居间。
+
 ---

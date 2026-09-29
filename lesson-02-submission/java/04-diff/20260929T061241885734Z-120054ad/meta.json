@@ -1,0 +1,17 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "diff",
+    "--",
+    "CLAUDE.md",
+    "src"
+  ],
+  "command": "[\"git\", \"diff\", \"--\", \"CLAUDE.md\", \"src\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-29T06:12:41.885734+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-02-submission/java/04-diff/20260929T061241885734Z-120054ad/output.txt",
+  "sha256": "e49f776708f08a4229baae00d49e6805274bf29baaa78c6b2dcc580c6c150966",
+  "provenance": "local_teaching_capture"
+}

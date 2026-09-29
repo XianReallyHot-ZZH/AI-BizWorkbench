@@ -1,0 +1,59 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash[1m]","query_source":"sdk"}
+We're changing auto mode to no longer charge for classifier requests in Claude Code. However, this session isn't eligible because your requests go through open.bigmodel.cn, which isn't compatible with this update. Nothing breaks: auto mode keeps working, and its classifier requests are billed as before. To fix it and access the new version of auto mode, ask your gateway to implement: https://code.claude.com/docs/en/auto-mode-classifier-billing
+## 读取的规则文件
+
+- 根目录 **`CLAUDE.md`**——「铁律」（`CLAUDE.md:11-18`）、「FlowERP 业务边界（L02 固化）」（`CLAUDE.md:20-30`）、「信用内核」（`CLAUDE.md:122`）。
+- 根目录 **`CONTEXT.md`**——词汇表，用于措辞继承：具名验收（`CONTEXT.md:64-66`）、「待审核 ≠ 已接受」（`CONTEXT.md:68-69`）、证据（`CONTEXT.md:71-73`）。
+
+未修改任何文件、未运行任何命令（遵守本次要求与当前 plan mode）。
+
+## 逐项判断：五项全部判拒
+
+**结论先行：五项均为越界方案，逐项明确判拒，无一可按原样接受。**
+
+### 1. 库存不足仍允许创建预占，稍后修正负库存 → **判拒**
+
+依据边界 1（`CLAUDE.md:24`）：「可用库存不能为负，预占必须原子化；缺货在创建时拒绝，**不做‘先记账后修正’**」。该方案就是边界点名禁止的那个模式本身。
+
+归属：**纯自动检查**。库存数量比对是机械可判定条件，创建时即可算出，不存在“稍后修正”的信息缺口；应判拒且拒绝后原数据不变（`CLAUDE.md:30`）。
+
+### 2. 相同幂等键重复提交时再次增加库存 → **判拒**
+
+依据边界 2（`CLAUDE.md:25`）：「同一个入库幂等键只能生效一次；**再次入库用新幂等键**，而不是让键失效」。同键再加库存 = 同一键生效两次，直接摧毁幂等语义。边界已给出正确替代：重入库换新键。
+
+归属：**纯自动检查**。键比对与生效计数是确定性规则，判拒路径不得改动已入账数据。
+
+### 3. 订单取消后保留原预占 → **判拒**
+
+依据边界 3（`CLAUDE.md:26`）：「订单只能按状态机迁移，取消时释放预占；**释放是取消的后件义务，不可省略**」。“不可省略”三字排除了保留预占的任何变体——这不是可权衡的选项，是义务性后件。
+
+归属：**纯自动检查**。状态机迁移合法性 + 后件动作完整性均可机器判定，无人工裁量空间。
+
+### 4. 自动检查通过后直接入库，不等人工批准 → **判拒（本条正是自动检查与人工决定的分界）**
+
+依据边界 4（`CLAUDE.md:27`）：「采购补货必须经**具名审批**后才能入库；**自动检查通过只推进到‘待批准’，不构成批准**」。自动检查通过是入库的必要条件，不是充分条件；把绿灯当成批准，等于让机器代行人工决定。
+
+归属：**需拆开**——自动检查（材料/数量合规性）通过后，状态只能推进到“待批准”；“批准并入库”是具名人工决定，机器不可代签。这与铁律 2「Claude 不代签」同构。若业务确要免审入库，唯一路径是候选分支放宽边界 + 具名验收，不走默认放行（`CLAUDE.md:30`）。
+
+### 5. evidence_complete 为 true 即显示“人工验收通过” → **判拒（自动检查冒充人工接受）**
+
+依据三处，同指一个错误：
+
+- 边界 5（`CLAUDE.md:28`）：「**自动检查不冒充人工接受**，失败不能显示成成功」；
+- 铁律 2（`CLAUDE.md:14`）：「**待审核 ≠ 已接受**（逐字使用）……直到用户具名验收」；
+- 信用内核（`CLAUDE.md:122`）：「`acceptance: pending_human_review` **恒待人签**」。
+
+`evidence_complete` 只是证据完整性的自动复核结果，它最多支持显示“证据齐备，待人工审核”；“人工验收通过”字样只能由具名验收行为产生。把 true 映射成“已通过”，是“未接受显示成已接受”——与“失败不能显示成成功”同一性质，且破坏账本链判定的信用语义。
+
+## 汇总：自动检查与人工决定的分界
+
+| 项 | 判定 | 归属 | 正确行为 |
+|---|---|---|---|
+| 1 | 判拒 | 自动检查（创建时判缺货） | 缺货在创建时拒绝，原数据不变 |
+| 2 | 判拒 | 自动检查（键比对） | 同键只生效一次，重入库换新键 |
+| 3 | 判拒 | 自动检查（状态机 + 后件） | 取消必释放预占 |
+| 4 | 判拒 | **检查→推进“待批准”；入库→具名人工** | 自动检查通过 ≠ 批准 |
+| 5 | 判拒 | **复核→“证据齐备/待人工审核”；通过→具名验收** | pending 恒待人签 |
+
+规律：1–3 是机器可全权判定的硬边界，自动检查直接判拒即可；4–5 的共同错误是把“通过自动检查”误当“人工决定已完成”——检查绿灯只是必要条件，“批准”与“验收”始终保留给具名人工。若确实想放宽其中任何一条，按 `CLAUDE.md:30` 走候选分支 + 具名验收，不走默认放行。

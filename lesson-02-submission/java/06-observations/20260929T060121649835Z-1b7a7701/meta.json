@@ -1,0 +1,14 @@
+{
+  "phase": "observation",
+  "argv": [
+    "claude",
+    "--version"
+  ],
+  "command": "[\"claude\", \"--version\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-29T06:01:21.649835+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-02-submission/java/06-observations/20260929T060121649835Z-1b7a7701/output.txt",
+  "sha256": "b211344c57abae865f3f5b379f1f813d5102cde273c025c18b42c84bbeb899ea",
+  "provenance": "local_teaching_capture"
+}
