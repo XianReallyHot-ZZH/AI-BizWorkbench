@@ -1,6 +1,9 @@
 package workbench.cli;
 
+import workbench.bootstrap.Args;
 import workbench.bootstrap.BootstrapCommands;
+import workbench.bootstrap.Command;
+import workbench.bootstrap.JsonOut;
 
 /**
  * Workbench CLI 入口：注册表 + 分发缝 + 顶层异常边界（镜像 Python workbench/cli.py）。
@@ -21,14 +24,14 @@ public final class Main {
         if (args.length == 0 || REGISTRY.find(args[0]) == null) {
             usage(args);
         }
-        CommandRegistry.CliCommand command = REGISTRY.find(args[0]);
+        Command command = REGISTRY.find(args[0]);
         String[] rest = new String[args.length - 1];
         System.arraycopy(args, 1, rest, 0, rest.length);
         try {
             System.exit(command.execute(rest));
         } catch (Args.UsageException error) {
             System.err.println("error: " + error.getMessage());
-            System.err.println("usage: python -m workbench.cli <command> [--options]");
+            System.err.println("usage: workbench <command> [--options]");
             System.exit(2);
         } catch (Exception error) {
             // 基础设施失败也保持 JSON 错误契约，不裸 traceback

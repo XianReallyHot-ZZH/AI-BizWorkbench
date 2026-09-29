@@ -1,5 +1,7 @@
 package workbench.cli;
 
+import workbench.bootstrap.Command;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -10,19 +12,13 @@ import java.util.Map;
  */
 public final class CommandRegistry {
 
-    @FunctionalInterface
-    public interface CliCommand {
-        /** 执行命令；argv 为子命令名之后的参数。返回进程退出码。 */
-        int execute(String[] argv) throws Exception;
-    }
+    private final Map<String, Command> commands = new LinkedHashMap<>();
 
-    private final Map<String, CliCommand> commands = new LinkedHashMap<>();
-
-    public void register(String name, CliCommand command) {
+    public void register(String name, Command command) {
         commands.put(name, command);
     }
 
-    public CliCommand find(String name) {
+    public Command find(String name) {
         return commands.get(name);
     }
 

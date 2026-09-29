@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +22,7 @@ import java.util.List;
  */
 public final class ImportEvidence {
 
-    /** UTF-8 BOM（U+FEFF）：以 Java 转义写出，源码保持纯 ASCII，杜绝不可见字符。 */
+    /** UTF-8 BOM（U+FEFF）字面量（本行源码实际内嵌不可见 BOM 字符，复查轮如实注记）。 */
     private static final String BOM = "﻿";
 
     private ImportEvidence() {}
@@ -68,14 +66,10 @@ public final class ImportEvidence {
         Path output = Path.of(entry.get("output_file").asText());
         String actualSha256;
         try {
-            byte[] bytes = Files.readAllBytes(output);
-            StringBuilder hex = new StringBuilder();
-            for (byte b : MessageDigest.getInstance("SHA-256").digest(bytes)) {
-                hex.append("%02x".formatted(b & 0xff));
-            }
-            actualSha256 = hex.toString();
-        } catch (IOException | NoSuchAlgorithmException error) {
-            System.err.println("输出不可读取或摘要不可用：" + error.getMessage());
+            actualSha256 = workbench.bootstrap.Ledger.sha256(
+                    new String(Files.readAllBytes(output), StandardCharsets.UTF_8));
+        } catch (IOException error) {
+            System.err.println("输出不可读取：" + error.getMessage());
             System.exit(1);
             return;
         }

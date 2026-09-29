@@ -1,0 +1,175 @@
+diff --git a/src/main/java/workbench/bootstrap/Args.java b/src/main/java/workbench/bootstrap/Args.java
+index ec7255f..58c42fa 100644
+--- a/src/main/java/workbench/bootstrap/Args.java
++++ b/src/main/java/workbench/bootstrap/Args.java
+@@ -1,4 +1,4 @@
+-package workbench.cli;
++package workbench.bootstrap;
+ 
+ import java.util.HashMap;
+ import java.util.Map;
+diff --git a/src/main/java/workbench/bootstrap/BootstrapCommands.java b/src/main/java/workbench/bootstrap/BootstrapCommands.java
+index 6ea38dc..bc25805 100644
+--- a/src/main/java/workbench/bootstrap/BootstrapCommands.java
++++ b/src/main/java/workbench/bootstrap/BootstrapCommands.java
+@@ -1,8 +1,6 @@
+ package workbench.bootstrap;
+ 
+-import workbench.cli.Args;
+ import workbench.cli.CommandRegistry;
+-import workbench.cli.JsonOut;
+ 
+ import java.io.IOException;
+ import java.io.UncheckedIOException;
+@@ -182,8 +180,10 @@ public final class BootstrapCommands {
+         // 解析期校验与上游 argparse 同时机（choices / type=int）
+         String phase = args.require("--phase");
+         if (!Ledger.PHASES.contains(phase)) {
++            String quotedChoices = Ledger.PHASES.stream().map(choice -> "'" + choice + "'")
++                    .reduce((a, b) -> a + ", " + b).orElse("");
+             throw new Args.UsageException(
+-                    "argument --phase: invalid choice: '%s' (choose from %s)".formatted(phase, Ledger.PHASES));
++                    "argument --phase: invalid choice: '%s' (choose from %s)".formatted(phase, quotedChoices));
+         }
+         int returncode = args.requireInt("--returncode");
+         String outputFile = args.require("--output-file");
+diff --git a/src/main/java/workbench/bootstrap/JsonOut.java b/src/main/java/workbench/bootstrap/JsonOut.java
+index 50686de..9708385 100644
+--- a/src/main/java/workbench/bootstrap/JsonOut.java
++++ b/src/main/java/workbench/bootstrap/JsonOut.java
+@@ -1,4 +1,4 @@
+-package workbench.cli;
++package workbench.bootstrap;
+ 
+ import java.io.PrintStream;
+ import java.nio.charset.StandardCharsets;
+diff --git a/src/main/java/workbench/bootstrap/PyJson.java b/src/main/java/workbench/bootstrap/PyJson.java
+index 4fadc59..4d027fe 100644
+--- a/src/main/java/workbench/bootstrap/PyJson.java
++++ b/src/main/java/workbench/bootstrap/PyJson.java
+@@ -1,4 +1,4 @@
+-package workbench.cli;
++package workbench.bootstrap;
+ 
+ import java.util.List;
+ import java.util.Map;
+diff --git a/src/main/java/workbench/cli/CommandRegistry.java b/src/main/java/workbench/cli/CommandRegistry.java
+index 381e112..8c53313 100644
+--- a/src/main/java/workbench/cli/CommandRegistry.java
++++ b/src/main/java/workbench/cli/CommandRegistry.java
+@@ -1,5 +1,7 @@
+ package workbench.cli;
+ 
++import workbench.bootstrap.Command;
++
+ import java.util.LinkedHashMap;
+ import java.util.Map;
+ 
+@@ -10,19 +12,13 @@ import java.util.Map;
+  */
+ public final class CommandRegistry {
+ 
+-    @FunctionalInterface
+-    public interface CliCommand {
+-        /** 执行命令；argv 为子命令名之后的参数。返回进程退出码。 */
+-        int execute(String[] argv) throws Exception;
+-    }
+-
+-    private final Map<String, CliCommand> commands = new LinkedHashMap<>();
++    private final Map<String, Command> commands = new LinkedHashMap<>();
+ 
+-    public void register(String name, CliCommand command) {
++    public void register(String name, Command command) {
+         commands.put(name, command);
+     }
+ 
+-    public CliCommand find(String name) {
++    public Command find(String name) {
+         return commands.get(name);
+     }
+ 
+diff --git a/src/main/java/workbench/cli/Main.java b/src/main/java/workbench/cli/Main.java
+index f56720c..c8afda4 100644
+--- a/src/main/java/workbench/cli/Main.java
++++ b/src/main/java/workbench/cli/Main.java
+@@ -1,6 +1,9 @@
+ package workbench.cli;
+ 
++import workbench.bootstrap.Args;
+ import workbench.bootstrap.BootstrapCommands;
++import workbench.bootstrap.Command;
++import workbench.bootstrap.JsonOut;
+ 
+ /**
+  * Workbench CLI 入口：注册表 + 分发缝 + 顶层异常边界（镜像 Python workbench/cli.py）。
+@@ -21,14 +24,14 @@ public final class Main {
+         if (args.length == 0 || REGISTRY.find(args[0]) == null) {
+             usage(args);
+         }
+-        CommandRegistry.CliCommand command = REGISTRY.find(args[0]);
++        Command command = REGISTRY.find(args[0]);
+         String[] rest = new String[args.length - 1];
+         System.arraycopy(args, 1, rest, 0, rest.length);
+         try {
+             System.exit(command.execute(rest));
+         } catch (Args.UsageException error) {
+             System.err.println("error: " + error.getMessage());
+-            System.err.println("usage: python -m workbench.cli <command> [--options]");
++            System.err.println("usage: workbench <command> [--options]");
+             System.exit(2);
+         } catch (Exception error) {
+             // 基础设施失败也保持 JSON 错误契约，不裸 traceback
+diff --git a/src/main/java/workbench/tools/ImportEvidence.java b/src/main/java/workbench/tools/ImportEvidence.java
+index 0a71eac..cb340df 100644
+--- a/src/main/java/workbench/tools/ImportEvidence.java
++++ b/src/main/java/workbench/tools/ImportEvidence.java
+@@ -7,8 +7,6 @@ import java.io.IOException;
+ import java.nio.charset.StandardCharsets;
+ import java.nio.file.Files;
+ import java.nio.file.Path;
+-import java.security.MessageDigest;
+-import java.security.NoSuchAlgorithmException;
+ import java.util.ArrayList;
+ import java.util.List;
+ 
+@@ -24,7 +22,7 @@ import java.util.List;
+  */
+ public final class ImportEvidence {
+ 
+-    /** UTF-8 BOM（U+FEFF）：以 Java 转义写出，源码保持纯 ASCII，杜绝不可见字符。 */
++    /** UTF-8 BOM（U+FEFF）字面量（本行源码实际内嵌不可见 BOM 字符，复查轮如实注记）。 */
+     private static final String BOM = "﻿";
+ 
+     private ImportEvidence() {}
+@@ -68,14 +66,10 @@ public final class ImportEvidence {
+         Path output = Path.of(entry.get("output_file").asText());
+         String actualSha256;
+         try {
+-            byte[] bytes = Files.readAllBytes(output);
+-            StringBuilder hex = new StringBuilder();
+-            for (byte b : MessageDigest.getInstance("SHA-256").digest(bytes)) {
+-                hex.append("%02x".formatted(b & 0xff));
+-            }
+-            actualSha256 = hex.toString();
+-        } catch (IOException | NoSuchAlgorithmException error) {
+-            System.err.println("输出不可读取或摘要不可用：" + error.getMessage());
++            actualSha256 = workbench.bootstrap.Ledger.sha256(
++                    new String(Files.readAllBytes(output), StandardCharsets.UTF_8));
++        } catch (IOException error) {
++            System.err.println("输出不可读取：" + error.getMessage());
+             System.exit(1);
+             return;
+         }
+diff --git a/src/test/java/workbench/testsupport/Cli.java b/src/test/java/workbench/testsupport/Cli.java
+index 4f2535f..1d1b483 100644
+--- a/src/test/java/workbench/testsupport/Cli.java
++++ b/src/test/java/workbench/testsupport/Cli.java
+@@ -38,7 +38,7 @@ public final class Cli {
+         Path cpFile = repoRoot().resolve("target/child-classpath.txt");
+         if (!Files.isRegularFile(cpFile)) {
+             throw new IllegalStateException(
+-                    "缺少 target/child-classpath.txt：mvn test 生命周期应先经 exec-maven-plugin 生成");
++                    "缺少 target/child-classpath.txt：mvn test 生命周期应先经 maven-dependency-plugin:build-classpath 生成");
+         }
+         try {
+             return repoRoot().resolve("target/classes") + ":" + Files.readString(cpFile).strip();

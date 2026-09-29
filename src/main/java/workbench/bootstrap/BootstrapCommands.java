@@ -1,8 +1,6 @@
 package workbench.bootstrap;
 
-import workbench.cli.Args;
 import workbench.cli.CommandRegistry;
-import workbench.cli.JsonOut;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -182,8 +180,10 @@ public final class BootstrapCommands {
         // 解析期校验与上游 argparse 同时机（choices / type=int）
         String phase = args.require("--phase");
         if (!Ledger.PHASES.contains(phase)) {
+            String quotedChoices = Ledger.PHASES.stream().map(choice -> "'" + choice + "'")
+                    .reduce((a, b) -> a + ", " + b).orElse("");
             throw new Args.UsageException(
-                    "argument --phase: invalid choice: '%s' (choose from %s)".formatted(phase, Ledger.PHASES));
+                    "argument --phase: invalid choice: '%s' (choose from %s)".formatted(phase, quotedChoices));
         }
         int returncode = args.requireInt("--returncode");
         String outputFile = args.require("--output-file");

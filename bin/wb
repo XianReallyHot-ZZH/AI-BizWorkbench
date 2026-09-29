@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Workbench Java CLI 包装（ADR-0006 附录 A2 C9 定案件）：
+# classpath = target/classes + 依赖（mvn 生命期经 exec:build-classpath 落盘 child-classpath.txt）。
+# 用法：./bin/wb <子命令> [参数...]，等价于 java -cp … workbench.cli.Main <子命令> …
+set -euo pipefail
+cd "$(dirname "$0")/.."
+if [ ! -f target/child-classpath.txt ]; then
+  echo "缺少 target/child-classpath.txt：请先运行 mvn test 或 mvn compile" >&2
+  exit 2
+fi
+exec java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 \
+  -cp "target/classes:$(cat target/child-classpath.txt)" workbench.cli.Main "$@"

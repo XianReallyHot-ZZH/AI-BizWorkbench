@@ -38,7 +38,7 @@ public final class Cli {
         Path cpFile = repoRoot().resolve("target/child-classpath.txt");
         if (!Files.isRegularFile(cpFile)) {
             throw new IllegalStateException(
-                    "缺少 target/child-classpath.txt：mvn test 生命周期应先经 exec-maven-plugin 生成");
+                    "缺少 target/child-classpath.txt：mvn test 生命周期应先经 maven-dependency-plugin:build-classpath 生成");
         }
         try {
             return repoRoot().resolve("target/classes") + ":" + Files.readString(cpFile).strip();

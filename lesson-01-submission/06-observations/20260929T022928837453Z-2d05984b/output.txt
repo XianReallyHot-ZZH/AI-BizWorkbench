@@ -1,0 +1,7 @@
+{
+  "ok": false,
+  "error": "required_task_missing: 任务不存在：CASE-WB-L01-JAVA-MISSING",
+  "flowerp_connected": false,
+  "evidence_complete": false,
+  "errors": []
+}

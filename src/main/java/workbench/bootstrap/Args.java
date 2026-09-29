@@ -1,4 +1,4 @@
-package workbench.cli;
+package workbench.bootstrap;
 
 import java.util.HashMap;
 import java.util.Map;

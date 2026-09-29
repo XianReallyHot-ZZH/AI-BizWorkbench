@@ -1,4 +1,4 @@
-package workbench.cli;
+package workbench.bootstrap;
 
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;

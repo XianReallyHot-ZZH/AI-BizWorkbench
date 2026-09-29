@@ -1,4 +1,4 @@
-package workbench.cli;
+package workbench.bootstrap;
 
 import java.util.List;
 import java.util.Map;
