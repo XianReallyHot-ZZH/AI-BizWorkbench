@@ -1,6 +1,8 @@
 package workbench.bootstrap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,6 +22,7 @@ public final class Args {
 
     private final Map<String, String> values = new HashMap<>();
     private final Set<String> present = new java.util.HashSet<>();
+    private final List<String> positionals = new ArrayList<>();
 
     /**
      * @param argv         子命令名之后的参数
@@ -27,10 +30,25 @@ public final class Args {
      * @param booleanFlags 开关选项名（如 --require-red-green-evidence）
      */
     public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags) {
+        this(argv, valueFlags, booleanFlags, List.of());
+    }
+
+    /**
+     * @param positionalNames 位置参数名（按序；L03 spec 的 spec_path，移植注记 JD2）。
+     *     词面沿 argparse 同形：缺失报 ``the following arguments are required: <名>``，
+     *     多余报 ``unrecognized arguments: <多余项>``。两参构造器行为零变化（回归保证：
+     *     既有命令不收位置参数，非 -- 令牌维持原即时拒绝词面）。
+     */
+    public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags,
+                List<String> positionalNames) {
         for (int i = 0; i < argv.length; i++) {
             String token = argv[i];
             if (!token.startsWith("--")) {
-                throw new UsageException("unrecognized argument: " + token);
+                if (positionalNames.isEmpty()) {
+                    throw new UsageException("unrecognized argument: " + token);
+                }
+                positionals.add(token);
+                continue;
             }
             String name = token;
             String value = null;
@@ -56,6 +74,19 @@ public final class Args {
                 throw new UsageException("unrecognized argument: " + name);
             }
         }
+        if (positionals.size() < positionalNames.size()) {
+            throw new UsageException("the following arguments are required: "
+                    + positionalNames.get(positionals.size()));
+        }
+        if (positionals.size() > positionalNames.size()) {
+            throw new UsageException("unrecognized arguments: "
+                    + String.join(" ", positionals.subList(positionalNames.size(), positionals.size())));
+        }
+    }
+
+    /** 按序取位置参数（0 起）。 */
+    public String positional(int index) {
+        return positionals.get(index);
     }
 
     public String require(String name) {
