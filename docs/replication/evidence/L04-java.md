@@ -95,7 +95,12 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 - **链三封条**（同命令 `mvn test`，observed_at 严格递增，Diff 严格居间）：red `…648136ff`（12:46:39，rc 1，84 跑 22 红）→ diff `…3d283277`（13:18:44，rc 0，暂存区全量 `git diff --cached`——新增件为主，Python 时代台账 #4 同口径如实披露）→ green `…34bbc6d0`（13:18:49，rc 0，84/84）
 - 全量回归即绿命令本体（`mvn test` 就是全量门）——Python 时代"全量回归 observation"在此不另设，如实说明
 
-### R4 待补（A 门与 B 段，验收门后）
+### R4 A 票任务账与 A 门自举（C14）—— 2026-09-29
 
-- A 门自举实跑（verify 模式 eval = `mvn test` 全量）与任务账导入：owner/actor 向用户索取后补记
-- B 段（候选 clone / FDE_SPEC SHA-256 / N0 / 受控执行 / probe 六场景）：A 具名验收后补记
+- **具名**：`--owner`/`--actor` = `XianReallyHot-ZZH`（用户 AskUserQuestion 确认，不代填）；账本 `.runtime/course/L01-workbench-java/`（活账本沿用）
+- **任务创建**：`./bin/wb workbench-task-create … CASE-WB-L04-JAVA-001 --spec-file docs/lessons/L04-受控执行.md` → `ok:true`，requirement_summary `0ac961634cfc78d4…`
+- **导入前缺链查询**（预期失败也是证据）：observation `…7ad9d554`（rc **1**，词面 `same_command_red_diff_green_missing: 缺少同命令的红—Diff—绿链`）✓
+- **链导入**：Java `workbench.tools.ImportEvidence` ×3 全 rc 0（重算 SHA-256 验封）——顺序 red→diff→green
+- **A 门自举实跑**（V0 第一次被真人 operator 使用，Python A 门先例）：`./bin/wb workbench-task-run CASE-WB-L04-JAVA-001 --workspace . --mode verify --eval-command "mvn test" --execution-timeout 900 --actor Claude` → rc 0，`verify_completed`、eval rc 0（`mvn test` 84/84）、task_state `review`、execution_id 1（任务账留证）
+- **终态 status 密封采集**：observation `…cdb060f2`（rc 0）——`ok:true` / `evidence_complete:true` / `acceptance:pending_human_review` / `flowerp_connected:false`；链三记录 red(1)→diff(0)→green(0)，自举 execution 在账不破坏链
+- 待 A 具名验收后：`workbench-task-review` 具名 approve（reviewer=用户，执行者 Claude 不得自批）→ B 门（C9 前置绑定）放行
