@@ -1,0 +1,303 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] skip non existing resourceDirectory /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 40 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 133.1 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Running workbench.golden.GoldenL01ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 20.31 s -- in workbench.golden.GoldenL01ReplayTest
+[INFO] Running workbench.golden.GoldenL02ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.46 s -- in workbench.golden.GoldenL02ReplayTest
+[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Running workbench.rules.L02WorkbenchRulesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in workbench.rules.L02WorkbenchRulesTest
+[INFO] Running workbench.rules.JavaLineRuleFactsTest
+[ERROR] Tests run: 3, Failures: 3, Errors: 0, Skipped: 0, Time elapsed: 0.030 s <<< FAILURE! -- in workbench.rules.JavaLineRuleFactsTest
+[ERROR] workbench.rules.JavaLineRuleFactsTest.javaVerificationCommandsPresent -- Time elapsed: 0.010 s <<< FAILURE!
+java.lang.AssertionError: 
+[mvn test 全量门词面在场] 
+Expecting actual:
+  "# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 本仓库是什么
+
+CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：以 `vendors/` 下两个 submodule 为只读对照，逐讲（L00–L16）重建属于自己的、日常可用的工作台。课程逐讲是路径，不是终点。对照基线与升级记录以 [docs/research/codexfde-orientation.md](docs/research/codexfde-orientation.md) §10 检查点 changelog 为唯一事实源，上游变更只在检查点显式采纳（ADR-0003），不自动同步。
+
+词汇表在根目录 [CONTEXT.md](CONTEXT.md)——**措辞必须继承它**（复刻/上游/候选分支/起始红/具名验收/证据/合同 fixture），避免各词条的 _Avoid_ 替代词。
+
+## 铁律（先读这里）
+
+1. **`vendors/` 只读**。CodexFDE 与 flowERP 是 submodule，任何复刻产物不得写回。`git -C vendors/CodexFDE status --short` 与 flowERP 同查必须恒空。
+2. **待审核 ≠ 已接受**（逐字使用）。候选通过全部门槛也只是待审核，直到用户具名验收。Claude 不代签、不自行 merge。
+3. **证据 = 命令 + 退出码 + 失败后权威状态**。AI 自述、绿色截图不算证据；失败记录一律保留，不删不改凑通过。
+4. **冻结合同 fixture** 是上游 LESSONS 数据的逐字数据，不许"修好"它——发现与上游分歧走检查点显式采纳。载体（ADR-0006）：Python 阶段为 `workbench/course_contracts.py` 逐字拷贝；Java 重走后为 `CourseContracts.java` 常量类，以**字符串内容逐字等价 + 完整性机检测试**锁定，重走完成前双载体不得分歧。
+5. **用户显式技能**（`/mattpocock-skills:to-spec`、`:implement`、`:handoff`、`:teach`）到点必须停下提醒用户调用；降级路径仅在用户明确同意后走（见 docs/lessons/README.md 技能编排表）。
+6. 换会话用 `/mattpocock-skills:handoff` 生成交接文档，不以裸 `/clear` 为默认。
+
+## FlowERP 业务边界（L02 固化）
+
+以下边界在涉及 FlowERP 业务实现时适用（`vendors/flowERP` 对照、L04+ 候选内业务代码），纯文档改动不受约束：
+
+1. 可用库存不能为负，预占必须原子化；缺货在创建时拒绝，不做"先记账后修正"。
+2. 同一个入库幂等键只能生效一次；再次入库用新幂等键，而不是让键失效。
+3. 订单只能按状态机迁移，取消时释放预占；释放是取消的后件义务，不可省略。
+4. 采购补货必须经具名审批后才能入库；自动检查通过只推进到"待批准"，不构成批准。
+5. 任务、Eval 和反馈必须可追溯，失败不能显示成成功（铁律 2/3 的业务面：自动检查不冒充人工接受，失败记录一律保留）。
+
+越界请求明确判拒，拒绝后原数据不变；方案确需放宽某条边界时，走候选分支 + 具名验收，不走默认放行。
+
+## 常用命令
+
+```bash
+# 环境（Python ≥3.10，只用标准库；本机 3.13 与课堂 3.11 的偏离记录在证据即可）
+python3 -m venv .venv && .venv/bin/pip install -e .
+
+# 全量测试（当前门 = 合同测试；eval harness 属 L05+，尚不存在）
+.venv/bin/python -X utf8 -m unittest discover -s tests
+
+# 单文件 / 单用例
+.venv/bin/python -X utf8 -m unittest discover -s tests -v -p "test_l01_*.py"
+.venv/bin/python -X utf8 -m unittest discover -s tests -k wb07 -v
+
+# 工作台 CLI（运行库 .runtime/，已 gitignore）
+.venv/bin/python -X utf8 -m workbench.cli workbench-status \
+  --runtime-dir .runtime/course/L01-workbench \
+  --require-project PERSONAL-WORKBENCH --require-task CASE-WB-L01-001 \
+  --require-red-green-evidence
+
+# 看账本（只读；status 会重算 SHA-256 复核，勿手改）
+sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
+```
+
+证据采集/导入用 vendor 工具（只执行不修改）：`vendors/CodexFDE/docs/courses/L01/tools/evidence.py` 与 `import_evidence.py`（后者用 `sys.executable`，必须以本仓库 `.venv` 的 python 运行）。捕获目录 `lesson-01-submission/` **随 Git 提交且永不移动**——meta.json 里的 `output_file` 是绝对路径，移动即断封条。
+
+## 每讲工作流（候选分支机制，ADR-0004）
+
+1. **讲前**：`git -C vendors/CodexFDE fetch` 现查上游（勿信快照），起草 `docs/lessons/LNN-标题.md`（四段结构见 docs/lessons/README.md），**用户审完讲义才动手**。
+2. **候选分支 `lesson-NN`**：commit 1 = 合同测试（起始红）+ 红证据；实现后采 Diff + 后绿（与红**同一测试命令**、observed_at 严格递增）再 commit 2。起始红必须先于实现真实存在。
+3. **证据**：`docs/replication/evidence/LNN.md`——C 编号逐项结论表 + 命令台账（输出摘要 + 退出码）+ 失败现场 + 末尾具名验收行。
+4. **验收与合并**：用户按讲义 §4 清单核对后，验收行入证据账，`git merge --no-ff lesson-NN`（合并信息含验收人与结论），更新 roadmap 状态。
+5. 验收前 Claude 自调 `code-review` 复查整条候选分支；发现按 test-first 修复并保留旧证据。
+
+## 完成定义（Definition of Done）
+
+- 每条新业务规则至少一个正常路径 + 一个失败路径用例；纯文档改动不触发完整业务检查。
+- 交付交回三样：范围内 Diff、实际检查结果与真实退出码、未解决问题清单。
+- 未实现不得写成已实现；缺口标"待建设"，与上游口径一致。
+
+## 架构大图
+
+```
+本仓库（工作台 + 复刻产物）
+├── workbench/            目标产物本体
+│   ├── cli.py            入口：REGISTRY 注册表缝 + 顶层异常边界（JSON 错误契约）
+│   ├── bootstrap.py      L01 五命令：任务账 + 命令证据账 + 完整性检查（四职责见模块 docstring）
+│   └── course_contracts.py  冻结合同 fixture（16 讲 LESSONS 逐字数据）
+├── tests/                每讲合同测试（文件头有 验收项→测试 映射表）+ fixture 完整性测试
+├── docs/
+│   ├── adr/              复刻决策（0001 全新实现 / 0002 Claude 执行器 / 0003 检查点 / 0004 候选分支 / 0005 客户真理）
+│   ├── lessons/          每讲复刻讲义 + 技能编排表（讲前 just-in-time 产出）
+│   └── replication/      路线图与状态 + 每讲证据账（evidence/LNN.md）
+├── lesson-01-submission/ evidence.py 原始捕获（meta.json + output.txt，入库不移动）
+└── learning/             教学工作区（使命/课程/学习记录，服务"验收人读懂代码"）
+
+vendors/CodexFDE          只读：课程合同、参考实现、讲义、L01 证据工具
+vendors/flowERP           只读：客户项目，L04 才由工作台首次驱动（客户真理：其自身 eval 才是业务权威）
+```
+
+**结构约定**：
+
+- 调用方向：命令入口（`workbench/cli.py`，REGISTRY 注册缝 + 顶层异常边界）→ 任务/证据逻辑（`workbench/bootstrap.py`）→ sqlite 存储（`.runtime/` 运行库；读命令不建库不建目录）。
+- 新增命令：沿 REGISTRY 注册并复用既有存储入口；错误词面对齐上游（`required_task_missing` 等）。
+- 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可。
+- 待建设清单：`eval.harness`（L05+）、`course-status` 等上游命令——引用时如实说明尚未复刻。
+
+**信用内核**（L01 钉死，后续讲次全部踩在上面）：账本只追加、失败不可抹、快照不随原文件变、`status` 每次重算 SHA-256 复核、链判定三规则（同命令红绿 / Diff 严格居间 / 全局最新须为成功绿）、`acceptance: pending_human_review` 恒待人签。改动任何一处都要意识到全链信用随之变动。
+
+**换挡点**：L01–L03 由人直接监督 AI 建工作台；L04 起改为"通过工作台组织协同"——届时执行器合同（写集、预算、JSON 事件流、沙箱、退出码）按 ADR-0002 映射到 Claude Code 权限机制。
+"
+to contain:
+  "mvn test" 
+	at workbench.rules.JavaLineRuleFactsTest.javaVerificationCommandsPresent(JavaLineRuleFactsTest.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.rules.JavaLineRuleFactsTest.dualTrackFreezeDisciplinePresent -- Time elapsed: 0.007 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[双轨冻结纪律语义组在场：冻结不触碰 / 冻结面 / 零触碰 / 冻结实现面] 
+Expecting value to be true but was false
+	at workbench.rules.JavaLineRuleFactsTest.dualTrackFreezeDisciplinePresent(JavaLineRuleFactsTest.java:86)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.rules.JavaLineRuleFactsTest.javaStructureFactsPresent -- Time elapsed: 0.002 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[Java 结构事实语义组在场：src/main / src/main/java] 
+Expecting value to be true but was false
+	at workbench.rules.JavaLineRuleFactsTest.javaStructureFactsPresent(JavaLineRuleFactsTest.java:67)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   JavaLineRuleFactsTest.dualTrackFreezeDisciplinePresent:86 [双轨冻结纪律语义组在场：冻结不触碰 / 冻结面 / 零触碰 / 冻结实现面] 
+Expecting value to be true but was false
+[ERROR]   JavaLineRuleFactsTest.javaStructureFactsPresent:67 [Java 结构事实语义组在场：src/main / src/main/java] 
+Expecting value to be true but was false
+[ERROR]   JavaLineRuleFactsTest.javaVerificationCommandsPresent:43 [mvn test 全量门词面在场] 
+Expecting actual:
+  "# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 本仓库是什么
+
+CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：以 `vendors/` 下两个 submodule 为只读对照，逐讲（L00–L16）重建属于自己的、日常可用的工作台。课程逐讲是路径，不是终点。对照基线与升级记录以 [docs/research/codexfde-orientation.md](docs/research/codexfde-orientation.md) §10 检查点 changelog 为唯一事实源，上游变更只在检查点显式采纳（ADR-0003），不自动同步。
+
+词汇表在根目录 [CONTEXT.md](CONTEXT.md)——**措辞必须继承它**（复刻/上游/候选分支/起始红/具名验收/证据/合同 fixture），避免各词条的 _Avoid_ 替代词。
+
+## 铁律（先读这里）
+
+1. **`vendors/` 只读**。CodexFDE 与 flowERP 是 submodule，任何复刻产物不得写回。`git -C vendors/CodexFDE status --short` 与 flowERP 同查必须恒空。
+2. **待审核 ≠ 已接受**（逐字使用）。候选通过全部门槛也只是待审核，直到用户具名验收。Claude 不代签、不自行 merge。
+3. **证据 = 命令 + 退出码 + 失败后权威状态**。AI 自述、绿色截图不算证据；失败记录一律保留，不删不改凑通过。
+4. **冻结合同 fixture** 是上游 LESSONS 数据的逐字数据，不许"修好"它——发现与上游分歧走检查点显式采纳。载体（ADR-0006）：Python 阶段为 `workbench/course_contracts.py` 逐字拷贝；Java 重走后为 `CourseContracts.java` 常量类，以**字符串内容逐字等价 + 完整性机检测试**锁定，重走完成前双载体不得分歧。
+5. **用户显式技能**（`/mattpocock-skills:to-spec`、`:implement`、`:handoff`、`:teach`）到点必须停下提醒用户调用；降级路径仅在用户明确同意后走（见 docs/lessons/README.md 技能编排表）。
+6. 换会话用 `/mattpocock-skills:handoff` 生成交接文档，不以裸 `/clear` 为默认。
+
+## FlowERP 业务边界（L02 固化）
+
+以下边界在涉及 FlowERP 业务实现时适用（`vendors/flowERP` 对照、L04+ 候选内业务代码），纯文档改动不受约束：
+
+1. 可用库存不能为负，预占必须原子化；缺货在创建时拒绝，不做"先记账后修正"。
+2. 同一个入库幂等键只能生效一次；再次入库用新幂等键，而不是让键失效。
+3. 订单只能按状态机迁移，取消时释放预占；释放是取消的后件义务，不可省略。
+4. 采购补货必须经具名审批后才能入库；自动检查通过只推进到"待批准"，不构成批准。
+5. 任务、Eval 和反馈必须可追溯，失败不能显示成成功（铁律 2/3 的业务面：自动检查不冒充人工接受，失败记录一律保留）。
+
+越界请求明确判拒，拒绝后原数据不变；方案确需放宽某条边界时，走候选分支 + 具名验收，不走默认放行。
+
+## 常用命令
+
+```bash
+# 环境（Python ≥3.10，只用标准库；本机 3.13 与课堂 3.11 的偏离记录在证据即可）
+python3 -m venv .venv && .venv/bin/pip install -e .
+
+# 全量测试（当前门 = 合同测试；eval harness 属 L05+，尚不存在）
+.venv/bin/python -X utf8 -m unittest discover -s tests
+
+# 单文件 / 单用例
+.venv/bin/python -X utf8 -m unittest discover -s tests -v -p "test_l01_*.py"
+.venv/bin/python -X utf8 -m unittest discover -s tests -k wb07 -v
+
+# 工作台 CLI（运行库 .runtime/，已 gitignore）
+.venv/bin/python -X utf8 -m workbench.cli workbench-status \
+  --runtime-dir .runtime/course/L01-workbench \
+  --require-project PERSONAL-WORKBENCH --require-task CASE-WB-L01-001 \
+  --require-red-green-evidence
+
+# 看账本（只读；status 会重算 SHA-256 复核，勿手改）
+sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
+```
+
+证据采集/导入用 vendor 工具（只执行不修改）：`vendors/CodexFDE/docs/courses/L01/tools/evidence.py` 与 `import_evidence.py`（后者用 `sys.executable`，必须以本仓库 `.venv` 的 python 运行）。捕获目录 `lesson-01-submission/` **随 Git 提交且永不移动**——meta.json 里的 `output_file` 是绝对路径，移动即断封条。
+
+## 每讲工作流（候选分支机制，ADR-0004）
+
+1. **讲前**：`git -C vendors/CodexFDE fetch` 现查上游（勿信快照），起草 `docs/lessons/LNN-标题.md`（四段结构见 docs/lessons/README.md），**用户审完讲义才动手**。
+2. **候选分支 `lesson-NN`**：commit 1 = 合同测试（起始红）+ 红证据；实现后采 Diff + 后绿（与红**同一测试命令**、observed_at 严格递增）再 commit 2。起始红必须先于实现真实存在。
+3. **证据**：`docs/replication/evidence/LNN.md`——C 编号逐项结论表 + 命令台账（输出摘要 + 退出码）+ 失败现场 + 末尾具名验收行。
+4. **验收与合并**：用户按讲义 §4 清单核对后，验收行入证据账，`git merge --no-ff lesson-NN`（合并信息含验收人与结论），更新 roadmap 状态。
+5. 验收前 Claude 自调 `code-review` 复查整条候选分支；发现按 test-first 修复并保留旧证据。
+
+## 完成定义（Definition of Done）
+
+- 每条新业务规则至少一个正常路径 + 一个失败路径用例；纯文档改动不触发完整业务检查。
+- 交付交回三样：范围内 Diff、实际检查结果与真实退出码、未解决问题清单。
+- 未实现不得写成已实现；缺口标"待建设"，与上游口径一致。
+
+## 架构大图
+
+```
+本仓库（工作台 + 复刻产物）
+├── workbench/            目标产物本体
+│   ├── cli.py            入口：REGISTRY 注册表缝 + 顶层异常边界（JSON 错误契约）
+│   ├── bootstrap.py      L01 五命令：任务账 + 命令证据账 + 完整性检查（四职责见模块 docstring）
+│   └── course_contracts.py  冻结合同 fixture（16 讲 LESSONS 逐字数据）
+├── tests/                每讲合同测试（文件头有 验收项→测试 映射表）+ fixture 完整性测试
+├── docs/
+│   ├── adr/              复刻决策（0001 全新实现 / 0002 Claude 执行器 / 0003 检查点 / 0004 候选分支 / 0005 客户真理）
+│   ├── lessons/          每讲复刻讲义 + 技能编排表（讲前 just-in-time 产出）
+│   └── replication/      路线图与状态 + 每讲证据账（evidence/LNN.md）
+├── lesson-01-submission/ evidence.py 原始捕获（meta.json + output.txt，入库不移动）
+└── learning/             教学工作区（使命/课程/学习记录，服务"验收人读懂代码"）
+
+vendors/CodexFDE          只读：课程合同、参考实现、讲义、L01 证据工具
+vendors/flowERP           只读：客户项目，L04 才由工作台首次驱动（客户真理：其自身 eval 才是业务权威）
+```
+
+**结构约定**：
+
+- 调用方向：命令入口（`workbench/cli.py`，REGISTRY 注册缝 + 顶层异常边界）→ 任务/证据逻辑（`workbench/bootstrap.py`）→ sqlite 存储（`.runtime/` 运行库；读命令不建库不建目录）。
+- 新增命令：沿 REGISTRY 注册并复用既有存储入口；错误词面对齐上游（`required_task_missing` 等）。
+- 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可。
+- 待建设清单：`eval.harness`（L05+）、`course-status` 等上游命令——引用时如实说明尚未复刻。
+
+**信用内核**（L01 钉死，后续讲次全部踩在上面）：账本只追加、失败不可抹、快照不随原文件变、`status` 每次重算 SHA-256 复核、链判定三规则（同命令红绿 / Diff 严格居间 / 全局最新须为成功绿）、`acceptance: pending_human_review` 恒待人签。改动任何一处都要意识到全链信用随之变动。
+
+**换挡点**：L01–L03 由人直接监督 AI 建工作台；L04 起改为"通过工作台组织协同"——届时执行器合同（写集、预算、JSON 事件流、沙箱、退出码）按 ADR-0002 映射到 Claude Code 权限机制。
+"
+to contain:
+  "mvn test" 
+[INFO] 
+[ERROR] Tests run: 40, Failures: 3, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  02:50 min
+[INFO] Finished at: 2026-09-29T13:17:41+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

@@ -1,0 +1,71 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 5e02c13..454d9b4 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -35,7 +35,7 @@ CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：
+ # 环境（Python ≥3.10，只用标准库；本机 3.13 与课堂 3.11 的偏离记录在证据即可）
+ python3 -m venv .venv && .venv/bin/pip install -e .
+ 
+-# 全量测试（当前门 = 合同测试；eval harness 属 L05+，尚不存在）
++# 全量测试（Python 冻结对照基线，重走期零改动；eval harness 已随 L05/L06 建成并冻结）
+ .venv/bin/python -X utf8 -m unittest discover -s tests
+ 
+ # 单文件 / 单用例
+@@ -50,6 +50,16 @@ python3 -m venv .venv && .venv/bin/pip install -e .
+ 
+ # 看账本（只读；status 会重算 SHA-256 复核，勿手改）
+ sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
++
++# Java 线（重走期唯一活动实现，ADR-0006；状态唯一事实源 = docs/replication/README.md 重走线行，此处不缓存进度）
++mvn test                                # 全量门：合同测试 + golden 双重放（l01/l02）+ fixture 机检
++mvn test -Dtest=L02WorkbenchRulesTest   # 单类
++
++# 工作台 CLI（Java 版，经 bin/wb 包装：classpath = target/classes + 依赖清单落盘）
++./bin/wb workbench-status \
++  --runtime-dir .runtime/course/L01-workbench-java \
++  --require-project PERSONAL-WORKBENCH --require-task CASE-WB-L01-JAVA-001 \
++  --require-red-green-evidence
+ ```
+ 
+ 证据采集/导入用 vendor 工具（只执行不修改）：`vendors/CodexFDE/docs/courses/L01/tools/evidence.py` 与 `import_evidence.py`（后者用 `sys.executable`，必须以本仓库 `.venv` 的 python 运行）。捕获目录 `lesson-01-submission/` **随 Git 提交且永不移动**——meta.json 里的 `output_file` 是绝对路径，移动即断封条。
+@@ -78,22 +88,36 @@ sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
+ │   └── course_contracts.py  冻结合同 fixture（16 讲 LESSONS 逐字数据）
+ ├── tests/                每讲合同测试（文件头有 验收项→测试 映射表）+ fixture 完整性测试
+ ├── docs/
+-│   ├── adr/              复刻决策（0001 全新实现 / 0002 Claude 执行器 / 0003 检查点 / 0004 候选分支 / 0005 客户真理）
++│   ├── adr/              复刻决策（0001 全新实现 / 0002 Claude 执行器 / 0003 检查点 / 0004 候选分支 / 0005 客户真理 / 0006 Java 重走）
+ │   ├── lessons/          每讲复刻讲义 + 技能编排表（讲前 just-in-time 产出）
+-│   └── replication/      路线图与状态 + 每讲证据账（evidence/LNN.md）
++│   └── replication/      路线图与状态 + 每讲证据账（evidence/LNN.md；重走证据 LNN-java.md）
+ ├── lesson-01-submission/ evidence.py 原始捕获（meta.json + output.txt，入库不移动）
++├── lesson-02-submission/ L02 采集（Python 时代顶层 + java/ 子根，均入库不移动）
+ └── learning/             教学工作区（使命/课程/学习记录，服务"验收人读懂代码"）
+ 
+ vendors/CodexFDE          只读：课程合同、参考实现、讲义、L01 证据工具
+ vendors/flowERP           只读：客户项目，L04 才由工作台首次驱动（客户真理：其自身 eval 才是业务权威）
++
++Java 重走线（ADR-0006，重走期唯一活动实现；状态唯一事实源 = docs/replication/README.md 重走线行，此处不缓存进度）
++├── src/main/java/workbench/       Java 实现本体（与 Python 载体同形分层：cli → bootstrap → sqlite 存储）
++│   ├── cli/                       Main + CommandRegistry：入口注册缝 + 顶层异常边界（JSON 错误契约）
++│   ├── bootstrap/                 五命令逻辑（Args/Ledger/JsonOut/PyJson/BootstrapCommands/Command）
++│   ├── coursecontracts/           CourseContracts.java 冻结合同 fixture 双载体（与 Python 载体逐字等价 + 机检锁定）
++│   └── tools/                     ImportEvidence（复刻 vendor import_evidence.py 语义，重算 SHA-256 验封）
++├── src/test/java/                 合同测试 + golden 重放（testsupport/Cli 经真实 CLI 子进程驱动，不绕入口直调）
++├── src/test/resources/golden/     对照基准 l01（22 场景）/ l02（15 场景）——Python 冻结版采出，永不手改
++├── src/test/resources/coursecontracts/frozen-python-projection.json  Python 载体全字段投影（机检对照件）
++├── pom.xml                        Maven + Java 21 + JUnit5/AssertJ；运行时依赖白名单：Jackson、sqlite-jdbc
++└── bin/wb                         CLI 包装脚本（classpath = target/classes + build-classpath 落盘清单）
+ ```
+ 
+ **结构约定**：
+ 
+ - 调用方向：命令入口（`workbench/cli.py`，REGISTRY 注册缝 + 顶层异常边界）→ 任务/证据逻辑（`workbench/bootstrap.py`）→ sqlite 存储（`.runtime/` 运行库；读命令不建库不建目录）。
+ - 新增命令：沿 REGISTRY 注册并复用既有存储入口；错误词面对齐上游（`required_task_missing` 等）。
+-- 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可。
+-- 待建设清单：`eval.harness`（L05+）、`course-status` 等上游命令——引用时如实说明尚未复刻。
++- 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可（Java 线同口径：`testsupport/Cli` 子进程 / 文本直读）。
++- 待建设清单（双轨口径）：Python 侧 `eval.harness` 已随 L05/L06 建成并冻结（`evals/`）；Java 侧 `eval.harness`、`course-status` 等上游命令待建设——引用时如实说明尚未复刻，不写成已建成。
++- 双轨纪律（重走期，ADR-0006）：Python 实现面（`workbench/`、`tests/`、`pyproject.toml`）冻结不触碰，Python 时代 tools 复用不重写；`.runtime/course/L01-workbench/`（Python 时代账本）零写入，Java 线账本用 `.runtime/course/L01-workbench-java/`。仍然允许：冻结面之外的一切照常演进（`src/`、`pom.xml`、`bin/wb`、`docs/`、`lesson-*-submission/`）；误触冻结面即回退，冻结面字节不变。
+ 
+ **信用内核**（L01 钉死，后续讲次全部踩在上面）：账本只追加、失败不可抹、快照不随原文件变、`status` 每次重算 SHA-256 复核、链判定三规则（同命令红绿 / Diff 严格居间 / 全局最新须为成功绿）、`acceptance: pending_human_review` 恒待人签。改动任何一处都要意识到全链信用随之变动。
+ 
