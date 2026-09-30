@@ -1,0 +1,1 @@
+{"step": "replay-ledger", "status": "fail", "expected": "库存与流水均不变", "actual": "重放改变了账面", "requirement": "同一笔收货只入账一次：库存与流水都不得重复"}

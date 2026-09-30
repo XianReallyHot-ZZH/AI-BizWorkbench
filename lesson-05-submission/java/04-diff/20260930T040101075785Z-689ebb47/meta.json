@@ -1,0 +1,16 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "-C",
+    ".runtime/course/L05-defect-baseline-java",
+    "diff"
+  ],
+  "command": "[\"git\", \"-C\", \".runtime/course/L05-defect-baseline-java\", \"diff\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T04:01:01.075785+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/java/04-diff/20260930T040101075785Z-689ebb47/output.txt",
+  "sha256": "01387e49f379bb78cabf093d7159d590c15d26103970f0bb6a3bbd421c4e9481",
+  "provenance": "local_teaching_capture"
+}

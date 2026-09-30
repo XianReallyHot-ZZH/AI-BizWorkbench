@@ -50,3 +50,99 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 ### raw 现场
 
 `.runtime/golden-l05/raw/`（gitignore，不入库）：7 组 stdout/stderr + ws 夹具（clean / b1 / blind / no-flowerp）。重跑生成器即可复现，不依赖本机留存。
+
+---
+
+## R. 候选 lesson-05-java 证据（2026-09-30，implement 授权后）
+
+### R0 环境与分支形状
+
+- 分支 `lesson-05-java`：首开自 master@`caca6ce`，采红前预检暴露 J4（跨包可见度编译失败）→ 删支，前置跟进 `0929e82` 落 master 后自 `0929e82` 重开（继承前置 golden + 共享件扩展）
+- 配合点 1 复认（to-spec 降级路径每次重新确认，2026-09-30）与配合点 2（用户显式 `/mattpocock-skills:implement`）在案；任务账具名经 AskUserQuestion 确认（owner = XianReallyHot-ZZH，verify 自举 actor = Claude，L04-java 先例，不代填）
+- 冻结面硬检查：`git diff master...lesson-05-java -- evals workbench tests pyproject.toml tools/capture_evidence.py` = **0 字节**；vendors 双查恒空；`.runtime/course/L01-workbench/`（Python 账本）零写入；pom.xml 零改动
+
+### R1 起始红（commit 1 = `31dd286`）
+
+- 采红前预检（不采集，L04 R1 纪律）：**91 跑 7 红 0 错误**——`L05EvalContractTest` 6/6（失败信息全为「找不到主类 workbench.evals.l05.*」＝目标缺失类）+ `GoldenL05ReplayTest` 1（盲区树物化步即败）；既有 84 绿（含四套旧 golden 重放）
+- **红封条**：`03-failure/20260930T024413858516Z-8c20967d/`（`mvn test` 全量，rc 1）
+- stderr 词面断言使「基线已存在」「锚点命中 2 次」两拒绝面在 commit 1 **真实红**（修正注③设计生效；golden s02 偶然同形为已披露的例外）
+
+### R2 红转绿（commit 2 = `c345495`）
+
+**实现三件**（写集 = 附录 A2 C14 映射；零新 CLI 命令、零 REGISTRY 改动、Ledger 零扩、pom 零改动）：
+
+| 交付物 | 内容 |
+|---|---|
+| `workbench/evals/l05/FlowerpProbe.java` | 客户实现驱动缝（JD1/JD2）：`probe` 单方法 + 解释器绝对化 + 临时库生命周期；子进程 python 跑客户原语只回报原始观察值（setup/receive/product/events/events_total/snapshot），判断与预期计算留 Java；`ToolFailure` = 工具自身 rc 1（非落账语义，不复用 execution/ProcessRunner） |
+| `workbench/evals/l05/BuildDefectBaseline.java` | b1（默认）与冻结 Python argv/stdout/退出码/锚点守卫/自检逐字同形；`--defect blind`（JD4 补丁规格，与生成器内联手术逐字同文）+ `--source`（修正注①守卫可测缝）+ `--python`；默认基线 `-java` 路径（防跨时代冲撞，如实偏离） |
+| `workbench/evals/l05/ReceivingScenarioCheck.java` | 步序与 fail/pass 载荷逐 step 同形（replay/replay-flag/replay-ledger/new/invalid…）；预期由 opening+receipt 在 Java 独立计算；rc 0/1/2 语义同形 |
+
+复用深件：`bootstrap/Args`（argparse 同形解析，UsageException → rc 2）、`bootstrap/PyJson.dumpsCompact`（Python json.dumps 默认分隔符单行同形——stdout 契载体）。
+
+**转绿路径**：单类 `L05EvalContractTest` 6/6 绿 → `GoldenL05ReplayTest` 绿（**7 场景字节级一致，一次通过**）→ 全量 **91/91 绿**。
+
+**红绿间测试修正披露（一处，非放宽）**：`blindBuildsRewriteTreeToSpec` 的「盲区缺陷不是 b1」判别从全文件级 `doesNotContain("UPDATE stock…")` 改为**重放分支段内**——客户正常收货分支本就含该串，全文件级断言对真实客户树不可满足（首跑失败现场，commit message 与测试注释双留痕；意图收紧到正确作用域）。
+
+**链三封条**（同命令 `mvn test`，Diff 严格居间，observed_at 严格递增）：red `…8c20967d`（02:44:13，rc 1，91 跑 7 红）→ diff `04-diff/20260930T034932613129Z-0a81515e`（03:49:32，rc 0，暂存区 `git diff --cached`——新增件为主如实披露）→ green `05-green/20260930T034936820988Z-0e45c661`（03:49:36，rc 0，91/91）。
+
+### R3 证据链重演（C3–C7，附录 A4 步骤 6；现场全用 `-java` 新根）
+
+- **三树**（全部 Java 工具产物）：`.runtime/course/L05-defect-baseline-java/`（b1 自检 JSON：`defect_live:true`/`on_hand:10`/`events:1`，终端留痕）；`.runtime/course/L05-probe-java/blind-ledger-rewrite/`（blind 自检：`on_hand:5`/`old_key_events:0`/`rewritten_key_events:1`——盲区构造**脚本化**，Java 增量对 Python 时代 ad-hoc 手术）；`.runtime/course/L05-candidate-java/`（干净 clone @ `e0088d3`）
+- **客户 eval 红绿链**（同一条 `sh -c` 命令串逐字节，`$L05_EVAL_TARGET` 切目标树，pwd 行 + 封存 argv + 本账三重披露）：红① `03-failure/…040046…-e5cbb804` + 红② `…040054…-dcc31d38`（rc 1，`[BLOCK]` + `decision: block`，pwd 行证基线-java 树）→ diff `04-diff/…040101…-689ebb47`（rc 0；**与 Python 时代 record 46 字节同形**——同 `index 99753c2..d6f15ef` 行）→ 冻结 `06-observations/…040112…-e539ac92` → 绿 `05-green/…040121…-e40a19a7`（rc 0，`[PASS] 重复入库键只生效一次`，pwd 行证候选-java 树）
+- **C5 冻结口径**（9 路径，超 Python 时代 8 路径的增量 = Java 工具第三件 `FlowerpProbe.java`，如实注明）：客户 `eval/harness.py e2f526b6…` 与 `eval/cases.py c8409488…` **双树同指纹且与 Python 时代一致**；基线 `service.py 1a2f303c…` / 候选 `6c372dcd…` **与 Python 时代指纹逐字节相同**——Java 构造的缺陷树与候选树是 Python 时代两树的**字节等价物**；Java 三源件指纹入冻（`36051845…`/`e412b0ab…`/`2af9c57c…`）
+- **观察六枚**：20/8/8 pass（`…040132…-0bc323f0`，输出与 Python 时代 record 49 逐字节同形）/ 11/3/3 pass（`…040135…-b5eef9ea`，同 record 50）/ 基线定位补充红（`…040138…-f7825af5`，replay 步 28≠36 + requirement 逐字，同 record 55）/ 盲区驱动红（`…040140…-c105befd`，replay-ledger 步，同 record 51）/ **盲区 eval 绿×2**（`…040142…-faf6d411` + `…040143…-1d26cb09`，pwd 行证盲区树——Python 时代为叙述性留痕，Java 侧落正式封条，加严方向）
+- **任务账** `CASE-WB-L05-JAVA-001` @ `.runtime/course/L01-workbench-java/`：建单 ok（requirement_summary `40406db0…`）；**导入前缺链查询**（预期失败也是证据）：rc 1 `same_command_red_diff_green_missing: 缺少同命令的红—Diff—绿链`（`…043929…-407bab8f`）；Java `ImportEvidence` ×4 全 rc 0（重算 SHA-256 验封；导入序 = 红红 diff 绿）；**verify 自举**（V0 被 operator 使用的接缝检查，`…044001…-4cf4fe5c`：`verify_completed`、`executor_command: null`、`changed_files: []`、`task_state: review`、eval rc 0）；**终态密封**（`…044009…-73ad4aaf`：`ok:true` / `evidence_complete:true` / `acceptance:pending_human_review` / `flowerp_connected:false` 四词面齐）
+- **C5 收口复核**：`…044019…-2fe4e6d8` 与初冻 `e539ac92` **逐字节一致**
+- 全量回归即绿命令本体（`mvn test` 就是全量门），不另设——Python 时代台账同款如实说明
+
+## 10. C1–C7 逐项结论表（Java 口径）
+
+| # | 结论 | 证据 |
+|---|---|---|
+| C1 | ✓ | 客户 blocking 用例绿腿（`e40a19a7`，decision:pass）+ Java 驱动 20/8/8（`0bc323f0`：期初 20 → A 收 8 → 28，`opening`/`receipt:A` 流水逐条断言，预期独立计算） |
+| C2 | ✓ | 驱动：A 重放 28 不变、账面快照前后相等（含流水）、B 新收 36、0/负数拒绝且状态不变（`0bc323f0` 载荷 `on_hand_path [20,28,28,36]` / `invalid_quantities_rejected [0,-1]`） |
+| C3 | ✓ | 同一客户 eval 对 Java 构造基线连跑两次均红（`e5cbb804`/`dcc31d38`，rc 1，`[BLOCK]`+`decision:block`）；定位三件套：用例名级 blocking + observing 数值级（`f7825af5`：expected 28 / actual 36）+ requirement 逐字文本 |
+| C4 | ✓ | 红绿同一条 `sh -c` 命令串（逐字节同串，`$L05_EVAL_TARGET` 切树；pwd 行 + 封存 argv + 本账三重披露，§12 口径段照抄 Python 时代）；`workbench-status --require-red-green-evidence` → `evidence_complete:true`（`73ad4aaf`） |
+| C5 | ✓ | 初冻 `e539ac92` + 收口复核 `2fe4e6d8` 逐字节一致；客户件双树同指纹；冻结对象含 Java 三源件（`FlowerpProbe` 超点名有利，如实注明） |
+| C6 | ✓ | `b5eef9ea`：11→14→14→17 / 流水 1→2→2→3，预期独立计算（排除写死 28） |
+| C7 | ✓ | 盲区树 Java 构造器 `--defect blind` 可复现脚本化；客户 eval 对盲区树绿×2（`faf6d411`/`1d26cb09`，盲区复证正式封条）+ Java 驱动同树红（`c105befd`）；未覆盖边界见 §12；补流水断言留检查点显式采纳 |
+| —（重走线增量） | ✓ | golden l05 7 场景双跑指纹 `3d9b623c…` + Java 重放**字节级一致**（commit 1 红 → commit 2 绿，一次转绿）；工具建设链（mvn）另成链（R2），按 JD7 不入任务账 |
+
+## 11. R 段命令台账
+
+| 相位 | 命令 | 封条（时间戳-哈希后缀） | 退出码 |
+|---|---|---|---|
+| red（工具链） | `mvn test`（全量） | `03-failure/20260930T024413858516Z-8c20967d` | 1（91 跑 7 红） |
+| diff（工具链） | `git diff --cached`（暂存区全量，新增件为主如实披露） | `04-diff/20260930T034932613129Z-0a81515e` | 0 |
+| green（工具链） | `mvn test`（同 red 命令） | `05-green/20260930T034936820988Z-0e45c661` | 0（91/91） |
+| red（eval 链） | `sh -c 'cd "$L05_EVAL_TARGET" && pwd && exec <venv>/bin/python -X utf8 -m eval.harness --case receiving_is_idempotent --no-report'`（`L05_EVAL_TARGET=…/L05-defect-baseline-java`） | `03-failure/20260930T040046325110Z-e5cbb804` | 1 |
+| red（eval 链） | 同上（同串，同目标树） | `03-failure/20260930T040054553524Z-dcc31d38` | 1 |
+| diff（eval 链） | `git -C …/L05-defect-baseline-java diff`（缺陷补丁：与 Python 时代 record 46 字节同形） | `04-diff/20260930T040101075785Z-689ebb47` | 0 |
+| observation | `shasum -a 256`（9 路径：双树客户件 + 双树 service.py + Java 三源件）——**C5 初冻** | `06-observations/20260930T040112025555Z-e539ac92` | 0 |
+| green（eval 链） | 同 red 命令逐字节同串（`L05_EVAL_TARGET=…/L05-candidate-java`） | `05-green/20260930T040121281853Z-e40a19a7` | 0 |
+| observation | Java 驱动 20/8/8（候选树） | `06-observations/20260930T040132169332Z-0bc323f0` | 0 |
+| observation | 同上 `--opening 11 --receipt 3 --new 3` | `06-observations/20260930T040135663334Z-b5eef9ea` | 0 |
+| observation | Java 驱动对基线树（C3 定位补充，数值级） | `06-observations/20260930T040138981707Z-f7825af5` | 1 |
+| observation | Java 驱动对盲区树（C7，replay-ledger 步） | `06-observations/20260930T040140797330Z-c105befd` | 1 |
+| observation | 客户 eval 对盲区树 ×2（盲区复证；Python 时代叙述性留痕的加严） | `…T040142764522Z-faf6d411` / `…T040143174044Z-1d26cb09` | 0 / 0 |
+| observation | 建单后缺链查询 `workbench-status --require-red-green-evidence` | `06-observations/20260930T043929959902Z-407bab8f` | 1（`same_command_red_diff_green_missing`） |
+| observation | verify 自举 `workbench-task-run … --mode verify --eval-command "<客户 eval 绝对路径>" --execution-timeout 900 --actor Claude` | `06-observations/20260930T044001915156Z-4cf4fe5c`（任务账 execution `verify_completed`） | 0 |
+| observation | 终态 status 四词面 | `06-observations/20260930T044009230238Z-73ad4aaf` | 0 |
+| observation | `shasum -a 256`（同初冻 9 路径）——**C5 收口复核：逐字节一致** | `06-observations/20260930T044019307212Z-2fe4e6d8` | 0 |
+
+链判定（任务账 001）：红 `e5cbb804`（04:00:46）→ 红 `dcc31d38`（04:00:54）→ diff `689ebb47`（04:01:01）→ 绿 `e40a19a7`（04:01:21），同命令、observed_at 严格递增、全局最新绿 = 成功绿；verify 自举 execution 在账不破坏链；`evidence_complete:true`。
+
+## 12. 口径与限制
+
+- **同命令异树口径（C4，逐字承袭 Python 时代）**：红绿两条记录的命令串逐字节相同；目标树差异经 `$L05_EVAL_TARGET` 注入（红 = 缺陷基线-java，绿 = 候选-java），pwd 行、封存 argv 与本账三重披露。链判定的「同命令」语义在「同一检查命令、缺陷树红/正确树绿」上成立——增量重定位（D1）的设计本意，非账面技巧。
+- **结构翻译差异（A1，如实披露不伪装）**：冻结 Python 工具经 in-process import 驱动客户实现；Java 工具经子进程 python（`FlowerpProbe`）跑客户原语、回报原始观察值，**预期计算与断言留 Java**（独立计算语义不变）。对外契约（argv/stdout JSON/退出码/锚点守卫/自检）由 golden l05 字节级锁定。
+- **盲区构造脚本化（C7/JD4）**：Python 时代盲区树为 ad-hoc 手术无冻结脚本；Java 侧 `--defect blind` 可复现构造（补丁规格与 golden 生成器内联手术逐字同文），等价性由 golden s06 驱动 fail 反向锁 + 合同测试文本形状断言。
+- **golden s02 偶然同形（修正注③）**：rc 1 + 空 stdout 在工具缺失时与「主类不存在」同形，commit 1 可能不红——红点由其余 6 场景与合同测试承载（stderr 词面断言使合同侧拒绝面真实红）。
+- **链入账口径（JD7）**：`CASE-WB-L05-JAVA-001` 装客户 eval 同命令链（C4 字面，Python 时代同形）；mvn 工具建设链封条随分支 commit 1/2（不入任务账——避免多命令混链；Python 时代工具建设本无账本链）。
+- **无效探针 narrow 不重演**：v1→v2 翻案现场为 Python 时代历史事实（其证据账 §3 在案）；Java 按定稿 v2 合同走。
+- **客户 eval 不入 golden**（客户真理非我方表面，pwd 行/耗时不可复现）；工具 stderr 错误词面语言绑定按 JD6 如实偏差（`SystemExit` 中文消息已在拒绝面逐字复刻，traceback/errno 形状不复刻不伪装）。
+- **tdd 口径（翻案，加严）**：Python 时代零新命令无 unittest 起始红缝故未走 tdd；Java 侧工具新代码有合同测试起始红 → 红绿循环真实走完（implement 经用户显式调用，codebase-design/tdd 自调在案）。
+- **未覆盖边界（C7，如实）**：并发、进程崩溃、同键不同内容三类边界本讲未覆盖（上游同口径）；客户 eval 不读 inventory_events 流水对「账面重写」盲（复证在案）——是否补流水断言属改客户检查，留检查点显式采纳（ADR-0003），本讲不动客户文件。
+- **执行期技能口径**：`/mattpocock-skills:implement`（用户显式，2026-09-30）+ 模型自调 codebase-design / tdd；复查轮 `code-review` 见 §13。
+- **vendors 双查**：全程恒空（clone 只读源，缺陷只落 `.runtime/` clone）。
+- `acceptance: pending_human_review` 恒待人签；**待审核 ≠ 已接受**。

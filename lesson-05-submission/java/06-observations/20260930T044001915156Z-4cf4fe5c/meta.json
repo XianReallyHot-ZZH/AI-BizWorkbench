@@ -1,0 +1,27 @@
+{
+  "phase": "observation",
+  "argv": [
+    "./bin/wb",
+    "workbench-task-run",
+    "CASE-WB-L05-JAVA-001",
+    "--runtime-dir",
+    ".runtime/course/L01-workbench-java",
+    "--workspace",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate-java",
+    "--mode",
+    "verify",
+    "--eval-command",
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case receiving_is_idempotent --no-report",
+    "--execution-timeout",
+    "900",
+    "--actor",
+    "Claude"
+  ],
+  "command": "[\"./bin/wb\", \"workbench-task-run\", \"CASE-WB-L05-JAVA-001\", \"--runtime-dir\", \".runtime/course/L01-workbench-java\", \"--workspace\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L05-candidate-java\", \"--mode\", \"verify\", \"--eval-command\", \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case receiving_is_idempotent --no-report\", \"--execution-timeout\", \"900\", \"--actor\", \"Claude\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T04:40:01.915156+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/java/06-observations/20260930T044001915156Z-4cf4fe5c/output.txt",
+  "sha256": "ece0fed9a7151bf8b60e095ffb07433f02dc50b13440e358b8585852aab6ff2f",
+  "provenance": "local_teaching_capture"
+}

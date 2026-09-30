@@ -1,0 +1,9 @@
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  .runtime/course/L05-defect-baseline-java/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  .runtime/course/L05-defect-baseline-java/eval/cases.py
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  .runtime/course/L05-candidate-java/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  .runtime/course/L05-candidate-java/eval/cases.py
+1a2f303ce0008be4c0b7b908ed4d830700ea6ea53930b392d13cbe8239cd6aa8  .runtime/course/L05-defect-baseline-java/flowerp/service.py
+6c372dcd105c2c476bbbb76b97abaf6edfbbac233cc7cfb7567a73052325385a  .runtime/course/L05-candidate-java/flowerp/service.py
+36051845bc9e705fe51a2b036430bcbce88fbff1c13edd366ecca4bb151f45fa  src/main/java/workbench/evals/l05/BuildDefectBaseline.java
+e412b0abdc27645380e32037d47273952ed6eb5b5e01bb8596271b8f69c46619  src/main/java/workbench/evals/l05/ReceivingScenarioCheck.java
+2af9c57ce2b8d49c948ac87e6b79c4de376a96ed1b269a38927365bd44c9ea5c  src/main/java/workbench/evals/l05/FlowerpProbe.java
