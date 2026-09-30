@@ -1,0 +1,14 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    ".runtime/l07-protocol/real-red.sh"
+  ],
+  "command": "[\"sh\", \".runtime/l07-protocol/real-red.sh\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T10:41:52.079019+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-07-submission/06-observations/20260930T104152079019Z-b89486ae/output.txt",
+  "sha256": "acb1992b6615704274cd802028afe619e21a04a4d70401258912df63f52c635e",
+  "provenance": "local_teaching_capture"
+}

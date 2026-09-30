@@ -1,0 +1,14 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    ".runtime/l07-protocol/real-green.sh"
+  ],
+  "command": "[\"sh\", \".runtime/l07-protocol/real-green.sh\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T10:50:41.772166+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-07-submission/06-observations/20260930T105041772166Z-76489a17/output.txt",
+  "sha256": "8150625754ceb9871111e6801d182f6f1d5167e256da0c702688d76402cb8379",
+  "provenance": "local_teaching_capture"
+}
