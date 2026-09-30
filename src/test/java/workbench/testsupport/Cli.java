@@ -58,12 +58,28 @@ public final class Cli {
      * 见 evidence/L05-java.md §G）；默认重载固定 CLI 入口，旧行为不变。
      */
     public static Result runMain(String mainClass, String... args) {
+        return launch(mainClass, Map.of(), args);
+    }
+
+    /**
+     * 同 {@link #runMain}，额外注入环境变量（l06 起 golden 场景可声明 env：Checks 等工具读
+     * 环境变量是冻结 Python 语义，argv 面不含 --target）。独立方法名而非重载——J2 教训：
+     * 字符串实参调用点两可（见 evidence/L05-java.md §G）；空映射时子进程环境不变，与
+     * {@link #runMain} 行为一致（l01–l05 五套 manifest 无 env 字段 → 逐字节不变）。
+     */
+    public static Result runMainWithEnv(String mainClass, Map<String, String> env, String... args) {
+        return launch(mainClass, env, args);
+    }
+
+    private static Result launch(String mainClass, Map<String, String> env, String... args) {
         try {
             List<String> argv = new ArrayList<>(List.of("java",
                     "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
                     "-cp", childClasspath(), mainClass));
             argv.addAll(List.of(args));
-            Process process = new ProcessBuilder(argv).directory(repoRoot().toFile()).start();
+            ProcessBuilder builder = new ProcessBuilder(argv).directory(repoRoot().toFile());
+            builder.environment().putAll(env);
+            Process process = builder.start();
             byte[] out = process.getInputStream().readAllBytes();
             byte[] err = process.getErrorStream().readAllBytes();
             int code = process.waitFor();

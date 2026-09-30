@@ -1,0 +1,19 @@
+{
+  "available": 9,
+  "case": "stock_consistency",
+  "csv": [
+    13,
+    4,
+    9
+  ],
+  "opening": 13,
+  "query": [
+    13,
+    4,
+    9
+  ],
+  "rejected_reserve": 10,
+  "reserved": 4,
+  "state_unchanged": true,
+  "status": "pass"
+}

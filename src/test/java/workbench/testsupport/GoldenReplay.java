@@ -111,7 +111,18 @@ public final class GoldenReplay {
             // l05 起工具类场景可声明 main（默认 CLI 入口；l01–l04 四套 manifest 无该字段 → 行为不变）
             String mainClass = scenario.hasNonNull("main")
                     ? scenario.get("main").asText() : "workbench.cli.Main";
-            Cli.Result result = Cli.runMain(mainClass, argv.toArray(String[]::new));
+            // l06 起场景可声明 env（Checks 等工具读环境变量是冻结 Python 语义，argv 面不含
+            // --target）；l01–l05 五套 manifest 无该字段 → 子进程环境不变（行为零变化证据见
+            // evidence/L06-java.md §G）
+            Cli.Result result;
+            if (scenario.hasNonNull("env")) {
+                Map<String, String> env = new LinkedHashMap<>();
+                scenario.get("env").properties().forEach(
+                        entry -> env.put(entry.getKey(), entry.getValue().asText()));
+                result = Cli.runMainWithEnv(mainClass, env, argv.toArray(String[]::new));
+            } else {
+                result = Cli.runMain(mainClass, argv.toArray(String[]::new));
+            }
             assertThat(result.exitCode()).as("%s 退出码", id)
                     .isEqualTo(scenario.path("exit_code").asInt());
             assertThat(Cli.normalize(result.stdout(), maskFields))

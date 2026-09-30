@@ -1,0 +1,150 @@
+{
+  "generated_from": "frozen Python evals 统一运行器面 @ master（见 evidence/L06-java.md §G 记录的 commit）",
+  "generator": "tools/generate_golden_l06.py",
+  "inputs": {},
+  "normalization": {
+    "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
+    "mask_fields": {
+      "created_at": "<TS>",
+      "duration_ms": "<MS>",
+      "generated_at": "<TS>",
+      "recorded_at": "<TS>",
+      "workbench_id": "<WORKBENCH_ID>"
+    },
+    "mask_note": "l06 特有：本套场景面首次含统一运行器全量报告（s07/s08 checks 的 stdout 即报告全文）——generated_at/duration_ms 为机器时间字段，掩码扩展 2 键（l01–l05 首例扩展，机制 l04 起已按 manifest 声明数据驱动）；其余场景无这些键，键级掩码无扰；created_at/recorded_at/workbench_id 声明保留与五套统一（防御性，本套输出无这些键）",
+    "non_json": "逐字保留"
+  },
+  "scenarios": [
+    {
+      "argv": [
+        "--baseline",
+        ".runtime/golden-l06/ws/b1"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s01_build_defect_ok",
+      "main": "workbench.evals.l06.BuildDefectBaseline",
+      "note": "C7：clone+CSV available→on_hand 补丁+自检 JSON（defect_live/query_available 5/csv_available 8）；重放侧 Java 构造产物即 s05/s08 被测树（双侧树等价的第一重锁）",
+      "stdout_file": "s01_build_defect_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "--baseline",
+        ".runtime/golden-l06/ws/b1"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s02_build_existing_rejected",
+      "main": "workbench.evals.l06.BuildDefectBaseline",
+      "note": "基线已存在不覆盖（s01 产物在场；stdout 空，stderr 错误词面不入 golden）",
+      "stdout_file": "s02_build_existing_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l06/ws/clean"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s03_stock_default_pass",
+      "main": "workbench.evals.l06.StockConsistencyCheck",
+      "note": "C1/C2：8/3 主干（query/csv 同 [8,3,5]、拒 6、四表状态不变；预期独立计算）",
+      "stdout_file": "s03_stock_default_pass.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l06/ws/clean",
+        "--opening",
+        "13",
+        "--reserved",
+        "4"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s04_stock_migration_pass",
+      "main": "workbench.evals.l06.StockConsistencyCheck",
+      "note": "C1 迁移：[13,4,9]、拒 10（排除写死 5）",
+      "stdout_file": "s04_stock_migration_pass.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l06/ws/b1"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s05_stock_defect_fail",
+      "main": "workbench.evals.l06.StockConsistencyCheck",
+      "note": "C1 定位（数值级）：AC-AVAILABLE expected [8,3,5] / query [8,3,5] / csv [8,3,8] + requirement 逐字——与 Python 时代红 66 同形",
+      "stdout_file": "s05_stock_defect_fail.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l06/ws/no-flowerp"
+      ],
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "id": "s06_stock_target_rejected",
+      "main": "workbench.evals.l06.StockConsistencyCheck",
+      "note": "参数校验：--target 下没有 flowerp/（argparse error，stdout 空）",
+      "stdout_file": "s06_stock_target_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "--no-report"
+      ],
+      "env": {
+        "L06_EVAL_TARGET": ".runtime/golden-l06/ws/clean"
+      },
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s07_checks_report_pass",
+      "main": "workbench.evals.l06.Checks",
+      "note": "C3/C4 统一运行器绿面：五项全量报告（四 blocking 绿 + 教学告警 WARN，decision pass）——报告 stdout 字节锁；掩码 generated_at/duration_ms",
+      "stdout_file": "s07_checks_report_pass.stdout.txt"
+    },
+    {
+      "argv": [
+        "--no-report"
+      ],
+      "env": {
+        "L06_EVAL_TARGET": ".runtime/golden-l06/ws/b1"
+      },
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s08_checks_report_block",
+      "main": "workbench.evals.l06.Checks",
+      "note": "C4 可信红面：l06_stock_consistency 红（evidence=rc=1: {AC-AVAILABLE …}、error.type AssertionError）+ decision block——红报告 stdout 字节锁",
+      "stdout_file": "s08_checks_report_block.stdout.txt"
+    },
+    {
+      "argv": [
+        "--no-report"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s09_checks_env_missing",
+      "main": "workbench.evals.l06.Checks",
+      "note": "L06_EVAL_TARGET 必设面（stdout 空；rc 1 与「主类缺失」偶然同形——l05 修正注③同款口径，红点由其余场景与合同测试承载）",
+      "stdout_file": "s09_checks_env_missing.stdout.txt"
+    }
+  ],
+  "setup": [
+    {
+      "run": [
+        "git",
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "vendors/flowERP",
+        ".runtime/golden-l06/ws/clean"
+      ]
+    },
+    {
+      "content": "not a flowERP tree\n",
+      "write_file": "golden-l06/ws/no-flowerp/placeholder.txt"
+    }
+  ]
+}

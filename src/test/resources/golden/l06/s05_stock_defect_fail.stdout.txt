@@ -1,0 +1,24 @@
+{
+  "actual": {
+    "csv": [
+      8,
+      3,
+      8
+    ],
+    "query": [
+      8,
+      3,
+      5
+    ]
+  },
+  "expected": {
+    "wanted": [
+      8,
+      3,
+      5
+    ]
+  },
+  "requirement": "可用库存按在手减预占计算：查询与 CSV 同口径，且永不为负",
+  "status": "fail",
+  "step": "AC-AVAILABLE"
+}

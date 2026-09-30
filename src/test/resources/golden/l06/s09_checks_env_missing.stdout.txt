@@ -1,0 +1,76 @@
+{
+  "generated_at": "<TS>",
+  "requested_cases": [
+    "l06_stock_consistency",
+    "l05_receiving_regression",
+    "l06_customer_stock_case",
+    "l06_frozen_checks",
+    "teaching_observation"
+  ],
+  "results": [
+    {
+      "duration_ms": "<MS>",
+      "error": {
+        "message": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+        "type": "RuntimeError"
+      },
+      "evidence": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+      "level": "blocking",
+      "name": "l06_stock_consistency",
+      "passed": false
+    },
+    {
+      "duration_ms": "<MS>",
+      "error": {
+        "message": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+        "type": "RuntimeError"
+      },
+      "evidence": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+      "level": "blocking",
+      "name": "l05_receiving_regression",
+      "passed": false
+    },
+    {
+      "duration_ms": "<MS>",
+      "error": {
+        "message": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+        "type": "RuntimeError"
+      },
+      "evidence": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+      "level": "blocking",
+      "name": "l06_customer_stock_case",
+      "passed": false
+    },
+    {
+      "duration_ms": "<MS>",
+      "error": {
+        "message": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+        "type": "RuntimeError"
+      },
+      "evidence": "L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树",
+      "level": "blocking",
+      "name": "l06_frozen_checks",
+      "passed": false
+    },
+    {
+      "duration_ms": "<MS>",
+      "error": {
+        "message": "教学观察项：模拟非阻断提示，不代表实际缺陷",
+        "type": "AssertionError"
+      },
+      "evidence": "教学观察项：模拟非阻断提示，不代表实际缺陷",
+      "level": "observing",
+      "name": "teaching_observation",
+      "passed": false
+    }
+  ],
+  "schema_version": "1.0",
+  "suite": "all",
+  "summary": {
+    "blocking_failed": 4,
+    "decision": "block",
+    "observing_failed": 1,
+    "passed": 0,
+    "total": 5
+  }
+}
