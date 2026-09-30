@@ -1,0 +1,4 @@
+{
+  "target": ".runtime/course/L07-candidate",
+  "note": "quality-gate 缺省统一入口的被检客户树（相对仓库根解析）。重指流程与指纹纪律见 README.md。"
+}

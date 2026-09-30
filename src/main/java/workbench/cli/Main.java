@@ -4,6 +4,7 @@ import workbench.bootstrap.Args;
 import workbench.bootstrap.BootstrapCommands;
 import workbench.bootstrap.Command;
 import workbench.bootstrap.JsonOut;
+import workbench.evals.l07.QualityGate;
 import workbench.execution.ExecutionCommands;
 import workbench.spec.SpecCommands;
 
@@ -26,6 +27,9 @@ public final class Main {
         // L04：受控执行三命令经同一条缝注册（适配器在 workbench.execution.ExecutionCommands，
         // 镜像 cli.py 的 L04 注册段：复用 bootstrap 存储入口）。
         ExecutionCommands.register(REGISTRY);
+        // L07：本地护栏处理器经同一条缝注册（讲义 D2——workbenchIncrement「提交前本地护栏」
+        // 即工作台命令；适配器在 workbench.evals.l07.QualityGate，只加注册调用，缝位置不变）。
+        REGISTRY.register("quality-gate", QualityGate::execute);
     }
 
     public static void main(String[] args) {
