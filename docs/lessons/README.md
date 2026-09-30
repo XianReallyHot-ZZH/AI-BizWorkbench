@@ -47,6 +47,7 @@
 - [L04-受控执行.md](L04-受控执行.md)（已验收 2026-09-27；换挡点：V0 受控执行 + flowERP 首驱交付，A/B 双票双验收门，证据账含三次真实使用缺陷修复与 eval 误报裁决）
 - [L05-失败优先Eval.md](L05-失败优先Eval.md)（已验收 2026-09-28；对照基线 `7f67533` 检查点 0002，客户真理重大现查后增量重定位为辨别力证明+冻结，证据账含两级裁决记录与探针实证）
 - [L06-Harness分级判决.md](L06-Harness分级判决.md)（已验收 2026-09-29；客户真理现查后增量落 evals/harness+report_contract 统一裁判，两次修复教学链+假绿辨别力探针+客户 eval 盲区实证，证据账含 R1 驱动快照修正与复查轮勘误）
+- [L07-本地护栏Hook.md](L07-本地护栏Hook.md)（已验收 2026-09-30；**首个无 Python 先例的讲**——Codex Hooks→Claude Code Stop hook 映射（D1–D8 裁决），quality-gate 进 REGISTRY + 真实 Stop 事件红绿四拍 + hook_staging 待审投影与人审安装，证据账含三起过程失误如实披露与 actor 误填教训；证据账 [evidence/L07.md](../replication/evidence/L07.md)，候选 `lesson-07` 五 commit + 验收合并 `42a2b01`）
 - [支线-记忆系统最小闭环.md](支线-记忆系统最小闭环.md)（已验收 2026-09-28；L04 后串行插入：七命令记忆系统 + 四链真实走通，复查轮补跨项目治理拒绝与采用版本防漂移，证据账 S01.md）
 - [L01-工作台自举.md](L01-工作台自举.md) 附录 A：**Java 重走移植注记**（2026-09-29 审定并执行完成——L01 重走已验收：31/31 绿，golden 字节级对照入验收门，自举四查通过；证据账 [evidence/L01-java.md](../replication/evidence/L01-java.md)，候选 `lesson-01-java` 四 commit + 验收合并 `7d2a017`）
 - [L02-仓库规则.md](L02-仓库规则.md) 附录 A：**Java 重走移植注记**（2026-09-29 审定并执行完成——L02 重走已验收：40/40 绿，红点 = CLAUDE.md 缺 Java 重走线规则要素（`JavaLineRuleFactsTest` 三断言）、增量写入候选表 R1–R5 后转绿，N0/N1/边界/迁移四会话行为对照齐，golden l02 15 场景字节级对照；证据账 [evidence/L02-java.md](../replication/evidence/L02-java.md)，候选 `lesson-02-java` 六 commit + 验收合并 `d423e0a`）
