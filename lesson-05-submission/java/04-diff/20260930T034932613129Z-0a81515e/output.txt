@@ -1,0 +1,571 @@
+diff --git a/src/main/java/workbench/evals/l05/BuildDefectBaseline.java b/src/main/java/workbench/evals/l05/BuildDefectBaseline.java
+new file mode 100644
+index 0000000..cb04bbd
+--- /dev/null
++++ b/src/main/java/workbench/evals/l05/BuildDefectBaseline.java
+@@ -0,0 +1,186 @@
++package workbench.evals.l05;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * 构造 L05 缺陷基线（Java 重走件，对照冻结 {@code evals/l05/build_defect_baseline.py}）。
++ *
++ * <p>缺陷形状（讲义 §5 裁决记录二）：
++ * <ul>
++ * <li>{@code b1}（默认）——门面 {@code ERPService.receive_stock} 的重放分支重执行库存更新：
++ *     重试再次入账，on_hand 5→10、流水不重复。客户 blocking eval
++ *     {@code receiving_is_idempotent} 对此两连红（C3）。补丁与冻结 Python 逐字同文；
++ * <li>{@code blind}——重放分支删旧 event 行、以 {@code -rewritten} 新键重插同内容、库存与
++ *     返回值不变（C7 盲区对照靶子；JD4 规格，与 golden 生成器内联手术逐字同文）。
++ * </ul>
++ *
++ * <p>上游课堂窄缺陷「同键多写流水」因 {@code inventory_events.event_key} 主键不可构造
++ * （store.py schema 事实，Python 时代已入证据账）。基线仅作检查的靶子，永不合入。
++ *
++ * <p>对外契约与冻结件同形：stdout 单行 JSON（b1：baseline/defect_live/on_hand/events，
++ * 键序与 Python 插入序一致）；拒绝词面逐字同文（基线已存在 / 锚点命中 N 次 / 缺陷未生效），
++ * stderr + rc 1；用法错误 rc 2（argparse 同形，词面按 JD6）。结构差异（附录 A1）：自检经
++ * 子进程 python 驱动（Python 为 in-process import），默认解释器 {@code .venv/bin/python}
++ * （相对 cwd，内部绝对化）。Java 增量参数面（JD1/修正注①）：{@code --source}（默认
++ * vendors/flowERP，锚点守卫的可测缝——冻结件硬编码无注入缝）、{@code --defect}、
++ * {@code --python}；默认基线落 {@code -java} 路径（防跨时代冲撞，如实记录的偏离）。
++ */
++public final class BuildDefectBaseline {
++
++    /** 只命中门面重放分支（service.py receive_stock）；与冻结 Python 构造器逐字同一锚点。 */
++    private static final String ANCHOR = "            if exists:\n                row = conn.execute(";
++
++    /** b1 补丁：与冻结构造器 PATCH 逐字同文（重放分支重执行 UPDATE stock）。 */
++    private static final String B1_PATCH = "            if exists:\n"
++            + "                conn.execute(\"UPDATE stock SET on_hand=on_hand+? WHERE sku=?\", (quantity, sku))\n"
++            + "                row = conn.execute(";
++
++    /** 盲区补丁：JD4 规格，与 tools/generate_golden_l05.py 的 BLIND_PATCH 逐字同文（双侧同规格）。 */
++    private static final String BLIND_PATCH = "            if exists:\n"
++            + "                conn.execute(\"DELETE FROM inventory_events WHERE event_key=?\", (event_key,))\n"
++            + "                conn.execute(\n"
++            + "                    \"INSERT INTO inventory_events(event_key,sku,quantity,reserved_delta,event_type,reference) VALUES(?,?,?,?,?,?)\",\n"
++            + "                    (event_key + \"-rewritten\", sku, quantity, 0, \"receive\", reference),\n"
++            + "                )\n"
++            + "                row = conn.execute(";
++
++    private static final String DEFAULT_BASELINE = ".runtime/course/L05-defect-baseline-java";
++    private static final String DEFAULT_SOURCE = "vendors/flowERP";
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    private BuildDefectBaseline() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--baseline", "--defect", "--source", "--python"), Set.of());
++            String baselineArg = args.optional("--baseline", DEFAULT_BASELINE);
++            String defect = args.optional("--defect", "b1");
++            if (!defect.equals("b1") && !defect.equals("blind")) {
++                throw new Args.UsageException(
++                        "argument --defect: invalid choice: '" + defect + "' (choose from 'b1', 'blind')");
++            }
++            String sourceArg = args.optional("--source", DEFAULT_SOURCE);
++            Path interpreter = FlowerpProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++
++            build(baselineArg, defect, sourceArg);
++            selfCheck(interpreter, Path.of(baselineArg).toAbsolutePath().normalize(), defect, baselineArg);
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (FlowerpProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    private static void build(String baselineArg, String defect, String sourceArg) {
++        Path baseline = Path.of(baselineArg).toAbsolutePath().normalize();
++        if (Files.exists(baseline)) {
++            throw new FlowerpProbe.ToolFailure("基线已存在，不覆盖：" + baseline + "（重建请先手动删除）");
++        }
++        Path source = Path.of(sourceArg).toAbsolutePath().normalize();
++        Process process;
++        try {
++            process = new ProcessBuilder("git", "clone", "--quiet", "--no-hardlinks",
++                    source.toString(), baseline.toString()).start();
++        } catch (IOException error) {
++            throw new FlowerpProbe.ToolFailure("git clone 启动失败：" + source, error);
++        }
++        try {
++            String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            int code = process.waitFor();
++            if (code != 0) {
++                throw new FlowerpProbe.ToolFailure(
++                        "git clone 失败 rc=" + code + "：" + stderr.strip());
++            }
++        } catch (IOException error) {
++            throw new FlowerpProbe.ToolFailure("git clone 输出读取失败：" + source, error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new FlowerpProbe.ToolFailure("git clone 等待被中断", error);
++        }
++        Path serviceFile = baseline.resolve("flowerp").resolve("service.py");
++        String sourceText = readUtf8(serviceFile);
++        int hits = countMatches(sourceText, ANCHOR);
++        if (hits != 1) {
++            throw new FlowerpProbe.ToolFailure("锚点命中 " + hits + " 次（应为 1），上游形状变了，停止构造");
++        }
++        String patch = defect.equals("blind") ? BLIND_PATCH : B1_PATCH;
++        writeUtf8(serviceFile, sourceText.replace(ANCHOR, patch));
++    }
++
++    private static void selfCheck(Path interpreter, Path baseline, String defect, String baselineArg) {
++        Map<String, Object> report = new LinkedHashMap<>();
++        try (FlowerpProbe.TempDb temp = FlowerpProbe.tempDb("l05-baseline-check-")) {
++            FlowerpProbe.probe(interpreter, baseline, temp.db, "setup");
++            FlowerpProbe.probe(interpreter, baseline, temp.db, "receive", "receipt:001", "5");
++            JsonNode second = FlowerpProbe.probe(interpreter, baseline, temp.db,
++                    "receive", "receipt:001", "5");
++            int onHand = second.get("on_hand").asInt();
++            report.put("on_hand", onHand);
++            if (defect.equals("blind")) {
++                int oldKey = FlowerpProbe.probe(interpreter, baseline, temp.db,
++                        "events", "receipt:001").get("count").asInt();
++                int rewritten = FlowerpProbe.probe(interpreter, baseline, temp.db,
++                        "events", "receipt:001-rewritten").get("count").asInt();
++                report.put("old_key_events", oldKey);
++                report.put("rewritten_key_events", rewritten);
++                if (onHand != 5 || oldKey != 0 || rewritten != 1) {
++                    throw new FlowerpProbe.ToolFailure("缺陷未生效，基线不可用：" + PyJson.dumpsCompact(report));
++                }
++            } else {
++                int events = FlowerpProbe.probe(interpreter, baseline, temp.db,
++                        "events", "receipt:001").get("count").asInt();
++                report.put("events", events);
++                if (onHand != 10 || events != 1) {
++                    throw new FlowerpProbe.ToolFailure("缺陷未生效，基线不可用：" + PyJson.dumpsCompact(report));
++                }
++            }
++        }
++        Map<String, Object> out = new LinkedHashMap<>();
++        out.put("baseline", baselineArg);
++        if (defect.equals("blind")) {
++            out.put("defect", "blind");
++        }
++        out.put("defect_live", true);
++        out.putAll(report);
++        System.out.println(PyJson.dumpsCompact(out));
++    }
++
++    private static int countMatches(String text, String needle) {
++        int count = 0;
++        int index = 0;
++        while ((index = text.indexOf(needle, index)) >= 0) {
++            count++;
++            index += needle.length();
++        }
++        return count;
++    }
++
++    private static String readUtf8(Path file) {
++        try {
++            return Files.readString(file, StandardCharsets.UTF_8);
++        } catch (IOException error) {
++            throw new FlowerpProbe.ToolFailure("基线文件读取失败：" + file, error);
++        }
++    }
++
++    private static void writeUtf8(Path file, String content) {
++        try {
++            Files.writeString(file, content, StandardCharsets.UTF_8);
++        } catch (IOException error) {
++            throw new FlowerpProbe.ToolFailure("基线文件写入失败：" + file, error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l05/FlowerpProbe.java b/src/main/java/workbench/evals/l05/FlowerpProbe.java
+new file mode 100644
+index 0000000..6d4f9be
+--- /dev/null
++++ b/src/main/java/workbench/evals/l05/FlowerpProbe.java
+@@ -0,0 +1,173 @@
++package workbench.evals.l05;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++
++/**
++ * 客户实现驱动缝（L05 特有结构翻译点，讲义附录 A1）：冻结 Python 工具经
++ * {@code sys.path.insert} + in-process {@code from flowerp import …} 驱动客户实现，
++ * Java 无法同形——本件以「<b>子进程 python 跑客户原语、回报原始观察值 JSON</b>」承载；
++ * <b>预期计算与断言一律留在调用方</b>（独立计算语义：28 由 Java 用 20+8 算出，不抄子进程返回）。
++ *
++ * <p>接口 = {@link #probe} 一个方法加 {@link #resolveInterpreter}/{@link #tempDb} 两个
++ * 生命周期助手；两个工具 main 都是调用方（真缝）。实现藏解释器绝对化（跨 cwd 纪律）、
++ * 进程启动、UTF-8 与 JSON 解析、临时库清理。工具失败 = 自身 rc 非零，不是执行记录
++ * 落账语义——故不复用 {@code execution/ProcessRunner}（讲义附录 A6.2 JD1）。
++ */
++final class FlowerpProbe {
++
++    /** 工具以 rc 1 收场的失败（词面入 stderr；对照 Python SystemExit，errno/traceback 形状按 JD6 如实偏差）。 */
++    public static final class ToolFailure extends RuntimeException {
++        public ToolFailure(String message) {
++            super(message);
++        }
++
++        public ToolFailure(String message, Throwable cause) {
++            super(message, cause);
++        }
++    }
++
++    /**
++     * 客户原语片段：经 argv 收 db/target/op，stdout 出单行 JSON 观察。<b>不判对错</b>——
++     * 判断在 Java 侧；本片段只报告原始观察值（receive 的 ValueError → rejected:true 等）。
++     * 与冻结驱动同款查询面（events/snapshot 的列与排序逐字同文）。
++     */
++    private static final String SNIPPET = """
++            import json, sys
++            from pathlib import Path
++            sys.path.insert(0, sys.argv[2])
++            from flowerp import ERPService, ERPStore
++            svc = ERPService(ERPStore(Path(sys.argv[1])))
++            op = sys.argv[3]
++
++            def out(obj):
++                print(json.dumps(obj, ensure_ascii=False))
++
++            if op == "setup":
++                svc.add_product("SKU-A", "验收商品", 1000, 2)
++                out({"ok": True})
++            elif op == "receive":
++                key, qty = sys.argv[4], int(sys.argv[5])
++                try:
++                    r = svc.receive_stock("SKU-A", qty, key)
++                    out({"rejected": False, "on_hand": r["on_hand"],
++                         "idempotent_replay": bool(r["idempotent_replay"])})
++                except ValueError:
++                    out({"rejected": True})
++            elif op == "product":
++                out({"on_hand": svc.product("SKU-A")["on_hand"]})
++            elif op == "events":
++                rows = svc.store.rows(
++                    "SELECT event_key,quantity,event_type FROM inventory_events WHERE event_key=?",
++                    (sys.argv[4],))
++                out({"count": len(rows),
++                     "quantity": rows[0]["quantity"] if rows else None,
++                     "event_type": rows[0]["event_type"] if rows else None})
++            elif op == "events_total":
++                rows = svc.store.rows(
++                    "SELECT event_key FROM inventory_events WHERE sku=?", ("SKU-A",))
++                out({"count": len(rows)})
++            elif op == "snapshot":
++                events = svc.store.rows(
++                    "SELECT event_key,sku,quantity,reserved_delta,event_type,reference "
++                    "FROM inventory_events WHERE sku=? ORDER BY rowid", ("SKU-A",))
++                stock = svc.store.rows(
++                    "SELECT on_hand,reserved FROM stock WHERE sku=?", ("SKU-A",))
++                out({"events": [list(r.values()) for r in events],
++                     "stock": [list(r.values()) for r in stock]})
++            else:
++                raise SystemExit("unknown op: " + op)
++            """;
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private FlowerpProbe() {}
++
++    /** 相对解释器路径按进程 cwd 绝对化（eval/执行器命令跨 cwd 一律绝对——L04 起始纪律移植）。 */
++    static Path resolveInterpreter(String python) {
++        return Path.of(python).toAbsolutePath().normalize();
++    }
++
++    /** 临时库（自建库、天然干净数据开始；close 递归清理——Python TemporaryDirectory 同形）。 */
++    static final class TempDb implements AutoCloseable {
++        private final Path dir;
++        final Path db;
++
++        private TempDb(Path dir) {
++            this.dir = dir;
++            this.db = dir.resolve("scenario.db");
++        }
++
++        @Override
++        public void close() {
++            try (var stream = Files.walk(dir)) {
++                stream.sorted(Comparator.reverseOrder()).forEach(p -> {
++                    try {
++                        Files.delete(p);
++                    } catch (IOException error) {
++                        throw new UncheckedIOException(error);
++                    }
++                });
++            } catch (IOException error) {
++                throw new UncheckedIOException(error);
++            }
++        }
++    }
++
++    static TempDb tempDb(String prefix) {
++        try {
++            return new TempDb(Files.createTempDirectory(prefix));
++        } catch (IOException error) {
++            throw new ToolFailure("临时目录创建失败（" + prefix + "）", error);
++        }
++    }
++
++    /**
++     * 跑一个客户原语操作，解析 stdout 单行 JSON 为观察值。子进程失败或输出不可解析 →
++     * ToolFailure（调用方 rc 1 收场；Python 侧对应 traceback 崩溃，形状语言绑定按
++     * JD6 如实偏差、不入 golden）。
++     */
++    static JsonNode probe(Path interpreter, Path target, Path db, String... opArgs) {
++        List<String> argv = new ArrayList<>(List.of(
++                interpreter.toString(), "-X", "utf8", "-c", SNIPPET,
++                db.toString(), target.toString()));
++        argv.addAll(List.of(opArgs));
++        Process process;
++        try {
++            process = new ProcessBuilder(argv).start();
++        } catch (IOException error) {
++            throw new ToolFailure("python 启动失败（" + interpreter + "）", error);
++        }
++        String stdout;
++        String stderr;
++        int code;
++        try {
++            stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
++            stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            code = process.waitFor();
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出读取失败（" + interpreter + "）", error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new ToolFailure("python 等待被中断", error);
++        }
++        if (code != 0) {
++            throw new ToolFailure("python 子进程失败 rc=" + code + "：" + stderr.strip());
++        }
++        try {
++            return MAPPER.readTree(stdout);
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出不可解析：" + stdout.strip()
++                    + "；stderr：" + stderr.strip(), error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l05/ReceivingScenarioCheck.java b/src/main/java/workbench/evals/l05/ReceivingScenarioCheck.java
+new file mode 100644
+index 0000000..75dc320
+--- /dev/null
++++ b/src/main/java/workbench/evals/l05/ReceivingScenarioCheck.java
+@@ -0,0 +1,176 @@
++package workbench.evals.l05;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * L05 收货场景驱动（Java 重走件，对照冻结 {@code evals/l05/receiving_scenario_check.py}）。
++ *
++ * <p>预期一律由 --opening/--receipt/--new 算术在 Java 侧独立计算（上游：预期的 28 来自
++ * 20＋8，不能抄程序返回值）；客户实现经 {@link FlowerpProbe} 子进程跑原语、只回报原始
++ * 观察值。除 on_hand 外同时逐条对照 inventory_events——客户 blocking eval 不读流水，
++ * 本驱动是 observing 补充（C6 迁移 / C7 盲区对照），blocking 身份仍是客户用例
++ * {@code receiving_is_idempotent}（D4，不另立身份）。
++ *
++ * <p>默认数据 20/8/8 复现 C1/C2（20→28→28→36，流水 1→2→2→3，0/负数拒绝且状态不变）；
++ * {@code --opening 11 --receipt 3 --new 3} 为 C6 迁移（11→14→14→17）。每次运行自建
++ * 临时库，天然从干净数据开始。stdout 单行 JSON（pass/fail 两形）与冻结件逐字同形
++ * （fail 的 expected/actual 逐 step 同载荷）；rc：0 pass / 1 fail / 2 用法错误。
++ */
++public final class ReceivingScenarioCheck {
++
++    private static final String REQUIREMENT = "同一笔收货只入账一次：库存与流水都不得重复";
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    private ReceivingScenarioCheck() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--target", "--opening", "--receipt", "--new", "--python"), Set.of());
++            String targetArg = args.require("--target");
++            Path target = Path.of(targetArg).toAbsolutePath().normalize();
++            if (!Files.isDirectory(target.resolve("flowerp"))) {
++                throw new Args.UsageException("--target 下没有 flowerp/：" + target);
++            }
++            int opening = intOption(args, "--opening", 20);
++            int receipt = intOption(args, "--receipt", 8);
++            int newReceipt = intOption(args, "--new", 8);
++            Path interpreter = FlowerpProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            int code = run(target, interpreter, opening, receipt, newReceipt);
++            if (code != 0) {
++                System.exit(code);
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (FlowerpProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    private static int run(Path target, Path interpreter, int opening, int receipt, int newReceipt) {
++        try (FlowerpProbe.TempDb temp = FlowerpProbe.tempDb("l05-scenario-")) {
++            Path db = temp.db;
++            FlowerpProbe.probe(interpreter, target, db, "setup");
++
++            JsonNode openingReceive = FlowerpProbe.probe(interpreter, target, db,
++                    "receive", "opening", String.valueOf(opening));
++            if (openingReceive.get("on_hand").asInt() != opening) {
++                return fail("opening", obj("on_hand", opening),
++                        obj("on_hand", openingReceive.get("on_hand").asInt()));
++            }
++            JsonNode openingLedger = FlowerpProbe.probe(interpreter, target, db, "events", "opening");
++            if (openingLedger.get("count").asInt() != 1
++                    || openingLedger.get("quantity").asInt() != opening
++                    || !"receive".equals(openingLedger.get("event_type").asText())) {
++                return fail("opening-ledger", 1, openingLedger.get("count").asInt());
++            }
++
++            int expectedFirst = opening + receipt;
++            JsonNode first = FlowerpProbe.probe(interpreter, target, db,
++                    "receive", "receipt:A", String.valueOf(receipt));
++            if (first.get("on_hand").asInt() != expectedFirst || first.get("idempotent_replay").asBoolean()) {
++                return fail("first",
++                        obj("on_hand", expectedFirst, "replay", false),
++                        obj("on_hand", first.get("on_hand").asInt(),
++                            "replay", first.get("idempotent_replay").asBoolean()));
++            }
++            if (FlowerpProbe.probe(interpreter, target, db, "events", "receipt:A")
++                    .get("count").asInt() != 1) {
++                return fail("first-ledger", 1, "receipt:A 流水数≠1");
++            }
++
++            JsonNode before = FlowerpProbe.probe(interpreter, target, db, "snapshot");
++            JsonNode second = FlowerpProbe.probe(interpreter, target, db,
++                    "receive", "receipt:A", String.valueOf(receipt));
++            if (second.get("on_hand").asInt() != expectedFirst) {
++                return fail("replay", obj("on_hand", expectedFirst),
++                        obj("on_hand", second.get("on_hand").asInt()));
++            }
++            if (!second.get("idempotent_replay").asBoolean()) {
++                return fail("replay-flag", true, second.get("idempotent_replay").asBoolean());
++            }
++            JsonNode after = FlowerpProbe.probe(interpreter, target, db, "snapshot");
++            if (!before.equals(after)) {
++                return fail("replay-ledger", "库存与流水均不变", "重放改变了账面");
++            }
++
++            int expectedNew = opening + receipt + newReceipt;
++            JsonNode third = FlowerpProbe.probe(interpreter, target, db,
++                    "receive", "receipt:B", String.valueOf(newReceipt));
++            if (third.get("on_hand").asInt() != expectedNew) {
++                return fail("new", obj("on_hand", expectedNew),
++                        obj("on_hand", third.get("on_hand").asInt()));
++            }
++            int totalEvents = FlowerpProbe.probe(interpreter, target, db, "events_total")
++                    .get("count").asInt();
++            if (totalEvents != 3) {
++                return fail("new-ledger", 3, totalEvents);
++            }
++
++            for (int invalid : new int[] {0, -1}) {
++                JsonNode state = FlowerpProbe.probe(interpreter, target, db, "snapshot");
++                JsonNode attempt = FlowerpProbe.probe(interpreter, target, db,
++                        "receive", "invalid:" + invalid, String.valueOf(invalid));
++                if (!attempt.get("rejected").asBoolean()) {
++                    return fail("invalid", "数量 " + invalid + " 被拒绝", "被接受");
++                }
++                if (!state.equals(FlowerpProbe.probe(interpreter, target, db, "snapshot"))) {
++                    return fail("invalid-state", "拒绝后状态不变", "拒绝后改变了账面");
++                }
++            }
++        }
++
++        Map<String, Object> out = new LinkedHashMap<>();
++        out.put("case", "receiving_scenario");
++        out.put("status", "pass");
++        out.put("opening", opening);
++        out.put("receipt", receipt);
++        out.put("new", newReceipt);
++        out.put("on_hand_path", List.of(opening, opening + receipt,
++                opening + receipt, opening + receipt + newReceipt));
++        out.put("ledger_path", List.of(1, 2, 2, 3));
++        out.put("invalid_quantities_rejected", List.of(0, -1));
++        System.out.println(PyJson.dumpsCompact(out));
++        return 0;
++    }
++
++    /** 与冻结驱动同形的失败行：step/status/expected/actual/requirement（键序 = Python 插入序）。 */
++    private static int fail(String step, Object expected, Object actual) {
++        Map<String, Object> out = new LinkedHashMap<>();
++        out.put("step", step);
++        out.put("status", "fail");
++        out.put("expected", expected);
++        out.put("actual", actual);
++        out.put("requirement", REQUIREMENT);
++        System.out.println(PyJson.dumpsCompact(out));
++        return 1;
++    }
++
++    private static Map<String, Object> obj(Object... keyValue) {
++        Map<String, Object> map = new LinkedHashMap<>();
++        for (int i = 0; i < keyValue.length; i += 2) {
++            map.put((String) keyValue[i], keyValue[i + 1]);
++        }
++        return map;
++    }
++
++    private static int intOption(Args args, String name, int defaultValue) {
++        String raw = args.optional(name, String.valueOf(defaultValue));
++        try {
++            return Integer.parseInt(raw);
++        } catch (NumberFormatException error) {
++            throw new Args.UsageException("argument " + name + ": invalid int value: '" + raw + "'");
++        }
++    }
++}
+diff --git a/src/test/java/workbench/evals/l05/L05EvalContractTest.java b/src/test/java/workbench/evals/l05/L05EvalContractTest.java
+index 4c82b05..967152d 100644
+--- a/src/test/java/workbench/evals/l05/L05EvalContractTest.java
++++ b/src/test/java/workbench/evals/l05/L05EvalContractTest.java
+@@ -114,7 +114,12 @@ class L05EvalContractTest {
+         assertThat(patched).contains("\"-rewritten\"");
+         assertThat(patched).contains(
+                 "INSERT INTO inventory_events(event_key,sku,quantity,reserved_delta,event_type,reference)");
+-        assertThat(patched).as("盲区缺陷不是 b1（不动库存）").doesNotContain("UPDATE stock SET on_hand=on_hand+");
++        // 判别限定在重放分支段内（if exists: → row = conn.execute()）：客户正常收货分支
++        // 本就含 UPDATE stock（首跑失败现场——全文件级 doesNotContain 对真实客户树不可满足）
++        int branchStart = patched.indexOf("            if exists:");
++        String branch = patched.substring(branchStart,
++                patched.indexOf("row = conn.execute(", branchStart));
++        assertThat(branch).as("盲区缺陷不是 b1（重放分支不动库存）").doesNotContain("UPDATE stock");
+     }
+ 
+     @Test

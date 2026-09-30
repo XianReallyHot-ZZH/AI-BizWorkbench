@@ -114,7 +114,12 @@ class L05EvalContractTest {
         assertThat(patched).contains("\"-rewritten\"");
         assertThat(patched).contains(
                 "INSERT INTO inventory_events(event_key,sku,quantity,reserved_delta,event_type,reference)");
-        assertThat(patched).as("盲区缺陷不是 b1（不动库存）").doesNotContain("UPDATE stock SET on_hand=on_hand+");
+        // 判别限定在重放分支段内（if exists: → row = conn.execute()）：客户正常收货分支
+        // 本就含 UPDATE stock（首跑失败现场——全文件级 doesNotContain 对真实客户树不可满足）
+        int branchStart = patched.indexOf("            if exists:");
+        String branch = patched.substring(branchStart,
+                patched.indexOf("row = conn.execute(", branchStart));
+        assertThat(branch).as("盲区缺陷不是 b1（重放分支不动库存）").doesNotContain("UPDATE stock");
     }
 
     @Test
