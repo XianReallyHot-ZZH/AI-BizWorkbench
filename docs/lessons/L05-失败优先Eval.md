@@ -131,7 +131,7 @@ L05 是重走线**第三个有实质实现代码增量的讲**（增量重心从
 - **golden 语义在本讲的适用范围划清（handoff ①）**：golden l05 锁的是**我方工具输出面**——生成侧用**冻结 Python 工具**（`evals/l05/` 两件，只执行不修改）在同一 setup 上采出预期，重放侧 Java 工具字节级一致。**有冻结 Python 输出可对照的场景**：构造器成功自检 JSON / 构造器两拒绝 / 驱动 pass×2 / 驱动 b1 树 fail / 驱动 target 拒绝。**Java 新建面（无冻结工具对照）**：盲区构造行为（Python 时代无构造脚本——生成器按 JD4 补丁规格**内联手术**产树采驱动预期，重放侧由 Java 构造器产树，树的盲区性质由驱动 fail 输出对照反向锁定）；以及 mvn 合同测试断言的工具内部行为。**不入 golden（任何侧）**：客户 eval 运行输出（客户真理非我方表面——其 pwd 行绝对路径与耗时 ms 不可复现，证据链以语义+rc 承载，与 Python 时代同口径）；工具 stderr 错误词面（`SystemExit` 中文消息 vs Java 异常词面，语言绑定按 JD6 如实偏差，stdout 空 + rc 对照）；Python traceback 形状
 - **掩码：本套预期零新掩码**——l05 场景面无机器生成时间戳（工具不打印时间，无 l04 `_now()` 同秒漂移面），构造器输出的 `baseline` 字段用**固定相对路径**调用规避（生成器与重放 cwd 均为仓库根）；掩码集 = 三件套默认（`created_at`/`recorded_at`/`workbench_id` 声明保留），口径逐字写入 manifest `mask_note`（含"本套零扩展"说明）
 - **setup 块（与被测实现无关的环境物化，双侧同规格）**：`ws/clean`（`git clone vendors/flowERP` 相对路径 run 步骤）+ `ws/no-flowerp`（普通目录）；盲区树**不进共享 setup**（生成期内联手术 / 重放测试自行清场后调 Java 构造器各自物化，见修正注②）
-- **共享件行为零变化扩展（JD5，前置落 master）**：`GoldenReplay` 场景支持可选 `main` 字段（默认 `workbench.cli.Main`——l01–l04 四套 manifest 无该字段 → 输出逐字节不变）+ `Cli.runMain(main, args)` 独立方法（非重载——`run(String, String...)` 与既有 `run(String...)` 在字符串实参调用点两可，J2 编译失败现场见 §G；旧 `run` 委托默认主类）+ `GoldenReplay.deleteRecursively` 可见度放宽为包内（l05 重放测试自行清场用，修正注②）；以前置提交的 `mvn test` 84/84（含四套旧重放）为行为零变化证据
+- **共享件行为零变化扩展（JD5，前置落 master）**：`GoldenReplay` 场景支持可选 `main` 字段（默认 `workbench.cli.Main`——l01–l04 四套 manifest 无该字段 → 输出逐字节不变）+ `Cli.runMain(main, args)` 独立方法（非重载——`run(String, String...)` 与既有 `run(String...)` 在字符串实参调用点两可，J2 编译失败现场见 §G；旧 `run` 委托默认主类）+ `GoldenReplay.deleteRecursively` 可见度放宽为 public（l05 重放测试跨包自行清场用，修正注②——首版包内不足，J4 现场见 §G）；以前置提交的 `mvn test` 84/84（含四套旧重放）为行为零变化证据
 - 场景面 = L05 两工具行为语义（定稿 **7 场景**，全清单以 manifest 为准）：
 
 | 组 | 场景 | 预期 rc | 覆盖面 |
@@ -159,7 +159,7 @@ L05 是重走线**第三个有实质实现代码增量的讲**（增量重心从
 ```bash
 # 0. 审定后、动手前（前置落 master，L01–L04 先例）
 #    - 本附录审定稿入讲义 → master
-#    - GoldenReplay 场景 main 字段 + Cli.runMain 独立方法 + deleteRecursively 包内可见
+#    - GoldenReplay 场景 main 字段 + Cli.runMain 独立方法 + deleteRecursively public 可见
 #      （行为零变化，mvn test 84/84 回归证据）
 #      + tools/generate_golden_l05.py + golden/l05（双跑指纹，首跑即留）
 #      + evidence/L05-java.md §G → master

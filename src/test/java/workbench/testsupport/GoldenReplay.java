@@ -132,8 +132,9 @@ public final class GoldenReplay {
         }
     }
 
-    /** 包内可见（l05 起重放测试自行清场复用；原 private 语义不变）。 */
-    static void deleteRecursively(Path path) throws IOException {
+    /** public 可见（l05 重放测试在 workbench.golden 跨包自行清场复用；原 private 语义不变。
+     * 前置跟进修正：首版放宽为包内不足——跨包不可达，预检编译失败现场见 §G J4）。 */
+    public static void deleteRecursively(Path path) throws IOException {
         if (!Files.exists(path)) {
             return;
         }

@@ -8,7 +8,7 @@
 - 生成工具：`tools/generate_golden_l05.py`（只用标准库；7 场景单会话按序实跑冻结 Python 工具；Java 重放侧经共享件 main 字段驱动 `workbench.evals.l05.*` 两 main——工具不进 REGISTRY）
 - 场景面 = L05 两工具行为语义（附录 A3 七场景）：构造器 b1 成功自检 / 已存在拒绝 / 驱动 20/8/8 pass / 11/3/3 pass / b1 树 fail（replay 步 28≠36）/ 盲区树 fail（replay-ledger 步）/ `--target` 拒绝
 - 掩码：**本套零新掩码**——工具 stdout 无机器时间戳（无 l04 `_now()` 同秒漂移面）与机器绝对路径（构造器 `baseline` 字段以固定相对路径调用规避，驱动输出不含路径）；三件套声明保留（防御性，本套输出无这些键），口径逐字入 manifest `mask_note`
-- 共享件行为零变化扩展（JD5，本前置提交落 master）：`GoldenReplay` 场景可选 `main` 字段（默认 `workbench.cli.Main`）+ `Cli.runMain(main, args)` 独立方法（**非重载**——`run(String, String...)` 与既有 `run(String...)` 在字符串实参调用点两可，J2 编译失败现场见下表；旧 `run` 委托默认主类）+ `deleteRecursively` 可见度放宽为包内（l05 重放测试自行清场用，修正注②）；l01–l04 四套 manifest 无 `main` 字段 → 行为逐字节不变（J1/J3 回归证据）
+- 共享件行为零变化扩展（JD5，本前置提交落 master）：`GoldenReplay` 场景可选 `main` 字段（默认 `workbench.cli.Main`）+ `Cli.runMain(main, args)` 独立方法（**非重载**——`run(String, String...)` 与既有 `run(String...)` 在字符串实参调用点两可，J2 编译失败现场见下表；旧 `run` 委托默认主类）+ `deleteRecursively` 可见度放宽为 **public**（l05 重放测试在 workbench.golden 跨包自行清场用，修正注②；首版放宽为包内不足——跨包不可达，J4 编译失败现场见下表）；l01–l04 四套 manifest 无 `main` 字段 → 行为逐字节不变（J1/J3 回归证据）
 - 盲区树：生成器内联手术（JD4 补丁规格：门面重放分支删旧 event 行、以 `-rewritten` 后缀新键重插同内容、库存与返回值不变——客户 eval 对此绿、驱动红）；锚点与冻结构造器逐字同一且对 vendors service.py 唯一命中（预检 A0）；重放侧将由 Java 构造器 `--defect blind` 物化同一规格，两侧树的等价性由 s06 驱动 fail 输出对照反向锁定
 - 不入 golden（语言绑定或非确定，附录 A3/JD6）：客户 eval 运行输出（客户真理非我方面——pwd 行绝对路径与耗时 ms 不可复现，证据链以语义+rc 承载，与 Python 时代同口径）；工具 stderr 错误词面（`SystemExit` 中文消息 vs Java 异常词面，stdout 空 + rc 对照）；Python traceback 形状
 - 上游现查（起草日 2026-09-30）：`origin/main` = `7f67533`，与本讲对照基线一致（检查点 0002 后无新变更，冻结合同零变化）→ 不触发检查点采纳；flowERP pin `e0088d3`（与 Python 时代本讲现查同 pin），`receiving_is_idempotent` 仍为客户 blocking 用例
@@ -23,6 +23,7 @@
 | G2 | 同命令（第 2 跑，确定性比对） | 0 | 7/7 ok；指纹 `3d9b623c654bff89b88d45a716768a506812db46b176e9edf2c8c77977c8e576` = G1 → **golden 字节级确定，采纳此指纹** |
 | J2 | `mvn test`（共享件扩展后首跑，`Cli.run(String, String...)` 重载形态） | **非零（编译失败）** | **失败现场**：`[ERROR] 方法 run(java.lang.String...) 和 run(java.lang.String,java.lang.String...) 都匹配`——重载在字符串实参调用点两可；后台任务外壳的 `J2-exit=0` 系 zsh 管道尾部值，权威状态以 Maven `[ERROR]/BUILD FAILURE` 为准。处置 = 新方法改名 `runMain(String, String...)`（独立方法名，零歧义），失败记录保留不删 |
 | J3 | `mvn test`（runMain 修正后；含 golden l05 落树——尚无测试引用，纯落位不破坏现状，一跑双证） | 0 | **84/84 绿**（含 golden l01–l04 四套重放）→ **行为零变化证据** |
+| J4 | `mvn test`（lesson-05-java 采红前预检首跑，commit 1 测试件就位后） | **非零（编译失败）** | **失败现场**：`GoldenL05ReplayTest`（workbench.golden 包）跨包访问包内 `deleteRecursively` 不可达；处置 = 前置跟进提交（master）放宽为 public（与 testsupport 的 `Cli` 公开面同例，行为零变化），分支自跟进提交重开。失败记录保留不删（本行即现场；正式红封条见候选段 R1） |
 
 指纹命令：`cd src/test/resources/golden/l05 && find . -type f \| sort \| xargs shasum -a 256 \| shasum -a 256`。
 
