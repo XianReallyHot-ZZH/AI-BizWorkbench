@@ -1,0 +1,185 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 108 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.evals.l05.L05EvalContractTest
+[ERROR] Tests run: 6, Failures: 6, Errors: 0, Skipped: 0, Time elapsed: 1.318 s <<< FAILURE! -- in workbench.evals.l05.L05EvalContractTest
+[ERROR] workbench.evals.l05.L05EvalContractTest.b1RejectsExistingBaseline -- Time elapsed: 0.494 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l05.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l05.BuildDefectBaseline
+"
+to contain:
+  "基线已存在，不覆盖" 
+	at workbench.evals.l05.L05EvalContractTest.b1RejectsExistingBaseline(L05EvalContractTest.java:79)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l05.L05EvalContractTest.b1BuildsDefectBaselineWithSelfCheck -- Time elapsed: 0.137 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[b1 构造 rc] 
+expected: 0
+ but was: 1
+	at workbench.evals.l05.L05EvalContractTest.b1BuildsDefectBaselineWithSelfCheck(L05EvalContractTest.java:62)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l05.L05EvalContractTest.driverRejectsTargetWithoutFlowerp -- Time elapsed: 0.124 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[--target 非客户树 rc] 
+expected: 2
+ but was: 1
+	at workbench.evals.l05.L05EvalContractTest.driverRejectsTargetWithoutFlowerp(L05EvalContractTest.java:125)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l05.L05EvalContractTest.b1RejectsWhenAnchorNotUnique -- Time elapsed: 0.266 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l05.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l05.BuildDefectBaseline
+"
+to contain:
+  "锚点命中 2 次" 
+	at workbench.evals.l05.L05EvalContractTest.b1RejectsWhenAnchorNotUnique(L05EvalContractTest.java:97)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l05.L05EvalContractTest.driverRequiresTarget -- Time elapsed: 0.131 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[缺 --target rc] 
+expected: 2
+ but was: 1
+	at workbench.evals.l05.L05EvalContractTest.driverRequiresTarget(L05EvalContractTest.java:133)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l05.L05EvalContractTest.blindBuildsRewriteTreeToSpec -- Time elapsed: 0.128 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[盲区树构造 rc] 
+expected: 0
+ but was: 1
+	at workbench.evals.l05.L05EvalContractTest.blindBuildsRewriteTreeToSpec(L05EvalContractTest.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 144.3 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Running workbench.spec.L03SpecContractTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.321 s -- in workbench.spec.L03SpecContractTest
+[INFO] Running workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Running workbench.golden.GoldenL01ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 24.05 s -- in workbench.golden.GoldenL01ReplayTest
+[INFO] Running workbench.golden.GoldenL04ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 56.70 s -- in workbench.golden.GoldenL04ReplayTest
+[INFO] Running workbench.golden.GoldenL03ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.081 s -- in workbench.golden.GoldenL03ReplayTest
+[INFO] Running workbench.golden.GoldenL02ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 16.39 s -- in workbench.golden.GoldenL02ReplayTest
+[INFO] Running workbench.golden.GoldenL05ReplayTest
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.149 s <<< FAILURE! -- in workbench.golden.GoldenL05ReplayTest
+[ERROR] workbench.golden.GoldenL05ReplayTest.replayAllScenariosByteIdentically -- Time elapsed: 0.148 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[盲区树物化（Java 构造器 blind 模式，s06 前置）] 
+expected: 0
+ but was: 1
+	at workbench.golden.GoldenL05ReplayTest.replayAllScenariosByteIdentically(GoldenL05ReplayTest.java:41)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.030 s -- in workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Running workbench.execution.L04ExecutionContractTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 125.4 s -- in workbench.execution.L04ExecutionContractTest
+[INFO] Running workbench.rules.L02WorkbenchRulesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in workbench.rules.L02WorkbenchRulesTest
+[INFO] Running workbench.rules.JavaLineRuleFactsTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in workbench.rules.JavaLineRuleFactsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L05EvalContractTest.b1BuildsDefectBaselineWithSelfCheck:62 [b1 构造 rc] 
+expected: 0
+ but was: 1
+[ERROR]   L05EvalContractTest.b1RejectsExistingBaseline:79 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l05.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l05.BuildDefectBaseline
+"
+to contain:
+  "基线已存在，不覆盖" 
+[ERROR]   L05EvalContractTest.b1RejectsWhenAnchorNotUnique:97 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l05.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l05.BuildDefectBaseline
+"
+to contain:
+  "锚点命中 2 次" 
+[ERROR]   L05EvalContractTest.blindBuildsRewriteTreeToSpec:104 [盲区树构造 rc] 
+expected: 0
+ but was: 1
+[ERROR]   L05EvalContractTest.driverRejectsTargetWithoutFlowerp:125 [--target 非客户树 rc] 
+expected: 2
+ but was: 1
+[ERROR]   L05EvalContractTest.driverRequiresTarget:133 [缺 --target rc] 
+expected: 2
+ but was: 1
+[ERROR]   GoldenL05ReplayTest.replayAllScenariosByteIdentically:41 [盲区树物化（Java 构造器 blind 模式，s06 前置）] 
+expected: 0
+ but was: 1
+[INFO] 
+[ERROR] Tests run: 91, Failures: 7, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  06:16 min
+[INFO] Finished at: 2026-09-30T10:50:32+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

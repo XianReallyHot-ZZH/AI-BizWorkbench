@@ -1,0 +1,14 @@
+{
+  "phase": "green",
+  "argv": [
+    "mvn",
+    "test"
+  ],
+  "command": "[\"mvn\", \"test\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T03:49:36.820988+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/java/05-green/20260930T034936820988Z-0e45c661/output.txt",
+  "sha256": "58339141f2e4c74d8d984445566c7df6796be9dabaf078ec4b78fd8f062f289a",
+  "provenance": "local_teaching_capture"
+}

@@ -1,0 +1,15 @@
+{
+  "phase": "green",
+  "argv": [
+    "sh",
+    "-c",
+    "cd \"$L05_EVAL_TARGET\" && pwd && exec /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case receiving_is_idempotent --no-report"
+  ],
+  "command": "[\"sh\", \"-c\", \"cd \\\"$L05_EVAL_TARGET\\\" && pwd && exec /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case receiving_is_idempotent --no-report\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T04:01:21.281853+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/java/05-green/20260930T040121281853Z-e40a19a7/output.txt",
+  "sha256": "462bf9245b8d98787395444e2f87a3c4778c7977d5e5ee30ca9e3ed1392c334d",
+  "provenance": "local_teaching_capture"
+}

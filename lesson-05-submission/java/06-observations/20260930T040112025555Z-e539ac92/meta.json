@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    "shasum -a 256 .runtime/course/L05-defect-baseline-java/eval/harness.py .runtime/course/L05-defect-baseline-java/eval/cases.py .runtime/course/L05-candidate-java/eval/harness.py .runtime/course/L05-candidate-java/eval/cases.py .runtime/course/L05-defect-baseline-java/flowerp/service.py .runtime/course/L05-candidate-java/flowerp/service.py src/main/java/workbench/evals/l05/BuildDefectBaseline.java src/main/java/workbench/evals/l05/ReceivingScenarioCheck.java src/main/java/workbench/evals/l05/FlowerpProbe.java"
+  ],
+  "command": "[\"sh\", \"-c\", \"shasum -a 256 .runtime/course/L05-defect-baseline-java/eval/harness.py .runtime/course/L05-defect-baseline-java/eval/cases.py .runtime/course/L05-candidate-java/eval/harness.py .runtime/course/L05-candidate-java/eval/cases.py .runtime/course/L05-defect-baseline-java/flowerp/service.py .runtime/course/L05-candidate-java/flowerp/service.py src/main/java/workbench/evals/l05/BuildDefectBaseline.java src/main/java/workbench/evals/l05/ReceivingScenarioCheck.java src/main/java/workbench/evals/l05/FlowerpProbe.java\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T04:01:12.025555+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/java/06-observations/20260930T040112025555Z-e539ac92/output.txt",
+  "sha256": "b666da7fcd60f0ecd65f20246303e3cb5f107f1bf112531fc21991c739e0235b",
+  "provenance": "local_teaching_capture"
+}

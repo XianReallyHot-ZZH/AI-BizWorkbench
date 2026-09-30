@@ -151,7 +151,7 @@ L05 是重走线**第三个有实质实现代码增量的讲**（增量重心从
 ③ **commit 1 红点口径**：s02（预期 rc 1 + 空 stdout）在 Java 工具缺失时与"主类不存在"（rc 1 + 空 stdout）偶然同形——该场景在 commit 1 可能不红，红点由 s01/s03–s07 承载，合同测试映射表如实披露。
 
 - s01 与 s05 构成顺序叙事（s01 的 Java 构造产物即 s05 被测树；生成侧同构：Python 构造器产物 + Python 驱动）；重放测试自行清场后调 Java 构造器 `--defect blind` 物化 `ws/blind`、再以空 scratch 清单调 `replay()`（执行被测产品件产夹具，非"测试自带文本"；时序见修正注②）
-- 重放时长预算：8 场景 × JVM 子进程 + 1 次 clone + 4 次 python 子进程场景 ≈ 二十至四十秒增量，可接受
+- 重放时长预算：7 场景 × JVM 子进程 + 3 次 clone（setup 干净树 / s01 基线 / 盲区树物化）+ 4 次 python 子进程场景 ≈ 二十至四十秒增量，可接受
 - 幂等双跑，golden 目录 SHA-256 两次一致入 §G——**首跑即留指纹**（L03 教训）；golden + 生成器 + 共享件扩展 + §G 记录 + 本附录审定稿前置落 master（L01–L04 先例），候选分支自 master 分出即继承；生成后永不手改
 
 ### A4 实操流程（增量于 §3）
@@ -185,7 +185,9 @@ L05 是重走线**第三个有实质实现代码增量的讲**（增量重心从
 #    f. Java 驱动观察：20/8/8、11/3/3、基线树红（定位补充）、盲区树红；盲区树上客户 eval 绿×2
 #       （盲区复证 observation）
 #    g. 集成记录：./bin/wb workbench-task-run CASE-WB-L05-JAVA-001 --workspace <候选-java>
-#       --mode verify --eval-command "<同串>" --execution-timeout 900 --actor <向用户索取>
+#       --mode verify --eval-command "<客户 eval 绝对路径裸命令，Python 时代 record 52 同形；
+#       task-run --workspace 已绑定候选 cwd，无 $L05_EVAL_TARGET 注入缝>" --execution-timeout 900
+#       --actor <向用户索取>
 #    h. Java ImportEvidence 导入（red×2→diff→green 顺序；观察类绿后导入）→ status 密封
 #       四词面（ok / evidence_complete / pending_human_review / flowerp_connected:false）
 # 7. code-review 双轴自调（master...lesson-05-java）→ test-first 修复、旧证据保留 → 触点 3
@@ -201,7 +203,7 @@ L05 是重走线**第三个有实质实现代码增量的讲**（增量重心从
 - [ ] golden l05 双跑指纹在场（首跑即留）；共享件 main 字段扩展行为零变化（前置提交 84/84 回归 + 四套旧重放绿）；三套旧 golden 文件零触碰；l05 golden 非手改；重放测试 commit 1 红在场
 - [ ] 红绿同命令：sh -c 命令串逐字节相同（`$L05_EVAL_TARGET` 切换 + pwd 行 + 封存 argv + 证据账三重披露）；红与绿均真实（基线由 Java 构造器真实构造、自检真实通过；无补拍无造红）
 - [ ] 冻结与收口：初冻 + 收口复核 sha256 前后一致；冻结对象含 Java 两工具源与客户 harness/cases/双树 service.py；客户 eval 文件零改动
-- [ ] Java 工具输出与冻结 Python 逐字节一致（golden 8 场景 + 实跑观察记录）；子进程驱动缝差异如实披露（不伪装 in-process）
+- [ ] Java 工具输出与冻结 Python 逐字节一致（golden 7 场景 + 实跑观察记录）；子进程驱动缝差异如实披露（不伪装 in-process）
 - [ ] C4 链入 `CASE-WB-L05-JAVA-001`（owner/actor 用户具名，不代填）；mvn 工具建设链封条随分支 commit 1/2（JD7 口径，不入任务账）
 - [ ] 非目标守住：不建 Java 统一运行器（L06-java 正题）、不起草盲区补流水断言（留检查点）、无效探针 narrow 不重演（历史在案）
 - [ ] 红旗（新增）：为凑字节对照伪造 Python 词面/时间戳/路径；盲区树"手工弄好不落脚本"；工具失败被说成"自检通过"；驱动绿被说成 blocking 身份（blocking 恒为客户用例）；golden 手改；evals/ 被写入
@@ -227,9 +229,9 @@ L05 是重走线**第三个有实质实现代码增量的讲**（增量重心从
 
 | # | 决策 | 推荐 | 备选 |
 |---|---|---|---|
-| JD1 工具落位 | 新包 `src/main/java/workbench/evals/l05/`：`BuildDefectBaseline` + `ReceivingScenarioCheck` 两 main（子进程助手包内自带最小实现，不复用 `execution/ProcessRunner`——那是执行记录落账语义，工具失败 = 自身 rc 非零，语义不同）；不进 REGISTRY。参数面：构造器 `--baseline`（默认 `.runtime/course/L05-defect-baseline-java`——偏离 Python 默认路径防跨时代冲撞，如实记录）+ `--defect b1\|blind`（默认 b1）+ `--source`（默认 `vendors/flowERP`，修正注①）；驱动 `--target` 必填 + `--opening/--receipt/--new` 默认 20/8/8 | 塞 bootstrap/tools 包（分层失真 / 与 ImportEvidence 语义混置，不可取） |
+| JD1 工具落位 | 新包 `src/main/java/workbench/evals/l05/`：`BuildDefectBaseline` + `ReceivingScenarioCheck` 两 main（子进程助手包内自带最小实现，不复用 `execution/ProcessRunner`——那是执行记录落账语义，工具失败 = 自身 rc 非零，语义不同）；不进 REGISTRY。参数面：构造器 `--baseline`（默认 `.runtime/course/L05-defect-baseline-java`——偏离 Python 默认路径防跨时代冲撞，如实记录）+ `--defect b1\|blind`（默认 b1）+ `--source`（默认 `vendors/flowERP`，修正注①）+ `--python`（默认 `.venv/bin/python`——子进程自检的结构性必需，JD2 默认值口径；复查轮 S-2 补记）；驱动 `--target` 必填 + `--opening/--receipt/--new` 默认 20/8/8 | 塞 bootstrap/tools 包（分层失真 / 与 ImportEvidence 语义混置，不可取） |
 | JD2 驱动缝 | 子进程 python 跑客户原语（add_product/receive_stock/流水查询）回报**原始观察值 JSON**，预期计算与断言留 Java（独立计算语义保持：28 由 Java 用 20+8 算出，不抄子进程返回）；`--python` 默认 `.venv/bin/python`（相对 cwd，内部 resolve 绝对——跨 cwd 纪律），manifest 与实跑同参数面 | Java 内嵌整段 Python 复刻 driver（判断落在被测侧，违背独立计算，不可取） |
-| JD3 golden l05 方案 | A3 全案：8 场景 + 零新掩码（相对路径规避）+ setup 干净 clone/变异树 + s01→s06 顺序叙事 + 客户 eval/stderr 词面不入 golden + 首跑即留指纹 | 缩面无 golden（工具输出无字节锁，回归防护降级） |
+| JD3 golden l05 方案 | A3 全案：7 场景（修正注①后定稿）+ 零新掩码（相对路径规避）+ setup 干净 clone + s01→s05 顺序叙事 + 客户 eval/stderr 词面不入 golden + 首跑即留指纹 | 缩面无 golden（工具输出无字节锁，回归防护降级） |
 | JD4 盲区构造脚本化 | 构造器 `--defect blind` 扩展模式（默认 b1 与冻结 Python argv/输出逐字兼容；blind 为 Java 增量，无冻结工具对照，由 s07 反向锁 + 合同测试 discharge）；补丁规格：门面重放分支改为**删既有 event 行、以 `-rewritten` 后缀新键重插同内容**、库存与返回值不变；生成器按同一规格内联手术产 golden 预期 | 手工补丁（不可复现，Python 时代 ad-hab 无脚本——Java 侧倒退，不可取）；独立第三工具（表面膨胀） |
 | JD5 golden 共享件扩展 | `GoldenReplay` 场景可选 `main` 字段 + `Cli.run(main, args)` 重载，行为零变化（旧四套 manifest 无字段 → 逐字节不变），前置落 master 带 84/84 回归证据 | GoldenL05 自带重放循环（重复逻辑，l04 JD2 已否决同款） |
 | JD6 已知行为边界 | 工具 stderr 错误词面（`SystemExit` 中文 vs Java 异常）不入 golden、如实记录偏差；客户 eval 输出 pwd 行/耗时不入 golden；驱动缝差异如实披露 | 在 Java 侧拼装 Python 词面（伪装同形，不可取） |
