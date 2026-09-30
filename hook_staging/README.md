@@ -14,9 +14,9 @@ pin 在这里接受人工审查，**审查通过并具名授权后才安装**到
 
 | 源件 | sha256 |
 |---|---|
-| `src/main/java/workbench/evals/l07/QualityGate.java`（处理器：stdin 事件 → 校验 → 重入短路 → 子进程调统一入口 → Stop 协议翻译 → 事件留痕） | `cb2f085a8c35c1ccf961e139ef6d5c5e95089116194cb9eab170d64f695d9a3c` |
+| `src/main/java/workbench/evals/l07/QualityGate.java`（处理器：stdin 事件 → 校验 → 重入短路 → 子进程调统一入口 → Stop 协议翻译 → 事件留痕；失败明细点名失败登记项，非报告面回退尾十行——D5 回退语义保留，改进注记见证据账） | `42047d0f91c1c7b9d408a4f7fe4549ebc10d1b430cb5a3974936339e7b4f2eab` |
 | `src/main/java/workbench/evals/l07/OrderChecks.java`（统一入口：六登记项收口） | `5c1b72d32d4b2603f05c816b372de5345961a7d42fa6845437a7df6286300671` |
-| `src/main/java/workbench/evals/l07/OrderProbe.java`（订单面探针，断言留 Java） | `c42e1df446a69c1b778d9ff489e432e9d70152b81cd3663165ebc3fb013f732d` |
+| `src/main/java/workbench/evals/l07/OrderProbe.java`（订单面探针，断言留 Java；拒绝比三表、草稿不预占只比库存表——上游同形，首采绿腿抓获的三表误比缺陷已修，失败现场保留见证据账） | `4c99703cee02e0a04e83013fe3d55c2241dda3ee973d78dcd2564baf2103edff` |
 | `src/main/java/workbench/cli/Main.java`（REGISTRY 注册缝） | `d12bdc260702a8974b9dfcb6446c0a48a915baaa2cd96c12ff23e4b81675b08b` |
 | `src/main/java/workbench/evals/l06/StockConsistencyCheck.java`（L07 开放复用缝两词可见性，行为零变化） | `193ff6e1292218471db05ba41eb99ef0b4c4aab15eba9f4c524b796f91c84827` |
 
@@ -46,7 +46,7 @@ pin 在这里接受人工审查，**审查通过并具名授权后才安装**到
 ## 处理器行为摘要（详参 QualityGate javadoc 与讲义 §1.4）
 
 - 通过 → `{"systemMessage":"当前阻断级检查已通过；不代表 FlowERP 业务验收。"}`（放行停止）；
-- 阻断级检查失败 → `{"decision":"block","reason":"阻断级检查未通过。修复后显式复验：\n"+输出尾十行}`（Claude 续跑，reason 即继续理由）；
+- 阻断级检查失败 → `{"decision":"block","reason":"阻断级检查未通过。修复后显式复验：\n"+失败明细}`（Claude 续跑，reason 即继续理由；失败明细 = 报告可解析时点名失败登记项 + summary，否则输出尾十行——D5 回退语义保留）；
 - 处理器自身任何故障（事件不可解析/非 Stop/cwd 越界/统一入口启动失败/超时）→ block「未完成验证」（失败不能显示成成功）；
 - 重入（`stop_hook_active:true`）→ 跳过响应，不再次调统一入口——**跳过 ≠ 复验通过**，结束前仍须显式运行；
 - 处理器恒 rc 0 交付协议（协议交付成功 ≠ 业务通过）；stdout 只出协议 JSON，诊断走 stderr；

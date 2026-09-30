@@ -1,0 +1,14 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    ".runtime/l07-protocol/block.sh"
+  ],
+  "command": "[\"sh\", \".runtime/l07-protocol/block.sh\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T10:23:17.427517+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-07-submission/06-observations/20260930T102317427517Z-57a898e0/output.txt",
+  "sha256": "ddda0506d0896f92071b6ba7069950cd52b08dea379134ed7412a2ee1945a3bb",
+  "provenance": "local_teaching_capture"
+}

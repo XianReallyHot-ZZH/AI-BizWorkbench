@@ -118,6 +118,27 @@ class L07LocalGuardrailContractTest {
     }
 
     @Test
+    void gateNamesFailedEntriesWhenReportParses() throws Exception {
+        // schema 1.0 报告面（真实统一入口的输出形状）：reason 点名失败登记项而非报告尾十行
+        // （首采抓获 ObjectNode 直 dumps 的崩溃——报告路径此前无合同，test-first 补）
+        String report = "{\"schema_version\":\"1.0\",\"summary\":{\"total\":2,\"passed\":1,"
+                + "\"blocking_failed\":1,\"observing_failed\":0,\"decision\":\"block\"},"
+                + "\"results\":[{\"name\":\"l07_draft_amount\",\"level\":\"blocking\",\"passed\":false,"
+                + "\"duration_ms\":5,\"evidence\":\"AssertionError: expected=12000 actual=5000\","
+                + "\"error\":{\"type\":\"AssertionError\",\"message\":\"expected=12000 actual=5000\"}},"
+                + "{\"name\":\"l07_rejected_order\",\"level\":\"blocking\",\"passed\":true,"
+                + "\"duration_ms\":4,\"evidence\":\"ok\",\"error\":null}]}";
+        Path jsonRed = stub("printf '%s' '" + report + "'; exit 1");
+        Cli.Result result = gate(stopEvent(Cli.repoRoot().toString(), false),
+                jsonRed.toString(), "100000", temp.resolve("ev-report").toString());
+        assertThat(result.exitCode()).as("报告面同样以 rc 0 交付协议").isZero();
+        JsonNode response = Cli.json(result);
+        assertThat(response.path("decision").asText()).isEqualTo("block");
+        assertThat(response.path("reason").asText())
+                .contains("l07_draft_amount（blocking）").contains("5000").contains("blocking_failed");
+    }
+
+    @Test
     void gatePassesThroughAndArchivesEventOnGreenHarness() throws Exception {
         Path green = stub("printf 'all blocking checks passed\\n'");
         Path eventsDir = temp.resolve("ev-pass");

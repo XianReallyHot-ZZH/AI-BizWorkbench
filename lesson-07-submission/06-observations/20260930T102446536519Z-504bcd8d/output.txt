@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "flowerp_connected": false,
+  "error": "内部错误：IllegalArgumentException: 不可序列化的类型：class com.fasterxml.jackson.databind.node.ObjectNode"
+}

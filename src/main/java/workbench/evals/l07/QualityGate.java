@@ -1,5 +1,6 @@
 package workbench.evals.l07;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import workbench.bootstrap.Args;
@@ -167,9 +168,45 @@ public final class QualityGate {
         if (code == 0) {
             return ordered("systemMessage", "当前阻断级检查已通过；不代表 FlowERP 业务验收。");
         }
-        String tail = lastLines(readAll(stdoutFile) + "\n" + readAll(stderrFile), 10);
+        String detail = failureDetail(readAll(stdoutFile), readAll(stderrFile));
         return ordered("decision", "block",
-                "reason", "阻断级检查未通过。修复后显式复验：\n" + tail);
+                "reason", "阻断级检查未通过。修复后显式复验：\n" + detail);
+    }
+
+    /**
+     * 阻断失败明细：stdout 可解析为 schema 1.0 报告时点名失败登记项（名 + error 类型 +
+     * 消息）并附 summary——宿主续跑拿到的 reason 直接指路；非报告面（替身、异构输出、
+     * 半途崩溃）回退 D5 的输出尾十行。只翻译报告，不产生第二套业务判断。
+     */
+    private static String failureDetail(String stdoutText, String stderrText) {
+        try {
+            JsonNode report = MAPPER.readTree(stdoutText);
+            JsonNode results = report.path("results");
+            if (report.isObject() && results.isArray()) {
+                StringBuilder failed = new StringBuilder();
+                for (JsonNode item : results) {
+                    if (!item.path("passed").asBoolean(true)) {
+                        if (failed.length() > 0) {
+                            failed.append('\n');
+                        }
+                        failed.append(item.path("name").asText())
+                                .append("（").append(item.path("level").asText()).append("）: ")
+                                .append(item.path("error").path("type").asText()).append(": ")
+                                .append(item.path("error").path("message").asText());
+                    }
+                }
+                if (failed.length() > 0) {
+                    return failed + "\n" + PyJson.dumpsCompact(MAPPER.convertValue(
+                            report.path("summary"),
+                            new TypeReference<Map<String, Object>>() {}));
+                }
+                return "（报告无失败项但退出码非零）\n"
+                        + lastLines(stdoutText + "\n" + stderrText, 10);
+            }
+        } catch (IOException notAReport) {
+            // 非 JSON 报告面：走尾十行回退（替身/异构输出——D5 原语义）
+        }
+        return lastLines(stdoutText + "\n" + stderrText, 10);
     }
 
     /** 替身注入优先；缺省命令 = 同 classpath 起新 JVM 跑统一入口，目标树由 pin 解析。 */

@@ -1,0 +1,1 @@
+{"decision": "block", "reason": "阻断级检查未通过。修复后显式复验：\n    {\n      \"name\": \"l07_frozen_checks\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 11,\n      \"evidence\": \"冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e\",\n      \"error\": null\n    }\n  ]\n}"}
