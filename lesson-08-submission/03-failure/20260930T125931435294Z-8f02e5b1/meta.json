@@ -1,0 +1,14 @@
+{
+  "phase": "red",
+  "argv": [
+    "mvn",
+    "test"
+  ],
+  "command": "[\"mvn\", \"test\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-30T12:59:31.435294+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/03-failure/20260930T125931435294Z-8f02e5b1/output.txt",
+  "sha256": "aad9839202c67da0753ccfb87af15e3611af54a04f49b0a486e84198c39d3ed5",
+  "provenance": "local_teaching_capture"
+}

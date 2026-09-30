@@ -72,6 +72,15 @@ public final class Cli {
     }
 
     /**
+     * 同 {@link #runMain},但子进程环境**完全替换**为传入映射（不继承父进程——l08 起
+     * 信封身份用例须隔离构造：CI 环境父进程自带 {@code GITHUB_*} 变量，追加式注入
+     * 无法构造「缺失身份」红面）。独立方法名而非重载——J2 两可教训；既有方法行为零变化。
+     */
+    public static Result runMainWithIsolatedEnv(String mainClass, Map<String, String> env, String... args) {
+        return launchWithInput(mainClass, env, null, args, true);
+    }
+
+    /**
      * REGISTRY 命令 + stdin 注入（l07 起 Hook 处理器合同测试需要：{@code quality-gate}
      * 读 stdin 事件 JSON 是协议面，无法经 argv 承载）。独立方法名而非重载——J2 教训；
      * 既有 {@code run}/{@code runMain} 行为不变。子进程约定先读尽 stdin 再写 stdout
@@ -87,12 +96,21 @@ public final class Cli {
 
     private static Result launchWithInput(String mainClass, Map<String, String> env,
             String input, String... args) {
+        return launchWithInput(mainClass, env, input, args, false);
+    }
+
+    /** replaceEnv=true 时先清空子进程环境再注入（runMainWithIsolatedEnv 专用）。 */
+    private static Result launchWithInput(String mainClass, Map<String, String> env,
+            String input, String[] args, boolean replaceEnv) {
         try {
             List<String> argv = new ArrayList<>(List.of("java",
                     "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
                     "-cp", childClasspath(), mainClass));
             argv.addAll(List.of(args));
             ProcessBuilder builder = new ProcessBuilder(argv).directory(repoRoot().toFile());
+            if (replaceEnv) {
+                builder.environment().clear();
+            }
             builder.environment().putAll(env);
             Process process = builder.start();
             if (input != null) {
