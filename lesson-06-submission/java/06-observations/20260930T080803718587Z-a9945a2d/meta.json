@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    "shasum -a 256 .runtime/course/L06-defect-baseline-java/eval/harness.py .runtime/course/L06-defect-baseline-java/eval/cases.py .runtime/course/L06-defect-baseline-java/flowerp/service.py .runtime/course/L06-candidate-java/eval/harness.py .runtime/course/L06-candidate-java/eval/cases.py .runtime/course/L06-candidate-java/flowerp/service.py src/main/java/workbench/evals/EvalHarness.java src/main/java/workbench/evals/ReportContract.java src/main/java/workbench/evals/l06/Checks.java src/main/java/workbench/evals/l06/StockConsistencyCheck.java src/main/java/workbench/evals/l06/BuildDefectBaseline.java src/main/java/workbench/evals/l06/StockProbe.java"
+  ],
+  "command": "[\"sh\", \"-c\", \"shasum -a 256 .runtime/course/L06-defect-baseline-java/eval/harness.py .runtime/course/L06-defect-baseline-java/eval/cases.py .runtime/course/L06-defect-baseline-java/flowerp/service.py .runtime/course/L06-candidate-java/eval/harness.py .runtime/course/L06-candidate-java/eval/cases.py .runtime/course/L06-candidate-java/flowerp/service.py src/main/java/workbench/evals/EvalHarness.java src/main/java/workbench/evals/ReportContract.java src/main/java/workbench/evals/l06/Checks.java src/main/java/workbench/evals/l06/StockConsistencyCheck.java src/main/java/workbench/evals/l06/BuildDefectBaseline.java src/main/java/workbench/evals/l06/StockProbe.java\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T08:08:03.718587+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/java/06-observations/20260930T080803718587Z-a9945a2d/output.txt",
+  "sha256": "79321a04718e55163c0dc997f26faa64fd6e7c009e6df843c1f3d79abc0288c9",
+  "provenance": "local_teaching_capture"
+}

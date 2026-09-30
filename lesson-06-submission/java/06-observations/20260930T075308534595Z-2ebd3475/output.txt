@@ -1,0 +1,2 @@
+[PASS ] inventory_export_is_stable             246 ms  库存导出字段固定、按 SKU 排序，且门面/导出/v2 账本的 available 是同一个数
+{"total": 1, "passed": 1, "blocking_failed": 0, "observing_failed": 0, "decision": "pass"}

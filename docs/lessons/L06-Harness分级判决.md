@@ -80,7 +80,7 @@ blocking / observing 标注；【现查】= 按客户真理调整后的口径。
 
 ## 附录 A：Java 重走移植注记（ADR-0006）
 
-> 状态：**审定稿**（2026-09-30 用户审定：「没问题，继续」批量确认——A6.1 全部移植裁定 + A6.2 JD1–JD8 推荐口径 + A3 golden 方案全案）。决策与词汇见 ADR-0006 与 CONTEXT.md（重走 / 移植注记 / 对照基准）。§1–§5 为 Python 口径的历史对照基线，不重写；本附录只记录 Java 重走侧的翻译点与增量。重走证据落 `docs/replication/evidence/L06-java.md`（原 `evidence/L06.md` 不重开）。上游现查（2026-09-30，本附录起草日 fetch）：`origin/main` = `7f67533`，与本讲对照基线一致（检查点 0002 后无新变更，冻结合同零变化），不触发检查点采纳；flowERP 现查（submodule pin `e0088d3`，与 Python 时代本讲现查同 pin）：`run_suite` 统一分级/报告/退出码在场、EVALS 19 用例在场（`inventory_export_is_stable` / `stock_never_negative` / `receiving_is_idempotent` 均 blocking）、`flowerp/service.py` export_inventory CSV 模板 `{row['available']}` 锚点现查唯一命中 1 次。
+> 状态：**审定稿**（2026-09-30 用户审定：「没问题，继续」批量确认——A6.1 全部移植裁定 + A6.2 JD1–JD8 推荐口径 + A3 golden 方案全案）。分支内四处文档侧修正（A3 s09 面注记、「8 类拒绝」→11 处 ×2、A4 步骤 3 回写）均为行为零变化，逐项见证据账 §G 修正记录与 §13 复查轮呈报。决策与词汇见 ADR-0006 与 CONTEXT.md（重走 / 移植注记 / 对照基准）。§1–§5 为 Python 口径的历史对照基线，不重写；本附录只记录 Java 重走侧的翻译点与增量。重走证据落 `docs/replication/evidence/L06-java.md`（原 `evidence/L06.md` 不重开）。上游现查（2026-09-30，本附录起草日 fetch）：`origin/main` = `7f67533`，与本讲对照基线一致（检查点 0002 后无新变更，冻结合同零变化），不触发检查点采纳；flowERP 现查（submodule pin `e0088d3`，与 Python 时代本讲现查同 pin）：`run_suite` 统一分级/报告/退出码在场、EVALS 19 用例在场（`inventory_export_is_stable` / `stock_never_negative` / `receiving_is_idempotent` 均 blocking）、`flowerp/service.py` export_inventory CSV 模板 `{row['available']}` 锚点现查唯一命中 1 次。
 
 ### A1 讲解：本讲重建什么
 
@@ -101,7 +101,7 @@ L06 是重走线**最后一讲**，也是增量最重的一讲：Python 时代�
 | C1 | 可用 = 在手 − 预占（查询与 CSV 同口径） | **Java 口径驱动** 8/3：查询与 CSV 同为 `[8,3,5]`（预期由 8−3 在 Java 独立计算，不抄返回值）、CSV 恰一条该 SKU 记录；迁移 13/4 → `[13,4,9]`、请求 10 拒绝且状态不变（排除写死 5）；驱动输出与冻结 Python 逐字节同形（golden l06 锁） | 重演（驱动换 Java 载体） |
 | C2 | 超额预占拒绝且状态不变（绑定 eval `stock_never_negative`） | 驱动 AC-REJECT / AC-UNCHANGED（四表快照锚点=建单后，R1 终态照抄）；客户 blocking 用例经 Checks 登记项 `l06_customer_stock_case` 子进程照跑绿 | 重演 |
 | C3 | 统一运行器分级语义（九项运行器合同） | `EvalHarness` 九项语义合同测试（映射源 = 上游 `test_runner_contract.py`，与冻结 Python 测试头同源）：通过+报告落盘、blocking 一败即 block+退出 1、observing 只告警、异常保留类型+原因且继续、observing 异常不升格、非法选择拒绝、子集显式、x 模式不覆盖、消费端拒绝矛盾 | 重演（载体 Java；进程内直调 `run()`——Python 时代复查轮 S6 同款口径：合同面限 eval.harness 缝，非 workbench.cli 缝） |
-| C4 | 阻断失败、decision、退出码三者一致 + 假绿辨别力 | `ReportContract` 校验（8 类拒绝词面逐字）；假绿探针：`blocking_failed=0` 变体换入 → 合同套件真实红（探针封条留痕）；报告三态一致由 golden s07/s08 **字节级**锁定（含 `decision: block` 红报告全文） | 重演 |
+| C4 | 阻断失败、decision、退出码三者一致 + 假绿辨别力 | `ReportContract` 校验（11 处拒绝词面逐字）；假绿探针：`blocking_failed=0` 变体换入 → 合同套件真实红（探针封条留痕）；报告三态一致由 golden s07/s08 **字节级**锁定（含 `decision: block` 红报告全文） | 重演 |
 | C5 | 同命令红绿链入账 | 同一条 `sh -c` 命令串（`$L06_EVAL_TARGET` 切换目标树，echo 行 + 封存 argv + 证据账三重披露，L05 逐字承袭），`capture_evidence.py --submission-root lesson-06-submission/java` 采集 → Java `ImportEvidence` 导入 → `CASE-WB-L06-JAVA-001`；`workbench-status --require-red-green-evidence` 链判定完整 | 重演（账本/导入器 Java 载体） |
 | C6 | 检查冻结不被偷偷改动 + L05 能力不回归 | 冻结 sha256：客户 `eval/harness.py`+`eval/cases.py` 双树同指纹（与 Python 时代冻结值一致）+ 双树 `flowerp/service.py`（缺陷在场/候选干净，L05-java 先例超点名）+ **Java 六源件**（EvalHarness/ReportContract/Checks/StockConsistencyCheck/BuildDefectBaseline/StockProbe）；初冻 + 收口复核前后逐字节一致；L05 回归 = Checks 登记项 `l05_receiving_regression`（客户 `receiving_is_idempotent` 子进程照跑）+ mvn 全量既有合同与 golden l01–l05 五重放持续在场 | 重演（冻结对象含 L06 Java 工具源） |
 | C7 | 辨别力边界留痕（盲区实证） | 盲区探针：客户 `inventory_export_is_stable` 对**缺陷树**绿 ×2（rc 0 封条）+ 本方检查同树红（链 B 红即证）——「检查没跑在缺陷可见的形状上（reserved=0 数据）」如实留痕；未覆盖边界（并发预占/进程中断/多 SKU 多仓）照 Python §3.3 口径入账；是否补 reserved>0 形状的客户用例留检查点显式采纳 | 重演 |
@@ -127,7 +127,7 @@ L06 是重走线**最后一讲**，也是增量最重的一讲：Python 时代�
 | 驱动 | s06 `--target ws/no-flowerp` 拒绝 | 2 | 参数校验面 |
 | 运行器 | s07 checks（env `L06_EVAL_TARGET=ws/clean`）`--no-report`：五项报告（四 blocking 绿 + 教学告警，`decision: pass`） | 0 | **C3/C4 统一运行器绿面**（报告全文字节锁） |
 | 运行器 | s08 checks（env `L06_EVAL_TARGET=ws/b1`）`--no-report`：`l06_stock_consistency` 红（evidence=`rc=1: {AC-AVAILABLE …}`）+ `decision: block` | 1 | **C4 可信红面**（红报告全文字节锁） |
-| 运行器 | s09 checks 无 env：拒绝（stdout 空） | 1 | `L06_EVAL_TARGET` 必设面（与「主类缺失」偶然同形——修正注③同款口径，红点由其余场景承载） |
+| 运行器 | s09 checks 无 env：全项失败报告（stdout 即报告全文） | 1 | `L06_EVAL_TARGET` 必设面——目标树解析在登记项内（冻结 `_target()` 逐项调用同形）：四项 RuntimeError 入报告 + 教学项 AssertionError，`decision: block`；commit 1 真实红（期望报告 vs 主类缺失空 stdout） |
 
 - **共享件行为零变化扩展（JD4，前置落 master）**：`GoldenReplay` 场景支持可选 `env` 字段（map；s07/s08 用——Checks 读环境变量是冻结 Python 语义，加 `--target` 参数即偏离 argv 面）+ `Cli.runMainWithEnv`（**独立方法名**，J2 重载两可教训；旧 `runMain` 委托不变）；l01–l05 五套 manifest 无 `env` 字段 → 输出逐字节不变，前置提交 `mvn test` 91/91（含五套旧重放）为行为零变化证据
 - s01 与 s05/s08 构成顺序叙事（s01 构造产物即 s05/s08 被测树；生成侧同构：Python 构造器产物 + Python 驱动/checks）
@@ -145,13 +145,14 @@ L06 是重走线**最后一讲**，也是增量最重的一讲：Python 时代�
 #    - evidence/L06-java.md §G → master
 # 1. git checkout -b lesson-06-java
 # 2. 【配合点 1 复认】to-spec 降级：每次重新确认（L02–L05-java 先例），起始红采前问
-# 3. commit 1 = L06 Java 合同测试（EvalHarnessContractTest 九项 + ReportContract 拒绝面
-#    + L06EvalContractTest 工具面：构造器拒绝/锚点拒绝（--source 变异源 discharge，l05
-#    修正注① 同款）/驱动参数校验/checks 缺 env/输入校验/客户报告过 ReportContract 交叉
-#    验证——D3 schema 1.0 对齐的机检）+ GoldenL06ReplayTest + 起始红封条
+# 3. commit 1 = L06 Java 合同测试（L06EvalContractTest 工具面：构造器拒绝/锚点拒绝
+#    （--source 变异源 discharge，l05 修正注① 同款）/驱动参数校验/checks 缺 env/
+#    输入校验）+ GoldenL06ReplayTest + 起始红封条——九项合同与 ReportContract 拒绝面、
+#    客户报告交叉验证因 Java 编译绑定随实现落 commit 2（对应面起始红由 golden
+#    s07–s09 工具级承载；Python 同位面为 collection error 红；复查轮 S-1 回写，§R2 披露）
 #    （tools/capture_evidence.py --submission-root lesson-06-submission/java red -- mvn test）
 # 4. 【配合点 2】implement：用户显式调用后动笔——workbench/evals 根两件
-#    （EvalHarness：分级/报告/x 模式/退出码；ReportContract：8 类拒绝）+ l06 四件
+#    （EvalHarness：分级/报告/x 模式/退出码；ReportContract：11 处拒绝词面）+ l06 四件
 #    （Checks/StockConsistencyCheck/BuildDefectBaseline/StockProbe）；不进 REGISTRY、
 #    零新 CLI 命令、Ledger 零扩、pom 零改动；自调 codebase-design + tdd；遇障自调
 #    diagnosing-bugs

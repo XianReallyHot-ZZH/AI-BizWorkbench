@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    "-c",
+    "cd /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-defect-baseline-java && /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case inventory_export_is_stable --no-report"
+  ],
+  "command": "[\"sh\", \"-c\", \"cd /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-defect-baseline-java && /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m eval.harness --case inventory_export_is_stable --no-report\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T07:53:07.996911+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/java/06-observations/20260930T075307996911Z-67de1ff2/output.txt",
+  "sha256": "7279755364ceba896c53a849e23e7972c59c0c9379ad6b9e69ce0f5422ad61e4",
+  "provenance": "local_teaching_capture"
+}

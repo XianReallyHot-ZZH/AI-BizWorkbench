@@ -19,8 +19,9 @@
 - s07 checks 绿报告（clean 树：四 blocking 绿 + 教学告警，decision pass）
 - s08 checks 红报告（缺陷树：l06_stock_consistency 红（evidence=rc=1: {AC-AVAILABLE …}）
   + decision block——可信红面字节锁）
-- s09 checks 缺 env 拒绝（stdout 空；rc 1 与「主类缺失」偶然同形——l05 修正注③同款口径，
-  红点由其余场景与合同测试承载）
+- s09 checks 缺 env：四登记项 RuntimeError 入报告 + 教学项 AssertionError（decision block、
+  rc 1、stdout 即报告全文——冻结 checks 的 _target() 在登记项内解析，失败也走报告而非
+  入口拒绝；commit 1 真实红：期望报告 vs 主类缺失空 stdout）
 
 掩码（逐字写入 manifest mask_note）：本套扩展 generated_at→<TS>、duration_ms→<MS>
 （s07/s08 报告机器时间字段；其余场景无这些键，键级掩码无扰）；created_at/recorded_at/
@@ -202,8 +203,9 @@ def main() -> int:
                  "error.type AssertionError）+ decision block——红报告 stdout 字节锁")
     capture("s09_checks_env_missing", 1, JAVA_CHECKS_MAIN, ["--no-report"],
             module=CHECKS_MODULE,
-            note="L06_EVAL_TARGET 必设面（stdout 空；rc 1 与「主类缺失」偶然同形——l05 修正注③"
-                 "同款口径，红点由其余场景与合同测试承载）")
+            note="L06_EVAL_TARGET 必设面：目标树解析在登记项内（冻结 _target() 逐项调用同形）——"
+                 "四项 RuntimeError 入报告 + 教学项 AssertionError，decision block、rc 1、"
+                 "stdout 即报告全文")
 
     # ---- manifest（确定性内容，不含墙钟）-----------------------------------
     manifest = {

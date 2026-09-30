@@ -1,0 +1,207 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 118 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.evals.l05.L05EvalContractTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.380 s -- in workbench.evals.l05.L05EvalContractTest
+[INFO] Running workbench.evals.l06.L06EvalContractTest
+[ERROR] Tests run: 7, Failures: 6, Errors: 1, Skipped: 0, Time elapsed: 1.252 s <<< FAILURE! -- in workbench.evals.l06.L06EvalContractTest
+[ERROR] workbench.evals.l06.L06EvalContractTest.b1RejectsExistingBaseline -- Time elapsed: 0.143 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l06.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l06.BuildDefectBaseline
+"
+to contain:
+  "基线已存在，不覆盖" 
+	at workbench.evals.l06.L06EvalContractTest.b1RejectsExistingBaseline(L06EvalContractTest.java:88)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l06.L06EvalContractTest.checksRejectsTargetWithoutFlowerp -- Time elapsed: 0.134 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l06.Checks
+原因: java.lang.ClassNotFoundException: workbench.evals.l06.Checks
+"
+to contain:
+  "L06_EVAL_TARGET 下没有 flowerp/" 
+	at workbench.evals.l06.L06EvalContractTest.checksRejectsTargetWithoutFlowerp(L06EvalContractTest.java:147)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l06.L06EvalContractTest.b1BuildsDefectBaselineWithSelfCheck -- Time elapsed: 0.134 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[b1 构造 rc] 
+expected: 0
+ but was: 1
+	at workbench.evals.l06.L06EvalContractTest.b1BuildsDefectBaselineWithSelfCheck(L06EvalContractTest.java:70)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l06.L06EvalContractTest.driverRejectsInvalidQuantityWindow -- Time elapsed: 0.317 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "com.fasterxml.jackson.databind.JsonNode.asText()" because the return value of "com.fasterxml.jackson.databind.JsonNode.get(String)" is null
+	at workbench.evals.l06.L06EvalContractTest.driverRejectsInvalidQuantityWindow(L06EvalContractTest.java:118)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l06.L06EvalContractTest.driverRejectsTargetWithoutFlowerp -- Time elapsed: 0.130 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[--target 非客户树 rc] 
+expected: 2
+ but was: 1
+	at workbench.evals.l06.L06EvalContractTest.driverRejectsTargetWithoutFlowerp(L06EvalContractTest.java:127)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l06.L06EvalContractTest.b1RejectsWhenAnchorNotUnique -- Time elapsed: 0.249 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l06.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l06.BuildDefectBaseline
+"
+to contain:
+  "锚点命中 2 次" 
+	at workbench.evals.l06.L06EvalContractTest.b1RejectsWhenAnchorNotUnique(L06EvalContractTest.java:106)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l06.L06EvalContractTest.driverRequiresTarget -- Time elapsed: 0.134 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[缺 --target rc] 
+expected: 2
+ but was: 1
+	at workbench.evals.l06.L06EvalContractTest.driverRequiresTarget(L06EvalContractTest.java:135)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 138.4 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Running workbench.spec.L03SpecContractTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.039 s -- in workbench.spec.L03SpecContractTest
+[INFO] Running workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Running workbench.golden.GoldenL06ReplayTest
+[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.304 s <<< FAILURE! -- in workbench.golden.GoldenL06ReplayTest
+[ERROR] workbench.golden.GoldenL06ReplayTest.replayAllScenariosByteIdentically -- Time elapsed: 0.303 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[s01_build_defect_ok 退出码] 
+expected: 0
+ but was: 1
+	at workbench.testsupport.GoldenReplay.replay(GoldenReplay.java:127)
+	at workbench.golden.GoldenL06ReplayTest.replayAllScenariosByteIdentically(GoldenL06ReplayTest.java:34)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.golden.GoldenL01ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 31.61 s -- in workbench.golden.GoldenL01ReplayTest
+[INFO] Running workbench.golden.GoldenL04ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 56.45 s -- in workbench.golden.GoldenL04ReplayTest
+[INFO] Running workbench.golden.GoldenL03ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.664 s -- in workbench.golden.GoldenL03ReplayTest
+[INFO] Running workbench.golden.GoldenL02ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.80 s -- in workbench.golden.GoldenL02ReplayTest
+[INFO] Running workbench.golden.GoldenL05ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.37 s -- in workbench.golden.GoldenL05ReplayTest
+[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Running workbench.execution.L04ExecutionContractTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 112.2 s -- in workbench.execution.L04ExecutionContractTest
+[INFO] Running workbench.rules.L02WorkbenchRulesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in workbench.rules.L02WorkbenchRulesTest
+[INFO] Running workbench.rules.JavaLineRuleFactsTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in workbench.rules.JavaLineRuleFactsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L06EvalContractTest.b1BuildsDefectBaselineWithSelfCheck:70 [b1 构造 rc] 
+expected: 0
+ but was: 1
+[ERROR]   L06EvalContractTest.b1RejectsExistingBaseline:88 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l06.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l06.BuildDefectBaseline
+"
+to contain:
+  "基线已存在，不覆盖" 
+[ERROR]   L06EvalContractTest.b1RejectsWhenAnchorNotUnique:106 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l06.BuildDefectBaseline
+原因: java.lang.ClassNotFoundException: workbench.evals.l06.BuildDefectBaseline
+"
+to contain:
+  "锚点命中 2 次" 
+[ERROR]   L06EvalContractTest.checksRejectsTargetWithoutFlowerp:147 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l06.Checks
+原因: java.lang.ClassNotFoundException: workbench.evals.l06.Checks
+"
+to contain:
+  "L06_EVAL_TARGET 下没有 flowerp/" 
+[ERROR]   L06EvalContractTest.driverRejectsTargetWithoutFlowerp:127 [--target 非客户树 rc] 
+expected: 2
+ but was: 1
+[ERROR]   L06EvalContractTest.driverRequiresTarget:135 [缺 --target rc] 
+expected: 2
+ but was: 1
+[ERROR]   GoldenL06ReplayTest.replayAllScenariosByteIdentically:34 [s01_build_defect_ok 退出码] 
+expected: 0
+ but was: 1
+[ERROR] Errors: 
+[ERROR]   L06EvalContractTest.driverRejectsInvalidQuantityWindow:118 NullPointer Cannot invoke "com.fasterxml.jackson.databind.JsonNode.asText()" because the return value of "com.fasterxml.jackson.databind.JsonNode.get(String)" is null
+[INFO] 
+[ERROR] Tests run: 99, Failures: 7, Errors: 1, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  06:18 min
+[INFO] Finished at: 2026-09-30T15:18:00+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
