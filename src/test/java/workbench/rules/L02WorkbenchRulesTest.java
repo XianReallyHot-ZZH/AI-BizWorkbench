@@ -80,10 +80,13 @@ class L02WorkbenchRulesTest {
 
     @Test
     void referencedCommandsAreReal() {
-        // C4 Python 侧半边：规则里的验证入口必须指向仓库真实存在的被引用物（防虚构路径的回归护栏）
-        assertThat(RuleText.rulesText()).as("unittest discover 入口字面量在场").contains("unittest discover");
-        for (String relative : new String[] {"tests", "workbench/cli.py", "workbench/course_contracts.py"}) {
-            assertThat(RuleText.REPO.resolve(relative)).as("规则引用的路径存在：%s", relative).exists();
+        // C4：规则里的验证入口必须指向仓库真实存在的被引用物（防虚构路径的回归护栏）。
+        // Python 载体退役（ADR-0006 尾款，2026-09-30）后半边翻转：规则文本改引 Java 门与
+        // 对照 tag；退役面不得在工作树复活（护栏语义由「路径存在」翻转为「路径不复活」）。
+        assertThat(RuleText.rulesText()).as("Java 全量门字面量在场").contains("mvn test");
+        assertThat(RuleText.rulesText()).as("退役对照 tag 字面量在场").contains("python-carrier-final");
+        for (String relative : new String[] {"tests", "workbench", "evals", "pyproject.toml"}) {
+            assertThat(RuleText.REPO.resolve(relative)).as("退役后工作树不得复活：%s", relative).doesNotExist();
         }
         assertThat(RuleText.rulesPath()).as("规则文件为仓库根 CLAUDE.md").isRegularFile();
     }

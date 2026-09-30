@@ -13,7 +13,7 @@ CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：�
 1. **`vendors/` 只读**。CodexFDE 与 flowERP 是 submodule，任何复刻产物不得写回。`git -C vendors/CodexFDE status --short` 与 flowERP 同查必须恒空。
 2. **待审核 ≠ 已接受**（逐字使用）。候选通过全部门槛也只是待审核，直到用户具名验收。Claude 不代签、不自行 merge。
 3. **证据 = 命令 + 退出码 + 失败后权威状态**。AI 自述、绿色截图不算证据；失败记录一律保留，不删不改凑通过。
-4. **冻结合同 fixture** 是上游 LESSONS 数据的逐字数据，不许"修好"它——发现与上游分歧走检查点显式采纳。载体（ADR-0006）：Python 阶段为 `workbench/course_contracts.py` 逐字拷贝；Java 重走后为 `CourseContracts.java` 常量类，以**字符串内容逐字等价 + 完整性机检测试**锁定，重走完成前双载体不得分歧。
+4. **冻结合同 fixture** 是上游 LESSONS 数据的逐字数据，不许"修好"它——发现与上游分歧走检查点显式采纳。载体（ADR-0006）：Python 阶段为 `workbench/course_contracts.py` 逐字拷贝；Java 重走后为 `CourseContracts.java` 常量类，以**字符串内容逐字等价 + 完整性机检测试**锁定——重走线完成后（2026-09-30）Python 载体退役，对照源 = tag `python-carrier-final`，机检投影 `frozen-python-projection.json` 已入库随测。
 5. **用户显式技能**（`/mattpocock-skills:to-spec`、`:implement`、`:handoff`、`:teach`）到点必须停下提醒用户调用；降级路径仅在用户明确同意后走（见 docs/lessons/README.md 技能编排表）。
 6. 换会话用 `/mattpocock-skills:handoff` 生成交接文档，不以裸 `/clear` 为默认。
 
@@ -32,23 +32,12 @@ CodexFDE（个人 AI 研发工作台 + 课程仓库）的**渐进式复刻**：�
 ## 常用命令
 
 ```bash
-# 环境（Python ≥3.10，只用标准库；本机 3.13 与课堂 3.11 的偏离记录在证据即可）
-python3 -m venv .venv && .venv/bin/pip install -e .
+# Python 载体已退役（ADR-0006 尾款，2026-09-30，tag python-carrier-final）：
+# workbench/ tests/ evals/ pyproject.toml 已移出工作树；对照/再生（含 golden 重生成、
+# 合同投影导出、历史复跑）经 `git checkout python-carrier-final`。.venv 与 python 本体
+# 保留——capture_evidence 采集与 evals 工具的子进程 python 探针仍在用（客户实现是 Python）。
 
-# 全量测试（Python 冻结对照基线，重走期零改动；eval harness 已随 L05/L06 建成并冻结）
-.venv/bin/python -X utf8 -m unittest discover -s tests
-
-# 单文件 / 单用例
-.venv/bin/python -X utf8 -m unittest discover -s tests -v -p "test_l01_*.py"
-.venv/bin/python -X utf8 -m unittest discover -s tests -k wb07 -v
-
-# 工作台 CLI（运行库 .runtime/，已 gitignore）
-.venv/bin/python -X utf8 -m workbench.cli workbench-status \
-  --runtime-dir .runtime/course/L01-workbench \
-  --require-project PERSONAL-WORKBENCH --require-task CASE-WB-L01-001 \
-  --require-red-green-evidence
-
-# 看账本（只读；status 会重算 SHA-256 复核，勿手改）
+# Python 时代账本（只读封存，勿手改；status 重算 SHA-256 的复核随 tag 内 CLI）
 sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
 
 # Java 线（重走期唯一活动实现，ADR-0006；状态唯一事实源 = docs/replication/README.md 重走线行，此处不缓存进度）
@@ -81,39 +70,36 @@ mvn test -Dtest=L02WorkbenchRulesTest   # 单类
 ## 架构大图
 
 ```
-本仓库（工作台 + 复刻产物）
-├── workbench/            目标产物本体
-│   ├── cli.py            入口：REGISTRY 注册表缝 + 顶层异常边界（JSON 错误契约）
-│   ├── bootstrap.py      L01 五命令：任务账 + 命令证据账 + 完整性检查（四职责见模块 docstring）
-│   └── course_contracts.py  冻结合同 fixture（16 讲 LESSONS 逐字数据）
-├── tests/                每讲合同测试（文件头有 验收项→测试 映射表）+ fixture 完整性测试
-├── docs/
-│   ├── adr/              复刻决策（0001 全新实现 / 0002 Claude 执行器 / 0003 检查点 / 0004 候选分支 / 0005 客户真理 / 0006 Java 重走）
-│   ├── lessons/          每讲复刻讲义 + 技能编排表（讲前 just-in-time 产出）
-│   └── replication/      路线图与状态 + 每讲证据账（evidence/LNN.md；重走证据 LNN-java.md）
-├── lesson-01-submission/ evidence.py 原始捕获（meta.json + output.txt，入库不移动）
-├── lesson-02-submission/ L02 采集（Python 时代顶层 + java/ 子根，均入库不移动）
-└── learning/             教学工作区（使命/课程/学习记录，服务"验收人读懂代码"）
-
-vendors/CodexFDE          只读：课程合同、参考实现、讲义、L01 证据工具
-vendors/flowERP           只读：客户项目，L04 才由工作台首次驱动（客户真理：其自身 eval 才是业务权威）
-
-Java 重走线（ADR-0006，重走期唯一活动实现；状态唯一事实源 = docs/replication/README.md 重走线行，此处不缓存进度）
-├── src/main/java/workbench/       Java 实现本体（与 Python 载体同形分层：cli → bootstrap → sqlite 存储）
+本仓库（工作台 = Java 实现，复刻产物；状态唯一事实源 = docs/replication/README.md）
+├── src/main/java/workbench/       Java 实现本体（与退役 Python 载体同形分层：cli → bootstrap → sqlite 存储）
 │   ├── cli/                       Main + CommandRegistry：入口注册缝 + 顶层异常边界（JSON 错误契约）
 │   ├── bootstrap/                 五命令逻辑（Args/Ledger/JsonOut/PyJson/BootstrapCommands/Command）
 │   ├── spec/                      六段 Spec 结构解析器（L03-java，词面与检查序与冻结版逐字同形）
 │   ├── execution/                 V0 受控执行三命令（L04-java，与 Python execution.py 同形：run/review/show + Shlex/ProcessRunner/WorkspaceInspector/WriteScope）
 │   ├── evals/                     统一运行器根两件（L06-java：EvalHarness 分级/报告/x 模式/退出码 + ReportContract 报告合同——evals/harness.py 与 report_contract.py 对应物，L07 Hook 入口，报告 schema 1.0 对齐客户）+ 评测工具子包 l05 两件（缺陷基线构造器+收货场景驱动）与 l06 三件（CSV 缺陷基线+口径交叉检查+五登记项收口 Checks）——独立 main 不进 REGISTRY，经子进程 python 驱动客户实现（冻结件 in-process import 的结构翻译点），对外契约逐字同形由 golden l05/l06 锁
-│   ├── coursecontracts/           CourseContracts.java 冻结合同 fixture 双载体（与 Python 载体逐字等价 + 机检锁定）
+│   ├── coursecontracts/           CourseContracts.java 冻结合同 fixture（对照源 = tag python-carrier-final + 机检投影锁定）
 │   └── tools/                     ImportEvidence（复刻 vendor import_evidence.py 语义，重算 SHA-256 验封）
 ├── src/test/java/                 合同测试 + golden 重放（testsupport/Cli 经真实 CLI 子进程驱动，不绕入口直调）
-├── src/test/resources/golden/     对照基准 l01–l05 五套（场景清单见各 manifest.json）——Python 冻结版采出，永不手改
+├── src/test/resources/golden/     对照基准 l01–l06 六套（场景清单见各 manifest.json）——Python 冻结版采出，永不手改
 ├── src/test/resources/coursecontracts/frozen-python-projection.json  Python 载体全字段投影（机检对照件）
 ├── pom.xml                        Maven + Java 21 + JUnit5/AssertJ；运行时依赖白名单：Jackson、sqlite-jdbc
-└── bin/wb                         CLI 包装脚本（classpath = target/classes + build-classpath 落盘清单）
+├── bin/wb                         CLI 包装脚本（classpath = target/classes + build-classpath 落盘清单）
+├── tools/                         capture_evidence.py（证据采集，标准库自足）+ golden 生成器 + 合同投影导出（执行需 tag checkout）
+├── docs/
+│   ├── adr/              复刻决策（0001 全新实现 / 0002 Claude 执行器 / 0003 检查点 / 0004 候选分支 / 0005 客户真理 / 0006 Java 重走）
+│   ├── lessons/          每讲复刻讲义 + 技能编排表 + 重走移植注记（附录 A）
+│   └── replication/      路线图与状态 + 每讲证据账（evidence/LNN.md；重走证据 LNN-java.md）
+├── lesson-01-submission/ evidence.py 原始捕获（meta.json + output.txt，入库不移动）
+├── lesson-02-submission/ L02 采集（Python 时代顶层 + java/ 子根，均入库不移动）
+├── lesson-06-submission/ L06 采集（java/ 子根）
+└── learning/             教学工作区（使命/课程/学习记录，服务"验收人读懂代码"）
 
-（Python 冻结面新增能力——evals/ 评测、记忆系统、工作台看板——见 docs/replication/README.md 对应行，不在此展开）
+（Python 载体已退役，ADR-0006 尾款 2026-09-30：workbench/ tests/ evals/ pyproject.toml 移出工作树，
+ 终态冻结于 tag python-carrier-final——对照/再生经 tag checkout；Python 冻结面时代建成的能力
+ ——evals/ 评测、记忆系统、工作台看板——的 Java 对应物进度见 docs/replication/README.md 各行）
+
+vendors/CodexFDE          只读：课程合同、参考实现、讲义、L01 证据工具
+vendors/flowERP           只读：客户项目，L04 起由工作台驱动（客户真理：其自身 eval 才是业务权威）
 ```
 
 **结构约定**：
@@ -122,7 +108,7 @@ Java 重走线（ADR-0006，重走期唯一活动实现；状态唯一事实源 
 - 新增命令：沿 REGISTRY 注册并复用既有存储入口；错误词面对齐上游（`required_task_missing` 等）。
 - 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可（Java 线同口径：`testsupport/Cli` 子进程 / 文本直读）。
 - 待建设清单（双轨口径）：Python 侧 `eval.harness` 已随 L05/L06 建成并冻结（`evals/`），Python 实现面随重走线完成进入退役窗口（ADR-0006 尾款，退役细则单独确认后执行）；Java 侧 eval 能力已齐——L05-java 两工具 + L06-java 统一运行器根两件与 l06 三件（`workbench/evals/`），`course-status` 等上游命令待建设（V0 受控执行三命令已随 L04-java 建成，`workbench/execution/`）——引用时如实说明尚未复刻，不写成已建成。
-- 双轨纪律（重走期，ADR-0006）：Python 实现面（`workbench/`、`tests/`、`pyproject.toml`）冻结不触碰，Python 时代 tools 复用不重写；`.runtime/course/L01-workbench/`（Python 时代账本）零写入，Java 线账本用 `.runtime/course/L01-workbench-java/`。仍然允许：冻结面之外的一切照常演进（`src/`、`pom.xml`、`bin/wb`、`docs/`、`lesson-*-submission/`）；误触冻结面即回退，冻结面字节不变。
+- 双轨纪律（重走期，ADR-0006；**重走线已完结，2026-09-30 起 Python 载体退役**）：重走期的「Python 实现面冻结不触碰」纪律随退役转译为——`workbench/`、`tests/`、`evals/`、`pyproject.toml` 不得在工作树复活（对照源 = tag `python-carrier-final`，机检护栏在 L02WorkbenchRulesTest）；`.runtime/course/L01-workbench/`（Python 时代账本）恒只读封存，Java 线账本用 `.runtime/course/L01-workbench-java/`；`tools/`（capture_evidence、golden 生成器、合同投影导出）与 `lesson-*-submission/`、`docs/` 照常保留——生成器执行需 tag checkout，如实说明。
 
 **信用内核**（L01 钉死，后续讲次全部踩在上面）：账本只追加、失败不可抹、快照不随原文件变、`status` 每次重算 SHA-256 复核、链判定三规则（同命令红绿 / Diff 严格居间 / 全局最新须为成功绿）、`acceptance: pending_human_review` 恒待人签。改动任何一处都要意识到全链信用随之变动。
 

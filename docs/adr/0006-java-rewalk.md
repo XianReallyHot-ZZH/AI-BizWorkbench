@@ -22,3 +22,5 @@ date: 2026-09-29
 - **roadmap** 增设 Java 重走状态线（L01–L06 完成标注不回退，是历史事实）；L07 顺延至重走完成后。
 
 **验收**：XianReallyHot-ZZH，2026-09-29（/grill-with-docs 会话 12 项决策逐项确认后批量接受）。
+
+**退役执行**：2026-09-30——重走线 L01–L06 全部具名验收完成后，tag `python-carrier-final`（@`d4b77cb`）并移出工作树（`workbench/`、`tests/`、`evals/`、`pyproject.toml`；用户确认「退役，继续」）。保留：`tools/`（capture_evidence 采集、golden 生成器、合同投影导出——执行经 tag checkout）、`lesson-*-submission/`（永不移动）、`docs/`（只追加）、`.runtime/` Python 时代账本（只读封存）与 `.venv`（探针子进程与采集仍需 python）。护栏：退役面不得在工作树复活（L02WorkbenchRulesTest / SpecTemplateDualCarrierTest 退役口径翻转锁定）。
