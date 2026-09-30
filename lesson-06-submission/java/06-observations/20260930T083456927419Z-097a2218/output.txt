@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "flowerp_connected": false,
+  "review": {
+    "review_id": 4,
+    "task_id": "CASE-WB-L06-JAVA-001",
+    "execution_id": 5,
+    "reviewer": "XianReallyHot-ZZH",
+    "decision": "approve",
+    "note": "L06 重走具名验收：统一运行器+报告合同+l06 三工具建成，golden 9 场景字节级一致，链 B/探针/盲区/指纹全量重演（2026-09-30「没问题，继续」）"
+  },
+  "task_state": "accepted"
+}

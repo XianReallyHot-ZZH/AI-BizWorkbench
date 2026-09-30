@@ -161,3 +161,11 @@ golden 前置生成，连同生成器、共享件 env 字段扩展、本 §G 与
 | 呈报 | Spec | 审定稿（用户批准工件）分支内共改 4 行：A3 s09 面注记、「8 类」→11 处 ×2、A4 回写（本轮）——均文档侧零行为，修正链在案（§G 修正记录 + G3/G4） | ✅ 显式呈报：附录状态行加修正注；验收人按本表核对 |
 
 **复查轮结论**：Standards 轴**无硬违规**（冻结面 0 字节、vendors 恒空、golden 永不手改经生成器重生成在案、_Avoid_ 零命中、Unicode 纪律、测试口径 S6 承袭、`--skip-self-check` 参数面齐）；Spec 轴抽查**全相符**（假绿变体不入 git、链 B argv 逐字节同串 rc 1→0、任务账 16 条且 mvn 链不在账、首冻不入账、verify 失败+成功两枚 execution 在账、终冻=收口复核、客户件三时代同指纹、D5 封条时序无补拍、独立复跑 109/109）。S-1 文档修正随 commit 4 提交；其余搁置/澄清留档。
+
+## 具名验收（讲义级）
+
+- 验收人：XianReallyHot-ZZH
+- 日期：2026-09-30
+- 对象：CASE-WB-L06-JAVA-001 @ `lesson-06-java` 源码版本 `badedeb`（任务账 review 记录在场：reviewer = XianReallyHot-ZZH、decision = approve、`task_state: accepted`；approve 封条 `06-observations/20260930T083456927419Z-097a2218`；账面 `acceptance` 字段恒 `pending_human_review`——机器不代签，铁律 2）
+- 结论：**接受**（用户原话「没问题，继续」，本讲显式具名验收请求之后的答复；未解决问题清单六条已知悉并留档：① S-2 失配路径词面微偏差搁置检查点；② S-3–S-5 澄清留档 §13；③ 客户 eval 盲区补形状留检查点（ADR-0003）；④ 并发预占/进程中断/多 SKU 边界未覆盖（上游同口径）；⑤ `.idea/` 与仓库根 `java/` 归置（L02-java 遗留）；⑥ master 领先 origin 的 push 已随本验收一并授权）
+- 效力：随后 `git merge --no-ff lesson-06-java`（合并信息含验收人与结论），roadmap 重走线行（**重走线全完成**）+ 讲义导航 + CLAUDE.md 待建设清单口径收口（统一运行器建成除名；`course-status` 等上游命令仍待建设）；Python 载体退役（ADR-0006 尾款）另行单独确认后执行
