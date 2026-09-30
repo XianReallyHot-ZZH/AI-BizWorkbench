@@ -20,12 +20,11 @@ import java.util.concurrent.TimeUnit;
  * 不抄子进程返回——上游 order_contract_checks.py「independent integer expectations」同义）。
  *
  * <p>探针脚本对客户门面（{@code ERPService.create_order}）只做三件事：合法两行建草稿、
- * 非法三态（数量零/负、第二行商品不存在）试建、迁移输入建单。快照对比两档（上游
- * order_contract_checks 同形）：拒绝场景比 {@code sales_orders}/{@code sales_order_lines}/
- * {@code stock} 三表（拒绝必须零写入）；草稿不预占只比库存表（建单合法写入订单头与明细，
- * 三表对比会把合法建单误判为违规——首采绿腿抓获的探针语义缺陷，失败现场保留见证据账）。
- * 拒绝与不预占是观察到的客户行为，不是探针的断言。子进程超时 300s 对齐 l06
- * {@code SUBPROCESS_TIMEOUT}。
+ * 非法三态（数量零/负、第二行商品不存在）试建、迁移输入建单。快照两档、判断一律留
+ * 调用方（复查轮 T-2 对齐探针纪律）：拒绝场景回报三表（orders/lines/stock）before/after
+ * 原始数据，相等性由 Java 断言；草稿不预占回报库存表前后原始数据，同理。首采版曾把
+ * 相等判断合成布尔留在探针侧、草稿场景误比三表——两起均修，失败现场保留见证据账。
+ * 子进程超时 300s 对齐 l06 {@code SUBPROCESS_TIMEOUT}。
  */
 final class OrderProbe {
 
@@ -89,7 +88,7 @@ final class OrderProbe {
                     except Exception as exc:
                         exception = type(exc).__name__
                     results.append({"id": oid, "expected": expected, "exception": exception,
-                                    "unchanged": tables(store) == before})
+                                    "before": before, "after": tables(store)})
                 out({"scenario": "reject", "cases": results})
             else:
                 customer = "课堂客户" if scenario == "draft" else "迁移客户"
@@ -104,7 +103,8 @@ final class OrderProbe {
                     "status": order["status"],
                     "total_cents": order["total_cents"],
                     "line_totals": [row["line_total_cents"] for row in order["lines"]],
-                    "stock_unchanged": store.rows("SELECT * FROM stock ORDER BY sku") == stock_before,
+                    "stock_before": stock_before,
+                    "stock_after": store.rows("SELECT * FROM stock ORDER BY sku"),
                 })
             """;
 

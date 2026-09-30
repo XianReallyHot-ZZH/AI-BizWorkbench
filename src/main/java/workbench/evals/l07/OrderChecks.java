@@ -99,17 +99,16 @@ public final class OrderChecks {
     }
 
     /**
-     * 订单场景登记项：探针回报原始观察值，预期在本方法独立算出（不抄子进程返回——
-     * 排除「检查与实现共用错误公式」的上游教学点）；失败以 AssertionError 承载
-     * （evidence=异常消息，与 EvalHarness 条目异常捕获面一致）。
+     * 订单场景登记项：探针回报原始观察值，预期与全部判断在本方法独立完成（不抄子进程
+     * 返回——排除「检查与实现共用错误公式」的上游教学点；快照相等性同样在 Java 断言，
+     * 复查轮 T-2 对齐探针纪律）；失败以 AssertionError 承载（evidence=异常消息，
+     * 与 EvalHarness 条目异常捕获面一致）。
      */
     private static String orderScenario(Path interpreter, Path target, String scenario,
             int q1, int p1, int q2, int p2) {
         try (OrderProbe.TempDb tempDb = OrderProbe.tempDb("l07-order-")) {
             JsonNode observed = OrderProbe.order(
                     interpreter, target, tempDb.db, scenario, q1, p1, q2, p2);
-            int expectedTotal = q1 * p1 + q2 * p2;
-            List<Integer> expectedLines = List.of(q1 * p1, q2 * p2);
             if ("reject".equals(scenario)) {
                 for (JsonNode item : observed.path("cases")) {
                     String id = item.path("id").asText();
@@ -119,12 +118,20 @@ public final class OrderChecks {
                         throw new AssertionError("拒绝用例 " + id + "：预期 " + expected
                                 + "，实际 " + (actual.isEmpty() ? "未抛异常" : actual));
                     }
-                    if (!item.path("unchanged").asBoolean()) {
+                    if (!item.path("after").equals(item.path("before"))) {
                         throw new AssertionError("拒绝用例 " + id + "：被拒绝但三表状态发生变化");
                     }
                 }
                 return "数量为零或负数、第二行商品不存在均拒绝；订单头、明细、库存三表保持原样";
             }
+            // 显式订单号即稳定身份（合同 acceptance[0]，复查轮 T-1 补断言）
+            String expectedId = "draft".equals(scenario) ? "L07-AMOUNT" : "L07-TRANSFER";
+            if (!expectedId.equals(observed.path("order_id").asText())) {
+                throw new AssertionError("expected=" + expectedId
+                        + " actual=" + observed.path("order_id").asText());
+            }
+            int expectedTotal = q1 * p1 + q2 * p2;
+            List<Integer> expectedLines = List.of(q1 * p1, q2 * p2);
             String status = observed.path("status").asText();
             int total = observed.path("total_cents").asInt(-1);
             List<Integer> lines = new ArrayList<>();
@@ -138,12 +145,12 @@ public final class OrderChecks {
             if (!lines.equals(expectedLines)) {
                 throw new AssertionError("expected=" + expectedLines + " actual=" + lines);
             }
-            if (!observed.path("stock_unchanged").asBoolean()) {
+            if (!observed.path("stock_after").equals(observed.path("stock_before"))) {
                 throw new AssertionError("创建草稿后库存表发生变化（草稿不预占，L08 才做原子预占）");
             }
             if ("draft".equals(scenario)) {
-                return "两行金额 %d+%d=%d 分；状态 draft；零库存可建草稿且库存表不变"
-                        .formatted(q1 * p1, q2 * p2, expectedTotal);
+                return "两行金额 %d+%d=%d 分；状态 draft；显式订单号 %s；零库存可建草稿且库存表不变"
+                        .formatted(q1 * p1, q2 * p2, expectedTotal, expectedId);
             }
             return "迁移输入：%d×%d+%d×%d=%d 分；排除写死 %d"
                     .formatted(q1, p1, q2, p2, expectedTotal, 2 * 3000 + 3 * 2000);

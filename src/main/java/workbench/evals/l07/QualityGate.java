@@ -62,8 +62,22 @@ public final class QualityGate {
         Args args = new Args(argv,
                 Set.of("--harness-command", "--harness-timeout-ms", "--events-dir"), Set.of());
         long timeoutMs = longOption(args, "--harness-timeout-ms", DEFAULT_HARNESS_TIMEOUT_MS);
-        Path eventsDir = repoRoot().resolve(args.optional("--events-dir", DEFAULT_EVENTS_DIR));
-        String rawEvent = readStdin();
+        // 复查轮 S-1：stdin 读取与仓库根解析的故障也走 unverified 翻译面（恒 rc 0 交付
+        // 协议的合同对齐；此前两处在 try 面外裸抛会落 Main catch(Exception) rc 1）
+        String rawEvent;
+        try {
+            rawEvent = readStdin();
+        } catch (GateFailure error) {
+            System.out.println(PyJson.dumpsCompact(unverified(error.getMessage())));
+            return 0;
+        }
+        Path eventsDir;
+        try {
+            eventsDir = repoRoot().resolve(args.optional("--events-dir", DEFAULT_EVENTS_DIR));
+        } catch (GateFailure error) {
+            System.out.println(PyJson.dumpsCompact(unverified(error.getMessage())));
+            return 0;
+        }
 
         JsonNode event = null;
         String problem = null;

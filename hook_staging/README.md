@@ -4,7 +4,7 @@
 pin 在这里接受人工审查，**审查通过并具名授权后才安装**到 `.claude/settings.json`
 （acceptance[4]）。本目录不被 Claude Code 自动加载——放这里 ≠ 已启用。
 
-## 三件与指纹（commit 2 时点初冻；收口复核以证据账 L07 为准）
+## 三件与指纹（commit 2 初冻、修复轮 commit 5 终值；收口复核以证据账 L07 为准）
 
 | 文件 | 作用 | sha256 |
 |---|---|---|
@@ -14,9 +14,9 @@ pin 在这里接受人工审查，**审查通过并具名授权后才安装**到
 
 | 源件 | sha256 |
 |---|---|
-| `src/main/java/workbench/evals/l07/QualityGate.java`（处理器：stdin 事件 → 校验 → 重入短路 → 子进程调统一入口 → Stop 协议翻译 → 事件留痕；失败明细点名失败登记项，非报告面回退尾十行——D5 回退语义保留，改进注记见证据账） | `42047d0f91c1c7b9d408a4f7fe4549ebc10d1b430cb5a3974936339e7b4f2eab` |
-| `src/main/java/workbench/evals/l07/OrderChecks.java`（统一入口：六登记项收口） | `5c1b72d32d4b2603f05c816b372de5345961a7d42fa6845437a7df6286300671` |
-| `src/main/java/workbench/evals/l07/OrderProbe.java`（订单面探针，断言留 Java；拒绝比三表、草稿不预占只比库存表——上游同形，首采绿腿抓获的三表误比缺陷已修，失败现场保留见证据账） | `4c99703cee02e0a04e83013fe3d55c2241dda3ee973d78dcd2564baf2103edff` |
+| `src/main/java/workbench/evals/l07/QualityGate.java`（处理器：stdin 事件 → 校验 → 重入短路 → 子进程调统一入口 → Stop 协议翻译 → 事件留痕；失败明细点名失败登记项，非报告面回退尾十行——D5 回退语义保留；stdin/仓库根解析故障也走 unverified 翻译面——复查轮 S-1） | `0d35a3704c381f0415dd37175f7bea38463edf9821b42c823b37f497aecdfa08` |
+| `src/main/java/workbench/evals/l07/OrderChecks.java`（统一入口：六登记项收口；显式订单号断言——复查轮 T-1） | `33889aac22dd60c5b9b0b825ffb39f5dcf3b472ad0056b219d447c661ee99c41` |
+| `src/main/java/workbench/evals/l07/OrderProbe.java`（订单面探针；拒绝比三表、草稿不预占只比库存表——上游同形，快照相等判断留 Java——复查轮 T-2；首采绿腿抓获的三表误比缺陷已修，失败现场保留见证据账） | `51b1f4553d57504340074e354aa17c6b51c44e5bd25f0354411d51048d200fec` |
 | `src/main/java/workbench/cli/Main.java`（REGISTRY 注册缝） | `d12bdc260702a8974b9dfcb6446c0a48a915baaa2cd96c12ff23e4b81675b08b` |
 | `src/main/java/workbench/evals/l06/StockConsistencyCheck.java`（L07 开放复用缝两词可见性，行为零变化） | `193ff6e1292218471db05ba41eb99ef0b4c4aab15eba9f4c524b796f91c84827` |
 
@@ -60,6 +60,8 @@ pin 在这里接受人工审查，**审查通过并具名授权后才安装**到
 ## 边界注记（C8，如实标注）
 
 - 手工喂事件 JSON 只算协议测试，**不算真实宿主事件**（上游同款边界；真实事件链见证据账）；
+- **宿主信任面（实证）**：交互会话首次使用需 workspace trust 确认（受信前 settings 内 hooks 被扣住不跑）；`claude -p`/SDK 无头会话视目录为已信任、项目 hooks 直接加载——把无头会话指向陌生仓库前先审查其 `.claude/`（官方提醒）；
+- **真实超时的进程终止行为未实测**：内部超时面由替身验证的是 TimeoutExpired → block「未完成验证」的翻译路径；「外层到期 ≠ 子进程已全部退出」「内部 destroyForcibly 后进程树确实终止」未实测，标未验证（上游同款边界）；
 - 外层 timeout 到期即取消 hook 并放行停止（宿主行为）——外层超时 ≠ 验证通过；
 - `claude -p --bare` 会整体跳过 hooks（实证）；`if` 字段在 Stop 上写了 hook 永不运行（官方
   文档）——两者都是绕闸通道，依赖护栏时须知；
