@@ -64,7 +64,7 @@ public final class ExecutionCommands {
             }
             String taskId = args.positional(0);
             if (!ledger.taskExists(taskId)) {
-                return JsonOut.fail("required_task_missing: 任务不存在：" + taskId + "，记录未追加");
+                return JsonOut.fail(Ledger.MISSING_TASK + ": 任务不存在：" + taskId + "，记录未追加");
             }
             Path workspace = Path.of(args.require("--workspace"));
             String invalid = WorkspaceInspector.workspaceError(workspace);
@@ -268,7 +268,7 @@ public final class ExecutionCommands {
             }
             String taskId = args.positional(0);
             if (!ledger.taskExists(taskId)) {
-                return JsonOut.fail("required_task_missing: 任务不存在：" + taskId + "，记录未追加");
+                return JsonOut.fail(Ledger.MISSING_TASK + ": 任务不存在：" + taskId + "，记录未追加");
             }
             String reviewer = args.require("--reviewer").strip();
             if (reviewer.isEmpty()) {
@@ -323,7 +323,7 @@ public final class ExecutionCommands {
             String taskId = args.positional(0);
             Map<String, Object> task = ledger.taskRow(taskId);
             if (task == null) {
-                return JsonOut.fail("required_task_missing: 任务不存在：" + taskId);
+                return JsonOut.fail(Ledger.MISSING_TASK + ": 任务不存在：" + taskId);
             }
             Object prerequisite = task.get("prerequisite_task_id");
             JsonOut.emit(JsonOut.ordered("ok", true, "flowerp_connected", Ledger.FLOWERP_CONNECTED,

@@ -48,7 +48,7 @@ public final class Args {
     /**
      * @param repeatingValueFlags 可重复收集的取值选项（L04 --write-scope 的 nargs="+" 同形，
      *     移植注记 JD1）：选项后连续的非选项令牌逐一收入列表，遇下一 ``--`` 选项停止；
-     *     出现多次则各次收集值按出现序拼接。四参构造器行为零变化（回归保证：既有命令
+     *     同名选项重复出现时后值覆盖前值（argparse store 语义同形）。四参构造器行为零变化（回归保证：既有命令
      *     不声明可重复选项）。
      */
     public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags,

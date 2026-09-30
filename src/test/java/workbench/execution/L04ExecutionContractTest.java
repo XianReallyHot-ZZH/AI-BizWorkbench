@@ -81,9 +81,9 @@ class L04ExecutionContractTest {
 
     // ---- 夹具 ------------------------------------------------------------------
 
-    private record Ledger(Path rt, Path workspace) {}
+    private record Fixture(Path rt, Path workspace) {}
 
-    private Ledger ledger() throws Exception {
+    private Fixture fixture() throws Exception {
         Path rt = temp.resolve("rt");
         Path ws = temp.resolve("candidate");
         Files.createDirectories(ws);
@@ -97,10 +97,10 @@ class L04ExecutionContractTest {
         assertThat(Cli.run("workbench-project-add", "--runtime-dir", rt.toString(),
                 "--project-id", "T-PROJ", "--name", "合同测试项目", "--path", ".",
                 "--purpose", "L04 合同测试").exitCode()).isZero();
-        return new Ledger(rt, ws);
+        return new Fixture(rt, ws);
     }
 
-    private void createTask(Ledger l, String taskId) {
+    private void createTask(Fixture l, String taskId) {
         assertThat(Cli.run("workbench-task-create", "--runtime-dir", l.rt.toString(),
                 "--project-id", "T-PROJ", "--task-id", taskId, "--requirement-id", "REQ-L04",
                 "--request", "L04 合同测试任务", "--actor", OPERATOR).exitCode()).isZero();
@@ -119,7 +119,7 @@ class L04ExecutionContractTest {
         }
     }
 
-    private String[] taskRun(Ledger l, String taskId, String mode, String executor,
+    private String[] taskRun(Fixture l, String taskId, String mode, String executor,
                              String evalCommand, int timeout) {
         List<String> argv = new ArrayList<>(List.of("workbench-task-run", taskId,
                 "--runtime-dir", l.rt.toString(), "--workspace", l.workspace.toString(),
@@ -141,7 +141,7 @@ class L04ExecutionContractTest {
 
     @Test
     void codeRunRecordsManifestDiffAndStopsAtReview() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_OK, 60));
         assertThat(result.exitCode()).as("执行成功 rc 0").isZero();
@@ -169,7 +169,7 @@ class L04ExecutionContractTest {
 
     @Test
     void taskRunRequiresWriteScopeInCodeMode() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         List<String> argv = new ArrayList<>(List.of("workbench-task-run", "T-001",
                 "--runtime-dir", l.rt.toString(), "--workspace", l.workspace.toString(),
@@ -186,7 +186,7 @@ class L04ExecutionContractTest {
 
     @Test
     void taskRunRequiresExecutorCommandInCodeMode() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", null, EVAL_OK, 60));
         assertThat(result.exitCode()).isEqualTo(1);
@@ -196,7 +196,7 @@ class L04ExecutionContractTest {
 
     @Test
     void taskRunRequiresExplicitTimeout() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         List<String> argv = new ArrayList<>(List.of("workbench-task-run", "T-001",
                 "--runtime-dir", l.rt.toString(), "--workspace", l.workspace.toString(),
@@ -211,7 +211,7 @@ class L04ExecutionContractTest {
 
     @Test
     void verifyRejectsExecutorCommand() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "verify", EXEC_NOTHING, EVAL_OK, 60));
         assertThat(result.exitCode()).isEqualTo(1);
@@ -221,7 +221,7 @@ class L04ExecutionContractTest {
 
     @Test
     void workspaceRejectsBeforeProcess() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Path noGit = temp.resolve("nogit");
         Files.createDirectories(noGit);
@@ -247,7 +247,7 @@ class L04ExecutionContractTest {
 
     @Test
     void outOfScopeStopsBeforeEval() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", EXEC_SNEAK, EVAL_MARKER, 60));
         assertThat(result.exitCode()).isEqualTo(1);
@@ -265,7 +265,7 @@ class L04ExecutionContractTest {
 
     @Test
     void verifyModeNeverLaunchesExecutor() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "verify", null, EVAL_MARKER, 60));
         assertThat(result.exitCode()).isZero();
@@ -281,7 +281,7 @@ class L04ExecutionContractTest {
 
     @Test
     void executorFailurePreservesOutputAndDiff() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", EXEC_FAIL, EVAL_OK, 60));
         assertThat(result.exitCode()).isEqualTo(1);
@@ -296,7 +296,7 @@ class L04ExecutionContractTest {
 
     @Test
     void timeoutPreservesPartialOutput() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", EXEC_TIMEOUT, EVAL_OK, 1));
         assertThat(result.exitCode()).isEqualTo(1);
@@ -309,7 +309,7 @@ class L04ExecutionContractTest {
 
     @Test
     void launchErrorPreservedAsFailedRecord() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code",
                 "./no-such-executor", EVAL_OK, 60));
@@ -322,7 +322,7 @@ class L04ExecutionContractTest {
 
     @Test
     void evalCommandUnparseableRejected() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE,
                 "sh -c 'unbalanced", 60));
@@ -333,7 +333,7 @@ class L04ExecutionContractTest {
 
     @Test
     void evalRunsInBoundWorkspaceCwd() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_MARKER, 60));
         assertThat(result.exitCode()).isZero();
@@ -342,7 +342,7 @@ class L04ExecutionContractTest {
 
     @Test
     void evalFailureKeepsRecordAndStatus() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         Cli.Result result = Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_FAIL, 60));
         assertThat(result.exitCode()).isEqualTo(1);
@@ -355,7 +355,7 @@ class L04ExecutionContractTest {
 
     @Test
     void reviewStateRejectsRerun() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         assertThat(Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_OK, 60)).exitCode())
                 .isZero();
@@ -371,7 +371,7 @@ class L04ExecutionContractTest {
 
     @Test
     void selfReviewRejected() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         assertThat(Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_OK, 60)).exitCode())
                 .isZero();
@@ -386,7 +386,7 @@ class L04ExecutionContractTest {
 
     @Test
     void reviewAnchorsToExecutionId() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         assertThat(Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_OK, 60)).exitCode())
                 .isZero();
@@ -407,7 +407,7 @@ class L04ExecutionContractTest {
 
     @Test
     void taskShowSummarizesExecutionsAndReviews() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         assertThat(Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_OK, 60)).exitCode())
                 .isZero();
@@ -430,7 +430,7 @@ class L04ExecutionContractTest {
 
     @Test
     void statusDigestCoversExecutions() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         assertThat(Cli.run(taskRun(l, "T-001", "code", EXEC_WRITE, EVAL_OK, 60)).exitCode())
                 .isZero();
@@ -448,7 +448,7 @@ class L04ExecutionContractTest {
 
     @Test
     void rerunAfterFailureKeepsOldRecord() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-001");
         assertThat(Cli.run(taskRun(l, "T-001", "code", EXEC_FAIL, EVAL_OK, 60)).exitCode())
                 .isEqualTo(1);
@@ -465,7 +465,7 @@ class L04ExecutionContractTest {
 
     @Test
     void prerequisiteRejectionFaces() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-A");
         Cli.Result missing = Cli.run("workbench-task-create", "--runtime-dir", l.rt.toString(),
                 "--project-id", "T-PROJ", "--task-id", "T-X", "--requirement-id", "REQ-L04",
@@ -487,7 +487,7 @@ class L04ExecutionContractTest {
 
     @Test
     void prerequisiteAcceptedAllowsTaskCreation() throws Exception {
-        Ledger l = ledger();
+        Fixture l = fixture();
         createTask(l, "T-A");
         // A 接受：verify 执行 + 具名复核（V0 能力）
         assertThat(Cli.run(taskRun(l, "T-A", "verify", null, EVAL_OK, 60)).exitCode()).isZero();

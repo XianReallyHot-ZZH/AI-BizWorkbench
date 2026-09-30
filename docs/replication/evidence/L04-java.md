@@ -129,3 +129,60 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 - 日期：＿＿＿＿
 - 对象：CASE-WB-L04-JAVA-002 @ execution 2（completed）+ 交付物 `delivery/inventory.csv`（任务账 review 门在待：`task_state: review`）
 - 结论：＿＿＿＿
+
+## 10. C1–C15 逐项结论表（Java 口径）
+
+| # | 结论 | 证据 |
+|---|---|---|
+| C1 | ✓ | 起始红 `…648136ff` rc 1（84 跑 22 红全目标缺口类：合同 21 + golden s06）；采红前预检抓出映射表误声明并拆分修正（R1） |
+| C2 | ✓ | 建设合同零重写（护栏 `pythonEraSubmissionArtifactsInPlace` 绿）；结构半边 Java CLI spec 解析 rc 0（就位组 `bootstrapContractParsesViaJavaCli`） |
+| C3 | ✓ | 执行记录同形：golden s06（全量形）/s30（eval 键缺位）/s44（task-show 投影）字节锁 + 合同测试；`change_manifest_sha256` 按冻结口径入库不出账（键位经 golden s06/s44 证实） |
+| C4 | ✓ | 启动拒绝 11 面 golden + 合同测试（词面逐字同形，Standards 轴抽查 4 处一致）；`-uall` 逐文件实测；越界 eval 键缺位、不自动回滚、越界件留证 |
+| C5 | ✓ | 五情境 golden 逐类（s07/s08/s32/s34/s30/s26）+ 替身执行器合同测试逐类 discharge（D7 证明边界在 A-evidence-java.md） |
+| C6 | ✓ | failed/timeout/eval_failed 如实落账、双流与 Diff 保留、旧记录并存（`rerunAfterFailureKeepsOldRecord`）；launch error 落 failed 记录（errno 词面偏差按 JD6 只断形状）；C6 措辞逐字在证据账与 B-evidence |
+| C7 | ✓ | eval 绑定候选 cwd 实跑（marker 断言）；`task-show` 摘要形 golden s44；eval 绿停 review，`acceptance` 恒 `pending_human_review` |
+| C8 | ✓ | review 态拒重跑（s19）/自批拒绝（s20）/execution_id 锚定（s22–s24：接受后再执行回 review、复核只追加）；复核按 execution_id 只覆盖所引执行（Ledger.taskState 已就位） |
+| C9 | ✓ | 双拒绝词面（golden s04/s05 + 就位组测试）+ 正面（s28 + 账本 B 单凭 A accepted 放行，`prerequisite_task_id` 入账） |
+| C10 | ✓ | 候选 = 本地 clone（起点 `e0088d3`，`.runtime/course/L04-delivery-java/`，不入 Git）；vendors 双查恒空；实测写集 delivery/ 四件全在界；无 flowerp 复制回仓库 |
+| C11 | ✓ | probe 六场景 N0（`06-probe-n0`）+ 终验（`07-probe-final`）双 rc 0 五组全 pass（file-failure 注入真实失败 + 只读性 iterdump 对照按 report 非结论文字）；按 `inventory_export_is_stable` 登记，harness 双轨口径如实注明 |
+| C12 | ✓ | probe 种子经 flowERP 自身服务；eval 对照 practice.db 权威账（与 import_export.py 查询同源的 SQL 只读，acceptance ③）；工作台/合同测试无进程内接 flowerp；BOM/CRLF 为候选既有行为承袭 |
+| C13 | ✓ | `B-evidence-java.md` 全字段 + 剩余风险 4 条；`handoff-java.md` 五问；真实失败实验 = probe file-failure 注入（原始 report 在场）；B 首跑无丢记录（绝对路径纪律移植生效） |
+| C14 | ✓ | 写集映射见 A2 C14 + 复查轮 S-6 补认项（bootstrap 三件加法扩展）；双任务账终态四词面（A 密封 `…cdb060f2`，B 密封 `…28ada20b`）；链三封条 + 修复轮 diff/green 追加；A review（2026-09-30T00:09:25Z）严格先于 B execution（01:00:05Z，账本实查机器可证） |
+| C15 | ✓ | 非目标全守：Python 冻结面 0 字节 diff、无 serve-workbench/根 FDE_SPEC.md/build_delivery_spec/Java eval.harness/course-submit、无 flowERP 业务改动、B 交付内容未预做 |
+| —（重走线增量） | ✓ | golden l04 47 场景双跑指纹 `5b7ebbcdb44ca977…` + Java 字节级重放（commit 1 红 → commit 2 绿） |
+
+## 11. R 段命令台账
+
+| 相位 | 命令 | 封条/留证 | 退出码 |
+|---|---|---|---|
+| red | `mvn test`（全量） | `03-failure/20260929T124639108663Z-648136ff` | 1（84 跑 22 红） |
+| diff | `git diff --cached`（暂存区全量，新增件为主如实披露） | `04-diff/20260929T131844422273Z-3d283277` | 0 |
+| green | `mvn test`（同 red 命令） | `05-green/20260929T131849126124Z-34bbc6d0` | 0（84/84） |
+| observation | A 任务创建 `./bin/wb workbench-task-create … CASE-WB-L04-JAVA-001` | 任务账（requirement_summary `0ac96163…`） | 0 |
+| observation | 导入前缺链查询 `workbench-status --require-red-green-evidence` | `06-observations/20260929T134937340297Z-7ad9d554` | 1（`same_command_red_diff_green_missing`） |
+| observation | A 门自举 `workbench-task-run --mode verify --eval-command "mvn test" --execution-timeout 900 --actor Claude` | 任务账 execution 1（verify_completed，eval rc 0） | 0 |
+| observation | A 终态 status 四词面 | `06-observations/20260929T135552427369Z-cdb060f2` | 0 |
+| observation | B 任务创建（--prerequisite-task 放行） | 任务账 | 0 |
+| observation | N0 probe `--case all`（未动候选） | `06-probe-n0/`（账本 record 30） | 0 |
+| observation | B 受控执行 `workbench-task-run --mode code`（claude -p，900s，事件流 26,991 行落盘） | 任务账 execution 2 + `executor-events.jsonl` | 0（completed，eval rc 0） |
+| observation | 终验 probe `--case all`（交付后） | `07-probe-final/`（账本 record 31） | 0 |
+| observation | B status 常规完整性 | `06-observations/20260930T010316751812Z-28ada20b` | 0 |
+| diff（复查轮） | `git diff --cached` | `04-diff/20260930T012104997325Z-6b317404` | 0 |
+| green（复查轮） | `mvn test`（同 red 命令） | `05-green/20260930T012105132419Z-8c44887e` | 0（84/84） |
+
+## 12. 复查轮（code-review 双轴自调，2026-09-30）
+
+双轴子代理并行复查 `master...lesson-04-java`（报告全文见会话记录；此处存目与处置）。**处置原则：行为零变化修正、披露补记、旧证据全保留。**
+
+| # | 轴 | 发现 | 处置 |
+|---|---|---|---|
+| S-1 | Standards·judge | `required_task_missing` 词面两处硬编码（Python 用 `MISSING_TASK` 常量，有漂移风险） | ✅ 已修：改用 `Ledger.MISSING_TASK` 单一来源（同串，行为零变化；词面逐字不变由 84/84 + golden 字节锁回归证明） |
+| S-2 | Standards·judge | 执行记录以 `Map` 传 27 个位置 setter（Data Clumps） | 澄清（不改）：对照复刻保真代价——Python record dict 同形，改类型即偏离对照件；S-c1 摘要复核已覆盖存储文本 |
+| S-3 | Standards·judge | 测试夹具 `record Ledger` 遮蔽生产类名（Mysterious Name） | ✅ 已修：改名 `Fixture`（测试侧，行为零变化；修正中一处构造调用漏改致编译红，当场修正后 84/84 复绿，未采封条如实记录） |
+| S-4 | Spec·失实 | Args javadoc「出现多次则各次收集值按出现序拼接」与代码覆盖语义矛盾（行为 = argparse store 同形，忠实） | ✅ 已修：注释改为「后值覆盖前值（argparse store 语义同形）」，行为未动 |
+| S-5 | Spec·形态缺口 | C14 要求「证据账逐项结论表」：R 段仅有内联 C 标注，无结论表与命令台账表 | ✅ 已修：本账补 §10 结论表 + §11 命令台账（文档侧，无代码影响） |
+| S-6 | Spec·披露偏离 | 实际 diff 含 `bootstrap/Args`（可重复选项）、`PyJson`（dumpsCompact）、`Ledger`（读侧可见度放宽 + connection()）——A2 C14 写集映射初稿未列；JD1「Ledger 零扩公共接口」字面被推翻 | 记录 + 补认：三件皆 Java 活动线（非冻结面）加法扩展，为 nargs="+" 同形、DB JSON 列字节保真、Python execution.py import bootstrap 单一来源同形所必需（R2 已披露）；映射初稿漏列属起草疏漏，随 B 具名验收一并补认 |
+| S-7 | Spec·形状偏离 | 四 commit 而非 A6.1 D3 裁定的三 commit（`68e7d50` A 票任务账 + A 门自举独立成段） | 澄清：独立成段强化 A-before-B 时序的机器可证性（C14 门），无害偏离，理由随本表补记 |
+| — | 澄清 | 仓库根 `java/03-failure/…` 游离捕获 | 不改：**L02-java §6 具名验收已裁定**保留不删不移，非本讲产物，裁定已闭合不重开 |
+
+**修复轮链事件**（起始红 `…648136ff` 保持不变，链以修复轮绿收口）：**Diff** `04-diff/20260930T012104997325Z-6b317404` + **后绿** `05-green/20260930T012105132419Z-8c44887e`（`mvn test` 与起始红同命令，rc 0，84/84）——observed_at 严格递增，全局最新红绿链合法。修复轮 tests/ 变更仅夹具改名（断言逐字未动），**无断言放宽**。
