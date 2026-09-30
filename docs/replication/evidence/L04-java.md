@@ -123,12 +123,22 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 - **范围检查（C13）**：改动仅 delivery/；无密钥/.env；FDE_SPEC SHA 未变；flowerp 未复制回仓库
 - **B 段证据与交接（C13）**：`B-evidence-java.md`（含剩余风险 4 条：gitignored 产物 / 模型别名回退 stderr 留痕 / 提示词约定 ≠ 事前全部防住 / 自批名义级比较）+ `handoff-java.md` 五问；B status 密封 `…28ada20b`（rc 0，`ok:true` / `acceptance:pending_human_review` / `flowerp_connected:false`，常规完整性口径）
 
-## 9. Ticket B 具名验收（B 门·待签）
+## 9. Ticket B 具名验收（B 门）
 
-- 验收人：＿＿＿＿
-- 日期：＿＿＿＿
-- 对象：CASE-WB-L04-JAVA-002 @ execution 2（completed）+ 交付物 `delivery/inventory.csv`（任务账 review 门在待：`task_state: review`）
-- 结论：＿＿＿＿
+- 验收人：XianReallyHot-ZZH
+- 日期：2026-09-30
+- 对象：CASE-WB-L04-JAVA-002 @ execution 2（completed）+ 交付物 `delivery/inventory.csv`（任务账 review 记录在场：review_id 2 锚定 execution 2，`task_state: accepted`）
+- 结论：**接受**（用户原话「没问题，继续」，B 段清单与复查轮摘要显式具名验收请求之后的答复；剩余风险 4 条已知悉并留档）
+- 附：本验收同时为**讲义级验收**——含复查轮 S-6 补认（bootstrap 三件加法扩展：Args 可重复选项 / PyJson dumpsCompact / Ledger 读侧可见度放宽，Java 活动线非冻结面，R2 披露）与 S-7 四 commit 形状理由；随后 `git merge --no-ff lesson-04-java`（合并信息含验收人），roadmap 重走线行标记 L04 完成
+
+---
+
+## 具名验收（讲义级）
+
+- 验收人：XianReallyHot-ZZH
+- 日期：2026-09-30
+- 结论：接受——A（CASE-WB-L04-JAVA-001 @ 68e7d50，review_id 1）与 B（CASE-WB-L04-JAVA-002 @ execution 2，review_id 2）两票各自具名接受，golden l04 47 场景字节级对照（双跑指纹 `5b7ebbcdb44ca977…`）入验收门，C1–C15 逐项结论表全 ✓；合并方式 `git merge --no-ff lesson-04-java`
+- 未解决问题清单：① `.idea/` 与仓库根 `java/` 的 .gitignore 归置（L02-java 遗留，非本讲写集）；② master 领先 origin 未 push（用户既定留本地）
 
 ## 10. C1–C15 逐项结论表（Java 口径）
 
