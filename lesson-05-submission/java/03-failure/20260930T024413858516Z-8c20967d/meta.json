@@ -1,0 +1,14 @@
+{
+  "phase": "red",
+  "argv": [
+    "mvn",
+    "test"
+  ],
+  "command": "[\"mvn\", \"test\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-30T02:44:13.858516+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-05-submission/java/03-failure/20260930T024413858516Z-8c20967d/output.txt",
+  "sha256": "4498a310c7d59bba1ed4cea68d274eaf61fce7720e1d6f19c5940fbbf9ff9f67",
+  "provenance": "local_teaching_capture"
+}
