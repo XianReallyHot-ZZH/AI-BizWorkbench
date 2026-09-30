@@ -146,3 +146,22 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 - **执行期技能口径**：`/mattpocock-skills:implement`（用户显式，2026-09-30）+ 模型自调 codebase-design / tdd；复查轮 `code-review` 见 §13。
 - **vendors 双查**：全程恒空（clone 只读源，缺陷只落 `.runtime/` clone）。
 - `acceptance: pending_human_review` 恒待人签；**待审核 ≠ 已接受**。
+
+## 13. 复查轮（code-review 双轴自调，2026-09-30）
+
+双轴子代理并行复查 `master...lesson-05-java`（Standards 轴：CLAUDE.md/CONTEXT.md 标准 + Fowler smell 基线；Spec 轴：附录 A 审定稿 + 本账事实核对——逐 seal 读 meta、sqlite 只读查任务账、shasum 复算 golden 指纹；报告全文见会话记录，此处存目与处置）。**处置原则：行为零变化修正、披露补记、旧证据全保留。本轮零代码改动**（三工具源件已入 C5 冻结——冻结产物打磨不采纳，Python 时代复查轮同款裁定），文档侧修正不影响任何封条与测试，无需重采。
+
+| # | 轴 | 发现 | 处置 |
+|---|---|---|---|
+| S-1 | Spec·口径 | A4 步骤 6g 写 `--eval-command "<同串>"`，实际 verify 用裸绝对路径命令（无 `sh -c`/`$L05_EVAL_TARGET` 包装），与红绿链串非逐字节同串 | ✅ 已修（**讲义笔误**）：实查 Python 时代 record 52 的 eval-command 即裸命令形——Java 与 Python 同形非偏离；A4 文本改为「客户 eval 绝对路径裸命令，record 52 同形；task-run --workspace 已绑定候选 cwd，无 $L05_EVAL_TARGET 注入缝」 |
+| S-2 | Spec·披露 | 构造器 `--python` 参数 JD1 未列（JD2 只定默认值；R2 表与 javadoc 已双披露） | ✅ 补记：JD1 参数面补 `--python`（子进程自检的结构性必需） |
+| S-3 | Spec·残留 | 讲义 JD3 / A5 / 时长预算行残留「8 场景」+ 旧编号 s01→s06 + 变异树（修正注①重编号的同步遗漏；A3 正文与 manifest 从来就是 7 场景） | ✅ 已修：三处统一为 7 场景 / s01→s05 / 去变异树 |
+| T-1 | Standards·judge | `ReceivingScenarioCheck.intOption` 重写 `Args.requireInt` 形状（6 行重复） | 不采纳（搁置检查点）：上提 `Args.optionalInt` 须改**冻结核内**的驱动源件——C5 已冻三源件，重复浅、收益不抵重冻+重演成本（Python 时代对冻结产物同款裁定） |
+| T-2 | Standards·judge | 构造器 git 子进程块与 `FlowerpProbe.probe` 同形展开（Duplicated Code） | 不采纳（澄清）：两块错误语义不同（git 失败带 stderr 诊断 / probe 失败涉 JSON 解析），抽共享核需再设适配层；对照件 Python 侧同为两处独立 subprocess 使用 |
+| T-3 | Standards·judge | `(interpreter, target, db)` 三元组 13 处结伴（Data Clumps） | 不采纳（澄清）：`FlowerpProbe` 单方法缝为 JD1 有意设计（javadoc 背书）；会话对象属第二套缝，收益负 |
+| T-4 | Standards·judge | `selfCheck` 双份传 baseline（Path 解析版 + String 回显版） | 不采纳（澄清）：双份各司其职——操作用 resolve、stdout 契约回显**原样**（golden s01 锁的正是原样回显） |
+| T-5 | Standards·judge | `defect.equals("blind")` 四处重复（Primitive Obsession / Repeated Switches） | 不采纳（澄清）：字符串参数面对齐冻结件 argparse choices 同形；换枚举即偏离对照面 |
+| T-6 | Standards·judge | SNIPPET `product` op 无调用点（Speculative Generality，轻） | 不采纳（搁置检查点）：消除须改驱动源件（以 product op 复刻 opening 检查路径）——冻结核内改动，同 T-1 裁定，留检查点一并裁 |
+| T-7 | Standards·judge | `FlowerpProbe.ToolFailure` 承载构造器自身失败（归属命名偏 Probe，轻） | 不采纳（澄清）：共享失败类型有意（两 main 同一 rc 1 语义）；改名动三源件（冻结面） |
+
+**复查轮结论**：双轴均无实质缺陷与 scope creep（Spec 轴另核实：A5 硬检查 0 字节、commit 形状、JD1/JD7/修正注② 与实际逐项相符、golden 指纹复算一致、任务账恰 4 条 eval 链证据且 mvn 链不在账）；S-1–S-3 文档修正随 commit 4 提交；T-1–T-7 搁置/澄清留档。
