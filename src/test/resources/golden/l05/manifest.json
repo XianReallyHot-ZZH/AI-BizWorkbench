@@ -1,0 +1,123 @@
+{
+  "generated_from": "frozen Python evals/l05 工具 @ master（见 evidence/L05-java.md §G 记录的 commit）",
+  "generator": "tools/generate_golden_l05.py",
+  "inputs": {},
+  "normalization": {
+    "canonical_json": "json.dumps(sort_keys=True, ensure_ascii=False, indent=2) + 换行",
+    "mask_fields": {
+      "created_at": "<TS>",
+      "recorded_at": "<TS>",
+      "workbench_id": "<WORKBENCH_ID>"
+    },
+    "mask_note": "l05 特有：本套场景面（两工具 stdout）不含机器生成时间戳与机器绝对路径——构造器 baseline 字段以固定相对路径调用规避、驱动输出不含路径——故在 l01–l03 三件套之外零扩展；created_at/recorded_at/workbench_id 声明保留与四套统一（防御性，本套输出无这些键）",
+    "non_json": "逐字保留"
+  },
+  "scenarios": [
+    {
+      "argv": [
+        "--baseline",
+        ".runtime/golden-l05/ws/b1"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s01_build_b1_ok",
+      "main": "workbench.evals.l05.BuildDefectBaseline",
+      "note": "C3：clone+门面 b1 补丁+自检 JSON（defect_live/on_hand 10/events 1）；重放侧 Java 构造产物即 s05 被测树（双侧树等价的第一重锁）",
+      "stdout_file": "s01_build_b1_ok.stdout.txt"
+    },
+    {
+      "argv": [
+        "--baseline",
+        ".runtime/golden-l05/ws/b1"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s02_build_existing_rejected",
+      "main": "workbench.evals.l05.BuildDefectBaseline",
+      "note": "基线已存在不覆盖（s01 产物在场；stdout 空，stderr 错误词面不入 golden）",
+      "stdout_file": "s02_build_existing_rejected.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l05/ws/clean"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s03_scenario_default_pass",
+      "main": "workbench.evals.l05.ReceivingScenarioCheck",
+      "note": "C1/C2：20/8/8 主干（on_hand [20,28,28,36]、流水 [1,2,2,3]、0/负数拒绝；预期独立计算）",
+      "stdout_file": "s03_scenario_default_pass.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l05/ws/clean",
+        "--opening",
+        "11",
+        "--receipt",
+        "3",
+        "--new",
+        "3"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "id": "s04_scenario_migration_pass",
+      "main": "workbench.evals.l05.ReceivingScenarioCheck",
+      "note": "C6 迁移：11→14→14→17（排除写死 28）",
+      "stdout_file": "s04_scenario_migration_pass.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l05/ws/b1"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s05_scenario_defect_baseline_fail",
+      "main": "workbench.evals.l05.ReceivingScenarioCheck",
+      "note": "C3 定位（observing 数值级）：replay 步 expected 28 / actual 36 + requirement 逐字",
+      "stdout_file": "s05_scenario_defect_baseline_fail.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l05/ws/blind"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "id": "s06_scenario_blind_fail",
+      "main": "workbench.evals.l05.ReceivingScenarioCheck",
+      "note": "C7 盲区：replay-ledger 步（重放改变了账面）——树性质反向锁（客户 eval 对该树绿，见证据链）",
+      "stdout_file": "s06_scenario_blind_fail.stdout.txt"
+    },
+    {
+      "argv": [
+        "--target",
+        ".runtime/golden-l05/ws/no-flowerp"
+      ],
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "id": "s07_scenario_target_rejected",
+      "main": "workbench.evals.l05.ReceivingScenarioCheck",
+      "note": "参数校验：--target 下没有 flowerp/（argparse error，stdout 空）",
+      "stdout_file": "s07_scenario_target_rejected.stdout.txt"
+    }
+  ],
+  "setup": [
+    {
+      "run": [
+        "git",
+        "clone",
+        "--quiet",
+        "--no-hardlinks",
+        "vendors/flowERP",
+        ".runtime/golden-l05/ws/clean"
+      ]
+    },
+    {
+      "content": "not a flowERP tree\n",
+      "write_file": "golden-l05/ws/no-flowerp/placeholder.txt"
+    }
+  ]
+}

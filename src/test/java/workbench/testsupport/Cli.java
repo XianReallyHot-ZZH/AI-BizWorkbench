@@ -48,10 +48,20 @@ public final class Cli {
     }
 
     public static Result run(String... args) {
+        return runMain("workbench.cli.Main", args);
+    }
+
+    /**
+     * 同上，可指定主类：l05 起 golden 重放需驱动 workbench.evals.* 工具 main
+     * （工具不进 REGISTRY、各有入口）。独立方法名而非重载：{@code run(String, String...)}
+     * 与 {@code run(String...)} 在字符串实参调用点两可（J2 编译失败现场，
+     * 见 evidence/L05-java.md §G）；默认重载固定 CLI 入口，旧行为不变。
+     */
+    public static Result runMain(String mainClass, String... args) {
         try {
             List<String> argv = new ArrayList<>(List.of("java",
                     "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
-                    "-cp", childClasspath(), "workbench.cli.Main"));
+                    "-cp", childClasspath(), mainClass));
             argv.addAll(List.of(args));
             Process process = new ProcessBuilder(argv).directory(repoRoot().toFile()).start();
             byte[] out = process.getInputStream().readAllBytes();

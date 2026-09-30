@@ -1,0 +1,11 @@
+{
+  "actual": {
+    "on_hand": 36
+  },
+  "expected": {
+    "on_hand": 28
+  },
+  "requirement": "同一笔收货只入账一次：库存与流水都不得重复",
+  "status": "fail",
+  "step": "replay"
+}

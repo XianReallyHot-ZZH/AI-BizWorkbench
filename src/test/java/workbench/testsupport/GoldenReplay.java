@@ -32,7 +32,11 @@ public final class GoldenReplay {
 
     private GoldenReplay() {}
 
-    /** 重放一份 golden manifest（清场 → 物化输入 → setup → 逐场景对照；掩码按 manifest 声明驱动）。 */
+    /** 重放一份 golden manifest（清场 → 物化输入 → setup → 逐场景对照；掩码按 manifest 声明驱动）。
+     *
+     * <p>scratchRelativeDirs 传空清单 = 调用方自行清场（l05 先例：盲区树由重放测试在 replay()
+     * 之前物化，不能被首步清场抹掉）。
+     */
     public static void replay(String manifestResource, List<String> scratchRelativeDirs) throws Exception {
         // 重放清场（与生成器同口径：一律重采，不做增量）
         for (String dir : scratchRelativeDirs) {
@@ -104,7 +108,10 @@ public final class GoldenReplay {
             }
             List<String> argv = new ArrayList<>();
             scenario.path("argv").forEach(item -> argv.add(item.asText()));
-            Cli.Result result = Cli.run(argv.toArray(String[]::new));
+            // l05 起工具类场景可声明 main（默认 CLI 入口；l01–l04 四套 manifest 无该字段 → 行为不变）
+            String mainClass = scenario.hasNonNull("main")
+                    ? scenario.get("main").asText() : "workbench.cli.Main";
+            Cli.Result result = Cli.runMain(mainClass, argv.toArray(String[]::new));
             assertThat(result.exitCode()).as("%s 退出码", id)
                     .isEqualTo(scenario.path("exit_code").asInt());
             assertThat(Cli.normalize(result.stdout(), maskFields))
@@ -125,7 +132,8 @@ public final class GoldenReplay {
         }
     }
 
-    private static void deleteRecursively(Path path) throws IOException {
+    /** 包内可见（l05 起重放测试自行清场复用；原 private 语义不变）。 */
+    static void deleteRecursively(Path path) throws IOException {
         if (!Files.exists(path)) {
             return;
         }

@@ -1,0 +1,6 @@
+{
+  "baseline": ".runtime/golden-l05/ws/b1",
+  "defect_live": true,
+  "events": 1,
+  "on_hand": 10
+}
