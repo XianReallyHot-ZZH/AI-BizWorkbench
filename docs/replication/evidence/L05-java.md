@@ -129,8 +129,10 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 | observation | verify 自举 `workbench-task-run … --mode verify --eval-command "<客户 eval 绝对路径>" --execution-timeout 900 --actor Claude` | `06-observations/20260930T044001915156Z-4cf4fe5c`（任务账 execution `verify_completed`） | 0 |
 | observation | 终态 status 四词面 | `06-observations/20260930T044009230238Z-73ad4aaf` | 0 |
 | observation | `shasum -a 256`（同初冻 9 路径）——**C5 收口复核：逐字节一致** | `06-observations/20260930T044019307212Z-2fe4e6d8` | 0 |
+| observation | 观察类十封条导入后终验复跑 status（对齐 Python 时代 record 49–56 形态：观察记录入账） | `06-observations/20260930T045430964825Z-370396f1` | 0（`evidence_complete:true` 不受扰） |
+| observation | 具名 approve 后终态密封（task_state accepted） | `06-observations/20260930T045440927788Z-747f8a9f` | 0 |
 
-链判定（任务账 001）：红 `e5cbb804`（04:00:46）→ 红 `dcc31d38`（04:00:54）→ diff `689ebb47`（04:01:01）→ 绿 `e40a19a7`（04:01:21），同命令、observed_at 严格递增、全局最新绿 = 成功绿；verify 自举 execution 在账不破坏链；`evidence_complete:true`。
+链判定（任务账 001）：红 `e5cbb804`（04:00:46）→ 红 `dcc31d38`（04:00:54）→ diff `689ebb47`（04:01:01）→ 绿 `e40a19a7`（04:01:21），同命令、observed_at 严格递增、全局最新绿 = 成功绿；verify 自举 execution 在账不破坏链；观察类记录导入后终验复跑仍 `evidence_complete:true`（`370396f1`）。**任务账共 14 条证据**（链 4 + 观察 10，导入序如实）；具名 approve（review_id 3，reviewer = XianReallyHot-ZZH，2026-09-30T04:54:33Z）后 `task_state: accepted`——账面 `acceptance` 字段恒 `pending_human_review`（机器不代签，验收事实在 reviews 表与下方具名验收行，铁律 2）。
 
 ## 12. 口径与限制
 
@@ -165,3 +167,11 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 | T-7 | Standards·judge | `FlowerpProbe.ToolFailure` 承载构造器自身失败（归属命名偏 Probe，轻） | 不采纳（澄清）：共享失败类型有意（两 main 同一 rc 1 语义）；改名动三源件（冻结面） |
 
 **复查轮结论**：双轴均无实质缺陷与 scope creep（Spec 轴另核实：A5 硬检查 0 字节、commit 形状、JD1/JD7/修正注② 与实际逐项相符、golden 指纹复算一致、任务账恰 4 条 eval 链证据且 mvn 链不在账）；S-1–S-3 文档修正随 commit 4 提交；T-1–T-7 搁置/澄清留档。
+
+## 具名验收（讲义级）
+
+- 验收人：XianReallyHot-ZZH
+- 日期：2026-09-30
+- 对象：CASE-WB-L05-JAVA-001 @ `lesson-05-java` 源码版本 `a1ac340`（任务账 review 记录在场：review_id 3 锚定 verify execution，`task_state: accepted`）
+- 结论：**接受**（用户原话「没问题，继续」，本讲显式具名验收请求之后的答复；未解决问题清单五条已知悉并留档：① T-1/T-6 冻结件打磨搁置检查点；② 盲区补流水断言留检查点（ADR-0003）；③ 并发/进程崩溃/同键不同内容三边界未覆盖（上游同口径）；④ `.idea/` 与仓库根 `java/` 归置（L02-java 遗留）；⑤ master 领先 origin 未 push（决定权在用户））
+- 效力：随后 `git merge --no-ff lesson-05-java`（合并信息含验收人），roadmap 重走线行 + 讲义导航 + CLAUDE.md 待建设清单口径收口（JD8）
