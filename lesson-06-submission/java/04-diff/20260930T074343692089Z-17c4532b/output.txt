@@ -1,0 +1,1424 @@
+diff --git "a/docs/lessons/L06-Harness\345\210\206\347\272\247\345\210\244\345\206\263.md" "b/docs/lessons/L06-Harness\345\210\206\347\272\247\345\210\244\345\206\263.md"
+index cd89c95..c195c57 100644
+--- "a/docs/lessons/L06-Harness\345\210\206\347\272\247\345\210\244\345\206\263.md"
++++ "b/docs/lessons/L06-Harness\345\210\206\347\272\247\345\210\244\345\206\263.md"
+@@ -101,7 +101,7 @@ L06 是重走线**最后一讲**，也是增量最重的一讲：Python 时代
+ | C1 | 可用 = 在手 − 预占（查询与 CSV 同口径） | **Java 口径驱动** 8/3：查询与 CSV 同为 `[8,3,5]`（预期由 8−3 在 Java 独立计算，不抄返回值）、CSV 恰一条该 SKU 记录；迁移 13/4 → `[13,4,9]`、请求 10 拒绝且状态不变（排除写死 5）；驱动输出与冻结 Python 逐字节同形（golden l06 锁） | 重演（驱动换 Java 载体） |
+ | C2 | 超额预占拒绝且状态不变（绑定 eval `stock_never_negative`） | 驱动 AC-REJECT / AC-UNCHANGED（四表快照锚点=建单后，R1 终态照抄）；客户 blocking 用例经 Checks 登记项 `l06_customer_stock_case` 子进程照跑绿 | 重演 |
+ | C3 | 统一运行器分级语义（九项运行器合同） | `EvalHarness` 九项语义合同测试（映射源 = 上游 `test_runner_contract.py`，与冻结 Python 测试头同源）：通过+报告落盘、blocking 一败即 block+退出 1、observing 只告警、异常保留类型+原因且继续、observing 异常不升格、非法选择拒绝、子集显式、x 模式不覆盖、消费端拒绝矛盾 | 重演（载体 Java；进程内直调 `run()`——Python 时代复查轮 S6 同款口径：合同面限 eval.harness 缝，非 workbench.cli 缝） |
+-| C4 | 阻断失败、decision、退出码三者一致 + 假绿辨别力 | `ReportContract` 校验（8 类拒绝词面逐字）；假绿探针：`blocking_failed=0` 变体换入 → 合同套件真实红（探针封条留痕）；报告三态一致由 golden s07/s08 **字节级**锁定（含 `decision: block` 红报告全文） | 重演 |
++| C4 | 阻断失败、decision、退出码三者一致 + 假绿辨别力 | `ReportContract` 校验（11 处拒绝词面逐字）；假绿探针：`blocking_failed=0` 变体换入 → 合同套件真实红（探针封条留痕）；报告三态一致由 golden s07/s08 **字节级**锁定（含 `decision: block` 红报告全文） | 重演 |
+ | C5 | 同命令红绿链入账 | 同一条 `sh -c` 命令串（`$L06_EVAL_TARGET` 切换目标树，echo 行 + 封存 argv + 证据账三重披露，L05 逐字承袭），`capture_evidence.py --submission-root lesson-06-submission/java` 采集 → Java `ImportEvidence` 导入 → `CASE-WB-L06-JAVA-001`；`workbench-status --require-red-green-evidence` 链判定完整 | 重演（账本/导入器 Java 载体） |
+ | C6 | 检查冻结不被偷偷改动 + L05 能力不回归 | 冻结 sha256：客户 `eval/harness.py`+`eval/cases.py` 双树同指纹（与 Python 时代冻结值一致）+ 双树 `flowerp/service.py`（缺陷在场/候选干净，L05-java 先例超点名）+ **Java 六源件**（EvalHarness/ReportContract/Checks/StockConsistencyCheck/BuildDefectBaseline/StockProbe）；初冻 + 收口复核前后逐字节一致；L05 回归 = Checks 登记项 `l05_receiving_regression`（客户 `receiving_is_idempotent` 子进程照跑）+ mvn 全量既有合同与 golden l01–l05 五重放持续在场 | 重演（冻结对象含 L06 Java 工具源） |
+ | C7 | 辨别力边界留痕（盲区实证） | 盲区探针：客户 `inventory_export_is_stable` 对**缺陷树**绿 ×2（rc 0 封条）+ 本方检查同树红（链 B 红即证）——「检查没跑在缺陷可见的形状上（reserved=0 数据）」如实留痕；未覆盖边界（并发预占/进程中断/多 SKU 多仓）照 Python §3.3 口径入账；是否补 reserved>0 形状的客户用例留检查点显式采纳 | 重演 |
+@@ -127,7 +127,7 @@ L06 是重走线**最后一讲**，也是增量最重的一讲：Python 时代
+ | 驱动 | s06 `--target ws/no-flowerp` 拒绝 | 2 | 参数校验面 |
+ | 运行器 | s07 checks（env `L06_EVAL_TARGET=ws/clean`）`--no-report`：五项报告（四 blocking 绿 + 教学告警，`decision: pass`） | 0 | **C3/C4 统一运行器绿面**（报告全文字节锁） |
+ | 运行器 | s08 checks（env `L06_EVAL_TARGET=ws/b1`）`--no-report`：`l06_stock_consistency` 红（evidence=`rc=1: {AC-AVAILABLE …}`）+ `decision: block` | 1 | **C4 可信红面**（红报告全文字节锁） |
+-| 运行器 | s09 checks 无 env：拒绝（stdout 空） | 1 | `L06_EVAL_TARGET` 必设面（与「主类缺失」偶然同形——修正注③同款口径，红点由其余场景承载） |
++| 运行器 | s09 checks 无 env：全项失败报告（stdout 即报告全文） | 1 | `L06_EVAL_TARGET` 必设面——目标树解析在登记项内（冻结 `_target()` 逐项调用同形）：四项 RuntimeError 入报告 + 教学项 AssertionError，`decision: block`；commit 1 真实红（期望报告 vs 主类缺失空 stdout） |
+ 
+ - **共享件行为零变化扩展（JD4，前置落 master）**：`GoldenReplay` 场景支持可选 `env` 字段（map；s07/s08 用——Checks 读环境变量是冻结 Python 语义，加 `--target` 参数即偏离 argv 面）+ `Cli.runMainWithEnv`（**独立方法名**，J2 重载两可教训；旧 `runMain` 委托不变）；l01–l05 五套 manifest 无 `env` 字段 → 输出逐字节不变，前置提交 `mvn test` 91/91（含五套旧重放）为行为零变化证据
+ - s01 与 s05/s08 构成顺序叙事（s01 构造产物即 s05/s08 被测树；生成侧同构：Python 构造器产物 + Python 驱动/checks）
+@@ -151,7 +151,7 @@ L06 是重走线**最后一讲**，也是增量最重的一讲：Python 时代
+ #    验证——D3 schema 1.0 对齐的机检）+ GoldenL06ReplayTest + 起始红封条
+ #    （tools/capture_evidence.py --submission-root lesson-06-submission/java red -- mvn test）
+ # 4. 【配合点 2】implement：用户显式调用后动笔——workbench/evals 根两件
+-#    （EvalHarness：分级/报告/x 模式/退出码；ReportContract：8 类拒绝）+ l06 四件
++#    （EvalHarness：分级/报告/x 模式/退出码；ReportContract：11 处拒绝词面）+ l06 四件
+ #    （Checks/StockConsistencyCheck/BuildDefectBaseline/StockProbe）；不进 REGISTRY、
+ #    零新 CLI 命令、Ledger 零扩、pom 零改动；自调 codebase-design + tdd；遇障自调
+ #    diagnosing-bugs
+diff --git a/docs/replication/evidence/L06-java.md b/docs/replication/evidence/L06-java.md
+index 7bb8435..1e87261 100644
+--- a/docs/replication/evidence/L06-java.md
++++ b/docs/replication/evidence/L06-java.md
+@@ -23,9 +23,13 @@
+ | G1 | `.venv/bin/python -X utf8 tools/generate_golden_l06.py`（首跑） | 0 | **9/9 场景**按预期退出码通过；指纹 `f0e0ab77…` **首跑即留** |
+ | G2 | 同命令（第 2 跑，确定性比对） | 0 | 9/9 ok；指纹 `f0e0ab777e946e8bfa7d5bae2388377e0c9c649d2d3b3a3e671e8b885060f5a8` = G1 → **golden 字节级确定，采纳此指纹** |
+ | J2 | `mvn test`（共享件扩展后回归） | 0 | **91/91 绿**（含 golden l01–l05 五套重放）→ **行为零变化证据**（J1/J2 对照，env 字段扩展无扰） |
++| G3 | 同 G1 命令（重生成，候选期修正轮） | 0 | 9/9 ok；指纹 `1465c87d…` |
++| G4 | 同命令（修正后第 2 跑，确定性比对） | 0 | 9/9 ok；指纹 `1465c87d56b94e37e001fd3ae0c73e026d78312fbce9c2c6b1986f2374b3b05c` = G3 → **采纳此指纹** |
+ 
+ 指纹命令：`cd src/test/resources/golden/l06 && find . -type f \| sort \| xargs shasum -a 256 \| shasum -a 256`。
+ 
++**修正记录（s09 面注记，候选期 2026-09-30）**：前置期的生成器 docstring / manifest note / 附录 A3 / 本账场景清单把 s09（checks 缺 env）误述为「stdout 空、与主类缺失偶然同形」——**捕获数据自始正确**（s09 期望 = 全项失败报告：四登记项 RuntimeError + 教学项 AssertionError 入报告、`decision: block`、stdout 即报告全文——冻结 checks 的 `_target()` 在登记项内逐项解析，失败走报告而非入口拒绝），错的是注记文字与 Java 首版实现/合同测试的形状假设。Golden 重放首跑（s01–s08 字节全过后）在 s09 抓获 Java 首版「入口拒绝」译法与冻结面的分歧——按 golden 修正：Checks 目标解析移入登记项 + `RuntimeError` 同名异常类（报告 error.type 字节保真）+ 合同测试改断言报告形状（非放宽，向冻结面对齐；披露于 L06EvalContractTest 注释）。随后重生成 golden：`git diff` 证 9 个 stdout 件**逐字节未动**、仅 manifest 的 s09 note 一行变化 → 指纹 f0e0ab77… → `1465c87d…`（G3/G4 双跑一致，原 G1/G2 记录保留不删）。
++
+ ### 场景清单（9，单命令粒度，逐条见 `manifest.json` 的 scenarios 数组）
+ 
+ | 组 | 场景 | 覆盖面 |
+@@ -34,7 +38,7 @@
+ | 驱动 pass | s03 / s04 | 8/3 主干（query/csv 同 `[8,3,5]`、拒 6、四表状态不变）/ 13/4 迁移（`[13,4,9]`、拒 10——排除写死 5） |
+ | 驱动 fail | s05 | 缺陷树 `AC-AVAILABLE`：expected `[8,3,5]` / query `[8,3,5]` / csv `[8,3,8]` + requirement 逐字（与 Python 时代红 66 同形） |
+ | 驱动拒绝 | s06 | `--target` 下没有 flowerp/（rc 2，参数校验面） |
+-| 运行器 | s07 / s08 / s09 | 绿报告（四 blocking 绿 + 教学告警 WARN，decision pass）/ 红报告（stock 红 `rc=1: {AC-AVAILABLE …}`、error.type AssertionError、decision block——可信红面字节锁）/ 缺 env 拒绝（stdout 空；与「主类缺失」偶然同形——l05 修正注③同款口径） |
++| 运行器 | s07 / s08 / s09 | 绿报告（四 blocking 绿 + 教学告警 WARN，decision pass）/ 红报告（stock 红 `rc=1: {AC-AVAILABLE …}`、error.type AssertionError、decision block——可信红面字节锁）/ 缺 env 全项失败报告（四项 RuntimeError + 教学项 AssertionError 入报告、decision block、stdout 即报告全文——目标树解析在登记项内，冻结 `_target()` 逐项调用同形） |
+ 
+ ### 规范化与 setup（与五套旧 golden 的关系）
+ 
+diff --git a/src/main/java/workbench/evals/EvalHarness.java b/src/main/java/workbench/evals/EvalHarness.java
+new file mode 100644
+index 0000000..273748d
+--- /dev/null
++++ b/src/main/java/workbench/evals/EvalHarness.java
+@@ -0,0 +1,158 @@
++package workbench.evals;
++
++import workbench.bootstrap.PyJson;
++
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.nio.file.StandardOpenOption;
++import java.time.OffsetDateTime;
++import java.time.ZoneOffset;
++import java.time.format.DateTimeFormatter;
++import java.time.temporal.ChronoUnit;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.function.Supplier;
++
++/**
++ * 统一 Eval Harness（Java 重走件，对照冻结 {@code evals/harness.py}）：按登记清单分级执行
++ * 检查，产出报告与一致的进程退出码。L06 合同 workbench_increment「统一 Harness、判决与
++ * 退出码」的 Java 载体（L07 Hook 入口的同一裁判）。分级语义（CONTEXT.md）：blocking 失败
++ * 即整体失败并给出非零退出码；observing 只记录不拦截。报告 schema_version 1.0 与客户
++ * flowERP eval/harness 对齐（L08「本地/远端同一 Eval 身份」铺垫）；报告独占写入（x 模式），
++ * 一份报告属于一次调用，绝不覆盖旧证据。一致性由 {@link ReportContract} 独立复核
++ * （review 缝：可信红报告同样通过复核）。
++ *
++ * <p>纯库直译（附录 A1 结构翻译点①：无子进程依赖，进程内库语义同形）。已知语言绑定偏差
++ * （JD6，如实披露）：选择非法抛 {@link IllegalArgumentException}（Python ValueError 同义面）；
++ * 报告写失败以 {@link UncheckedIOException} 承载（Python OSError 原样上抛——其中 x 模式
++ * 撞既有文件的 cause 为 FileAlreadyExistsException，FileExistsError 同义面）；
++ * {@code generated_at} 为 Java ISO 偏移格式（Python isoformat 微差，掩码内不入对照）。
++ * 条目异常捕获面 = {@code RuntimeException | AssertionError}（Python {@code except Exception}
++ * 的同义面——Python AssertionError 是 Exception 子类，Java 是 Error，故显式并列；教学
++ * 观察项的 error.type 因此记 {@code AssertionError}，与冻结面逐字）。
++ */
++public final class EvalHarness {
++
++    public static final String SCHEMA_VERSION = "1.0";
++    private static final Set<String> LEVELS = Set.of("blocking", "observing");
++    private static final Set<String> SUITES = Set.of("all", "blocking", "observing");
++
++    /** 登记项：(名, 等级, 检查可调用)——检查返回 evidence 字符串，失败以异常承载。 */
++    public record Entry(String name, String level, Supplier<String> check) {}
++
++    /** run 结果：(报告, 进程退出码)——存在 blocking 失败返回 1，否则 0。 */
++    public record Outcome(Map<String, Object> report, int exitCode) {}
++
++    private EvalHarness() {}
++
++    /** 全默认面：suite=all、全量登记、不落盘（Python {@code run(entries)} 同形）。 */
++    public static Outcome run(List<Entry> entries) {
++        return run(entries, "all", null, null);
++    }
++
++    /**
++     * 运行登记项。suite/names 选择子集（显式记录在 requested_cases；空选择、未知项、与
++     * suite 不匹配、重复登记一律 {@link IllegalArgumentException}）；reportPath 非 null 时
++     * 独占写入 JSON 报告（x 模式：撞既有文件即失败，绝不覆盖旧证据）。
++     */
++    public static Outcome run(List<Entry> entries, String suite, List<String> names, Path reportPath) {
++        if (!SUITES.contains(suite)) {
++            throw new IllegalArgumentException("未知 suite：" + suite);
++        }
++        List<String> registry = entries.stream().map(Entry::name).toList();
++        if (registry.size() != Set.copyOf(registry).size()) {
++            throw new IllegalArgumentException("登记项重名");
++        }
++        if (entries.stream().anyMatch(entry -> !LEVELS.contains(entry.level()))) {
++            throw new IllegalArgumentException("登记项等级无效");
++        }
++        LinkedHashSet<String> requested = new LinkedHashSet<>(names == null ? registry : names);
++        List<Entry> selected = entries.stream()
++                .filter(entry -> requested.contains(entry.name())
++                        && ("all".equals(suite) || entry.level().equals(suite)))
++                .toList();
++        if (selected.isEmpty()
++                || !requested.equals(new LinkedHashSet<>(selected.stream().map(Entry::name).toList()))) {
++            throw new IllegalArgumentException("选择为空、含未知项或与 suite 不匹配");
++        }
++
++        List<Map<String, Object>> results = new ArrayList<>();
++        for (Entry entry : selected) {
++            long start = System.nanoTime();
++            String evidence;
++            boolean passed = true;
++            Map<String, Object> error = null;
++            try {
++                evidence = entry.check().get();
++            } catch (RuntimeException | AssertionError exc) {  // 检查崩溃不吞掉后续项，原因如实入报告
++                evidence = String.valueOf(exc.getMessage());
++                passed = false;
++                error = new LinkedHashMap<>();
++                error.put("type", exc.getClass().getSimpleName());
++                error.put("message", String.valueOf(exc.getMessage()));
++            }
++            Map<String, Object> item = new LinkedHashMap<>();
++            item.put("name", entry.name());
++            item.put("level", entry.level());
++            item.put("passed", passed);
++            item.put("duration_ms", (int) Math.round((System.nanoTime() - start) / 1_000_000.0));
++            item.put("evidence", evidence);
++            item.put("error", error);
++            results.add(item);
++        }
++
++        int blockingFailed = 0;
++        int observingFailed = 0;
++        int passedCount = 0;
++        for (Map<String, Object> item : results) {
++            boolean ok = (Boolean) item.get("passed");
++            if (ok) {
++                passedCount++;
++            } else if ("blocking".equals(item.get("level"))) {
++                blockingFailed++;
++            } else {
++                observingFailed++;
++            }
++        }
++        Map<String, Object> summary = new LinkedHashMap<>();
++        summary.put("total", results.size());
++        summary.put("passed", passedCount);
++        summary.put("blocking_failed", blockingFailed);
++        summary.put("observing_failed", observingFailed);
++        summary.put("decision", blockingFailed > 0 ? "block" : "pass");
++
++        Map<String, Object> report = new LinkedHashMap<>();
++        report.put("schema_version", SCHEMA_VERSION);
++        report.put("suite", suite);
++        report.put("requested_cases", new ArrayList<>(requested));
++        report.put("generated_at", OffsetDateTime.now(ZoneOffset.UTC)
++                .truncatedTo(ChronoUnit.MICROS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
++        report.put("summary", summary);
++        report.put("results", results);
++
++        if (reportPath != null) {
++            writeReport(reportPath, PyJson.dumps(report));
++        }
++        return new Outcome(report, blockingFailed > 0 ? 1 : 0);
++    }
++
++    private static void writeReport(Path target, String content) {
++        try {
++            if (target.getParent() != null) {
++                Files.createDirectories(target.getParent());
++            }
++            // 一份报告属于一次调用；旧证据不可覆盖（x 模式，CREATE_NEW 即拒绝）。
++            Files.writeString(target, content, StandardCharsets.UTF_8,
++                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
++        } catch (IOException error) {
++            throw new UncheckedIOException(error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/ReportContract.java b/src/main/java/workbench/evals/ReportContract.java
+new file mode 100644
+index 0000000..4c8bc74
+--- /dev/null
++++ b/src/main/java/workbench/evals/ReportContract.java
+@@ -0,0 +1,136 @@
++package workbench.evals;
++
++import com.fasterxml.jackson.databind.JsonNode;
++
++import java.util.ArrayList;
++import java.util.HashSet;
++import java.util.List;
++import java.util.Set;
++
++/**
++ * Eval 报告合同（Java 重走件，对照冻结 {@code evals/report_contract.py}）：按调用方请求的
++ * 用例身份复核报告，不信报告自己的绿色汇总。review 缝（L06 合同 acceptance[1]）：阻断失败、
++ * 报告 decision 和进程退出码必须一致；汇总与逐项结果矛盾、报告结论与退出码矛盾、用例身份
++ * 被替换——一律 {@link IllegalStateException}（Python RuntimeError 同义面，词面逐字）。
++ * 可信红报告同样通过复核（复核只验「报告如实」，不验「业务通过」）。报告 schema 与客户
++ * flowERP eval/harness 报告同形（schema_version 1.0），对两边的报告均可复核——客户报告
++ * 交叉验证（D3 对齐实证）见 EvalHarnessContractTest。
++ */
++public final class ReportContract {
++
++    private static final Set<String> LEVELS = Set.of("blocking", "observing");
++    private static final List<String> SUMMARY_COUNT_KEYS =
++            List.of("total", "passed", "blocking_failed", "observing_failed");
++
++    private ReportContract() {}
++
++    public static void validateReport(JsonNode report, List<String> caseNames, int returncode, String suite) {
++        if (report == null || !report.isObject()
++                || !report.path("schema_version").isTextual()
++                || !"1.0".equals(report.path("schema_version").asText())) {
++            throw new IllegalStateException("Eval 报告 Schema 无效");
++        }
++        if (!report.path("suite").isTextual() || !suite.equals(report.path("suite").asText())) {
++            throw new IllegalStateException("Eval 报告 suite 与请求不一致");
++        }
++
++        JsonNode requested = report.path("requested_cases");
++        if (!isStringSetEquals(requested, caseNames)) {
++            throw new IllegalStateException("Eval 请求用例与本次任务不一致");
++        }
++
++        JsonNode results = report.path("results");
++        if (!results.isArray() || results.isEmpty()) {
++            throw new IllegalStateException("Eval 结果必须包含实际用例");
++        }
++        for (JsonNode item : results) {
++            if (!item.isObject()) {
++                throw new IllegalStateException("Eval 结果必须包含实际用例");
++            }
++        }
++        List<String> names = new ArrayList<>();
++        for (JsonNode item : results) {
++            if (!item.path("name").isTextual()) {
++                break;
++            }
++            names.add(item.path("name").asText());
++        }
++        if (names.size() != results.size() || names.size() != stringSet(names).size()
++                || !stringSet(names).equals(Set.copyOf(caseNames))) {
++            throw new IllegalStateException("Eval 实际用例缺失、重复或被替换");
++        }
++
++        for (JsonNode item : results) {
++            if (!item.path("passed").isBoolean()) {
++                throw new IllegalStateException("Eval passed 必须为布尔值");
++            }
++            JsonNode level = item.path("level");
++            if (!level.isTextual() || !LEVELS.contains(level.asText())) {
++                throw new IllegalStateException("Eval 用例等级无效");
++            }
++            if (LEVELS.contains(suite) && !level.asText().equals(suite)) {
++                throw new IllegalStateException("Eval 用例等级与 suite 不一致");
++            }
++        }
++
++        int blockingFailed = 0;
++        int observingFailed = 0;
++        int passed = 0;
++        for (JsonNode item : results) {
++            if (item.path("passed").asBoolean()) {
++                passed++;
++            } else if (item.path("level").asText().equals("blocking")) {
++                blockingFailed++;
++            } else {
++                observingFailed++;
++            }
++        }
++        JsonNode summary = report.path("summary");
++        if (!summary.isObject()) {
++            throw new IllegalStateException("Eval 汇总与逐项结果不一致");
++        }
++        expectSummary(summary, "total", results.size());
++        expectSummary(summary, "passed", passed);
++        expectSummary(summary, "blocking_failed", blockingFailed);
++        expectSummary(summary, "observing_failed", observingFailed);
++        expectSummary(summary, "decision", blockingFailed > 0 ? "block" : "pass");
++        for (String key : SUMMARY_COUNT_KEYS) {
++            if (!summary.path(key).isInt()) {
++                throw new IllegalStateException("Eval 汇总计数必须为整数");
++            }
++        }
++        if (returncode != (blockingFailed > 0 ? 1 : 0)) {
++            throw new IllegalStateException("Eval 进程退出码与报告结论不一致");
++        }
++    }
++
++    /** requested_cases 面：字符串数组、无重复、集合与请求一致（Python 同一拒绝词面）。 */
++    private static boolean isStringSetEquals(JsonNode node, List<String> caseNames) {
++        if (!node.isArray()) {
++            return false;
++        }
++        List<String> values = new ArrayList<>();
++        for (JsonNode item : node) {
++            if (!item.isTextual()) {
++                return false;
++            }
++            values.add(item.asText());
++        }
++        return values.size() == stringSet(values).size()
++                && stringSet(values).equals(Set.copyOf(caseNames));
++    }
++
++    private static Set<String> stringSet(List<String> values) {
++        return new HashSet<>(values);
++    }
++
++    private static void expectSummary(JsonNode summary, String key, Object expected) {
++        JsonNode node = summary.path(key);
++        boolean equal = expected instanceof String text
++                ? node.isTextual() && text.equals(node.asText())
++                : node.isNumber() && node.asInt() == (Integer) expected;
++        if (!equal) {
++            throw new IllegalStateException("Eval 汇总与逐项结果不一致");
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l06/BuildDefectBaseline.java b/src/main/java/workbench/evals/l06/BuildDefectBaseline.java
+new file mode 100644
+index 0000000..2d5143a
+--- /dev/null
++++ b/src/main/java/workbench/evals/l06/BuildDefectBaseline.java
+@@ -0,0 +1,142 @@
++package workbench.evals.l06;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * 构造 L06 缺陷基线（Java 重走件，对照冻结 {@code evals/l06/build_defect_baseline.py}）。
++ *
++ * <p>缺陷（上游 L06 教学缺陷原样）：{@code ERPService.export_inventory} 的 CSV 模板把
++ * {@code {row['available']}} 换成 {@code {row['on_hand']}}——查询 [8,3,5]、导出 [8,3,8]，
++ * reserved&gt;0 时两出口口径分裂。客户 {@code inventory_export_is_stable} 用 reserved=0
++ * 数据，对本缺陷不可见（盲区探针另有实跑采证）。基线仅作检查的靶子，永不合入；锚点不唯一
++ * 即拒绝动手（上游形状漂移时构造失败而非错改）。
++ *
++ * <p>对外契约与冻结件同形：stdout 单行 JSON（defect_live/query_available/csv_available，
++ * 键序 = Python 插入序）；拒绝词面逐字同文（基线已存在 / 锚点命中 N 次 / 缺陷未生效），
++ * stderr + rc 1；用法错误 rc 2（argparse 同形，词面按 JD6）。结构差异（附录 A1）：自检经
++ * 子进程 python 驱动（Python 为 in-process import），经 {@link StockProbe} 一次场景回报。
++ * Java 增量参数面（JD1）：{@code --source}（默认 vendors/flowERP，锚点守卫可测缝——冻结件
++ * 硬编码无注入缝，l05 修正注① 先例）、{@code --python}（默认 .venv/bin/python，相对 cwd
++ * 内部绝对化）；默认基线落 {@code -java} 路径（防跨时代冲撞，如实记录的偏离）。
++ */
++public final class BuildDefectBaseline {
++
++    /** 只命中 export_inventory 的 CSV 模板 available 字段；与冻结 Python 构造器逐字同一锚点。 */
++    private static final String ANCHOR = "{row['available']}";
++    private static final String PATCH_TO = "{row['on_hand']}";
++
++    private static final String DEFAULT_BASELINE = ".runtime/course/L06-defect-baseline-java";
++    private static final String DEFAULT_SOURCE = "vendors/flowERP";
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    private BuildDefectBaseline() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--baseline", "--source", "--python"), Set.of("--skip-self-check"));
++            String baselineArg = args.optional("--baseline", DEFAULT_BASELINE);
++            Path interpreter = StockProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            build(baselineArg, args.optional("--source", DEFAULT_SOURCE));
++            if (!args.flag("--skip-self-check")) {
++                selfCheck(interpreter, Path.of(baselineArg).toAbsolutePath().normalize());
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (StockProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    private static void build(String baselineArg, String sourceArg) {
++        Path baseline = Path.of(baselineArg).toAbsolutePath().normalize();
++        if (Files.exists(baseline)) {
++            throw new StockProbe.ToolFailure("基线已存在，不覆盖：" + baseline + "（重建请先手动删除）");
++        }
++        Path source = Path.of(sourceArg).toAbsolutePath().normalize();
++        Process process;
++        try {
++            process = new ProcessBuilder("git", "clone", "--quiet", "--no-hardlinks",
++                    source.toString(), baseline.toString()).start();
++        } catch (IOException error) {
++            throw new StockProbe.ToolFailure("git clone 启动失败：" + source, error);
++        }
++        try {
++            String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            int code = process.waitFor();
++            if (code != 0) {
++                throw new StockProbe.ToolFailure(
++                        "git clone 失败 rc=" + code + "：" + stderr.strip());
++            }
++        } catch (IOException error) {
++            throw new StockProbe.ToolFailure("git clone 输出读取失败：" + source, error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new StockProbe.ToolFailure("git clone 等待被中断", error);
++        }
++        Path serviceFile = baseline.resolve("flowerp").resolve("service.py");
++        String sourceText = readUtf8(serviceFile);
++        int hits = countMatches(sourceText, ANCHOR);
++        if (hits != 1) {
++            throw new StockProbe.ToolFailure("锚点命中 " + hits + " 次（应为 1），上游形状变了，停止构造");
++        }
++        writeUtf8(serviceFile, sourceText.replace(ANCHOR, PATCH_TO));
++    }
++
++    private static void selfCheck(Path interpreter, Path baseline) {
++        int queryAvailable;
++        int csvAvailable;
++        try (StockProbe.TempDb temp = StockProbe.tempDb("l06-baseline-check-")) {
++            JsonNode observed = StockProbe.scenario(interpreter, baseline, temp.db, 8, 3);
++            queryAvailable = observed.path("query").path(2).asInt();
++            csvAvailable = observed.path("csv").path(2).asInt();
++        }
++        boolean defectLive = queryAvailable == 5 && csvAvailable == 8;
++        Map<String, Object> result = new LinkedHashMap<>();
++        result.put("defect_live", defectLive);
++        result.put("query_available", queryAvailable);
++        result.put("csv_available", csvAvailable);
++        System.out.println(PyJson.dumpsCompact(result));
++        if (!defectLive) {
++            throw new StockProbe.ToolFailure("缺陷未生效：预期查询 5 / CSV 8 分裂，实际见上");
++        }
++    }
++
++    private static int countMatches(String text, String needle) {
++        int count = 0;
++        int index = 0;
++        while ((index = text.indexOf(needle, index)) >= 0) {
++            count++;
++            index += needle.length();
++        }
++        return count;
++    }
++
++    private static String readUtf8(Path file) {
++        try {
++            return Files.readString(file, StandardCharsets.UTF_8);
++        } catch (IOException error) {
++            throw new StockProbe.ToolFailure("基线文件读取失败：" + file, error);
++        }
++    }
++
++    private static void writeUtf8(Path file, String content) {
++        try {
++            Files.writeString(file, content, StandardCharsets.UTF_8);
++        } catch (IOException error) {
++            throw new StockProbe.ToolFailure("基线文件写入失败：" + file, error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l06/Checks.java b/src/main/java/workbench/evals/l06/Checks.java
+new file mode 100644
+index 0000000..f585d84
+--- /dev/null
++++ b/src/main/java/workbench/evals/l06/Checks.java
+@@ -0,0 +1,215 @@
++package workbench.evals.l06;
++
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++import workbench.evals.EvalHarness;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * L06 登记项收口（Java 重走件，对照冻结 {@code evals/l06/checks.py}；讲义 §2 登记项构成，D4）。
++ *
++ * <p>五项（四 blocking + 一 observing，对上游 ENTRIES 四项；差异如实记录：上游
++ * l05_personal_* 是其 L05 私有文件，本仓库对应物为指纹复核 + 客户用例回归）：
++ * <ul>
++ * <li>{@code l06_stock_consistency}     blocking  口径交叉检查（进程内调用
++ *     {@link StockConsistencyCheck#runScenario}——Python 为子进程再跑 driver，方向与 L05
++ *     相反的结构翻译，附录 A1/JD2；evidence/error 与子进程路径逐字节同形）；
++ * <li>{@code l05_receiving_regression}  blocking  客户 blocking eval {@code receiving_is_idempotent}
++ *     照跑（L05 能力不回归）；
++ * <li>{@code l06_customer_stock_case}   blocking  客户 blocking eval {@code stock_never_negative}
++ *     照跑（合同绑定 eval）；
++ * <li>{@code l06_frozen_checks}         blocking  客户 eval 文件指纹复核（Java MessageDigest
++ *     直算；词面逐字，12 位前缀）；
++ * <li>{@code teaching_observation}      observing  如实标注的教学告警（演示非阻断语义，
++ *     不是真实缺陷）。
++ * </ul>
++ *
++ * <p>目标树经环境变量 {@code L06_EVAL_TARGET} 注入（冻结 Python 语义，argv 面不含 --target），
++ * <b>解析在登记项内</b>（冻结 checks 的 _target() 逐项调用同形）：缺失/非客户树时各登记项以
++ * {@link RuntimeError} 失败、被 harness 逐项捕获入报告（decision block、rc 1、stdout 即报告
++ * 全文——golden s09 锁定的正是这一面），而非入口拒绝。报告经 {@link EvalHarness}（schema 1.0、
++ * x 模式、退出码 = blocking 失败决定）；stdout 打印全量报告（indent=2 插入序，
++ * json.dumps(indent=2) 同形）。客户用例子进程超时 300s（SUBPROCESS_TIMEOUT 同值）；尾部行
++ * 原样入 evidence（客户汇总行无时间字段，字节稳定）。
++ */
++public final class Checks {
++
++    private static final String[] FROZEN_EVAL_FILES = {"eval/harness.py", "eval/cases.py"};
++    private static final long TIMEOUT_SECONDS = 300;
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    /**
++     * Python 内建 RuntimeError 的同名面：报告 error.type 记 {@code "RuntimeError"}——
++     * 目标树缺失/非客户树失败经 harness 入报告的字节保真载体（golden s09 对照）。
++     */
++    public static final class RuntimeError extends RuntimeException {
++        public RuntimeError(String message) {
++            super(message);
++        }
++    }
++
++    private Checks() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--report-path", "--opening", "--reserved", "--python"),
++                    Set.of("--no-report"));
++            int opening = intOption(args, "--opening", 8);
++            int reserved = intOption(args, "--reserved", 3);
++            Path interpreter = StockProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            Path reportPath = (args.flag("--no-report") || !args.has("--report-path"))
++                    ? null : Path.of(args.require("--report-path"));
++            EvalHarness.Outcome outcome = EvalHarness.run(
++                    entries(interpreter, opening, reserved), "all", null, reportPath);
++            System.out.println(PyJson.dumps(outcome.report()));
++            if (outcome.exitCode() != 0) {
++                System.exit(outcome.exitCode());
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (StockProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    /** 冻结 checks 的 _target() 同形：在登记项内逐项解析（缺 env/非客户树 → RuntimeError 入报告）。 */
++    private static Path target() {
++        String value = System.getenv("L06_EVAL_TARGET");
++        if (value == null || value.isBlank()) {
++            throw new RuntimeError("L06_EVAL_TARGET 未设置：本收口必须显式指定被测 flowERP 树");
++        }
++        Path target = Path.of(value).toAbsolutePath().normalize();
++        if (!Files.isDirectory(target.resolve("flowerp"))) {
++            throw new RuntimeError("L06_EVAL_TARGET 下没有 flowerp/：" + target);
++        }
++        return target;
++    }
++
++    private static List<EvalHarness.Entry> entries(Path interpreter, int opening, int reserved) {
++        return List.of(
++                new EvalHarness.Entry("l06_stock_consistency", "blocking",
++                        () -> runDriver(interpreter, opening, reserved)),
++                new EvalHarness.Entry("l05_receiving_regression", "blocking",
++                        () -> customerCase(interpreter, "receiving_is_idempotent")),
++                new EvalHarness.Entry("l06_customer_stock_case", "blocking",
++                        () -> customerCase(interpreter, "stock_never_negative")),
++                new EvalHarness.Entry("l06_frozen_checks", "blocking", Checks::frozenChecks),
++                new EvalHarness.Entry("teaching_observation", "observing", () -> {
++                    throw new AssertionError("教学观察项：模拟非阻断提示，不代表实际缺陷");
++                }));
++    }
++
++    /** 登记项 evidence/失败格式与冻结 _subprocess_evidence 逐字节同形（"rc=N: "+末行，[:2000]）。 */
++    private static String runDriver(Path interpreter, int opening, int reserved) {
++        Path target = target();
++        StockConsistencyCheck.Outcome outcome =
++                StockConsistencyCheck.runScenario(target, interpreter, opening, reserved);
++        if (outcome.code() != 0) {
++            throw new AssertionError("rc=" + outcome.code() + ": " + truncate(outcome.line()));
++        }
++        return outcome.line();
++    }
++
++    private static String customerCase(Path interpreter, String caseName) {
++        Path target = target();
++        List<String> argv = List.of(interpreter.toString(), "-X", "utf8",
++                "-m", "eval.harness", "--case", caseName, "--no-report");
++        Process process;
++        try {
++            process = new ProcessBuilder(argv).directory(target.toFile()).start();
++        } catch (IOException error) {
++            throw new StockProbe.ToolFailure("python 启动失败（" + interpreter + "）", error);
++        }
++        String stdout;
++        String stderr;
++        int code;
++        try {
++            stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
++            stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
++                process.destroyForcibly();
++                throw new StockProbe.ToolFailure(
++                        "python 子进程超时（" + TIMEOUT_SECONDS + "s）：" + caseName);
++            }
++            code = process.exitValue();
++        } catch (IOException error) {
++            throw new StockProbe.ToolFailure("python 输出读取失败（" + caseName + "）", error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new StockProbe.ToolFailure("python 等待被中断", error);
++        }
++        String output = (stdout + stderr).strip();
++        String tail = output.isEmpty() ? "" : output.substring(output.lastIndexOf('\n') + 1);
++        if (code != 0) {
++            throw new AssertionError("rc=" + code + ": " + truncate(tail));
++        }
++        return tail;
++    }
++
++    private static String frozenChecks() {
++        Path target = target();
++        Map<String, Object> mismatched = new LinkedHashMap<>();
++        for (String rel : FROZEN_EVAL_FILES) {
++            String targetHash = sha256(target.resolve(rel));
++            String sourceHash = sha256(repoRoot().resolve("vendors").resolve("flowERP").resolve(rel));
++            if (!targetHash.equals(sourceHash)) {
++                mismatched.put(rel, Map.of(
++                        "target", targetHash.substring(0, 12),
++                        "vendors", sourceHash.substring(0, 12)));
++            }
++        }
++        if (!mismatched.isEmpty()) {
++            throw new AssertionError("冻结检查被改动: " + PyJson.dumpsCompact(mismatched));
++        }
++        StringBuilder evidence = new StringBuilder("冻结检查指纹一致: ");
++        for (int i = 0; i < FROZEN_EVAL_FILES.length; i++) {
++            if (i > 0) {
++                evidence.append(", ");
++            }
++            evidence.append(FROZEN_EVAL_FILES[i]).append('=')
++                    .append(sha256(target.resolve(FROZEN_EVAL_FILES[i])).substring(0, 12));
++        }
++        return evidence.toString();
++    }
++
++    private static String truncate(String text) {
++        return text.length() > 2000 ? text.substring(0, 2000) : text;
++    }
++
++    private static String sha256(Path file) {
++        try {
++            return HexFormat.of().formatHex(
++                    MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(file)));
++        } catch (IOException | NoSuchAlgorithmException error) {
++            throw new StockProbe.ToolFailure("冻结检查文件读取失败：" + file, error);
++        }
++    }
++
++    private static Path repoRoot() {
++        return Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
++    }
++
++    private static int intOption(Args args, String name, int defaultValue) {
++        String raw = args.optional(name, String.valueOf(defaultValue));
++        try {
++            return Integer.parseInt(raw);
++        } catch (NumberFormatException error) {
++            throw new Args.UsageException("argument " + name + ": invalid int value: '" + raw + "'");
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l06/StockConsistencyCheck.java b/src/main/java/workbench/evals/l06/StockConsistencyCheck.java
+new file mode 100644
+index 0000000..7997464
+--- /dev/null
++++ b/src/main/java/workbench/evals/l06/StockConsistencyCheck.java
+@@ -0,0 +1,139 @@
++package workbench.evals.l06;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * L06 库存口径交叉检查驱动（Java 重走件，对照冻结 {@code evals/l06/stock_consistency_check.py}）：
++ * 查询与 CSV 都必须遵守 可用 = 在手 − 预占。
++ *
++ * <p>预期由 --opening/--reserved 算术在 Java 侧独立计算（上游 §1：8−3=5 来自业务规则，
++ * 不能拿查询返回值当导出预期）；同时覆盖超额预占拒绝且状态不变（FlowERP 边界 #1，合同绑定
++ * eval {@code stock_never_negative} 的驱动面）。每次运行自建临时库，天然从干净数据开始。
++ * blocking 身份属登记项 {@code l06_stock_consistency}（讲义 §2）。客户实现经
++ * {@link StockProbe} 子进程跑场景、只回报原始观察值；四表快照锚点 = 超额草稿单创建之后
++ * （R1 终态照抄：建单是合法写入，被拒绝的是预占）。
++ *
++ * <p>stdout 单行 JSON（pass/fail/input 三形）与冻结件逐字同形（fail 的 expected/actual
++ * 逐 step 同载荷）；rc：0 pass / 1 fail（含 input 窗口不成立）/ 2 用法错误。
++ * {@link #runScenario} 为 Checks 的进程内复用面（Python 经子进程再跑 driver——方向与
++ * L05 相反的结构翻译，附录 A1/JD2：返回 (rc, 末行)，Checks 以 {@code "rc=1: "+行} 构造
++ * 与子进程路径逐字节同形的 evidence）。
++ */
++public final class StockConsistencyCheck {
++
++    private static final String REQUIREMENT = "可用库存按在手减预占计算：查询与 CSV 同口径，且永不为负";
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    /** 场景结局：(退出码, 输出行)——行即 pass/fail JSON（main 打印它，Checks 直接复用它）。 */
++    record Outcome(int code, String line) {}
++
++    private StockConsistencyCheck() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--target", "--opening", "--reserved", "--python"), Set.of());
++            Path target = Path.of(args.require("--target")).toAbsolutePath().normalize();
++            if (!Files.isDirectory(target.resolve("flowerp"))) {
++                throw new Args.UsageException("--target 下没有 flowerp/：" + target);
++            }
++            int opening = intOption(args, "--opening", 8);
++            int reserved = intOption(args, "--reserved", 3);
++            Path interpreter = StockProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            Outcome outcome = runScenario(target, interpreter, opening, reserved);
++            System.out.println(outcome.line());
++            if (outcome.code() != 0) {
++                System.exit(outcome.code());
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (StockProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    static Outcome runScenario(Path target, Path interpreter, int opening, int reserved) {
++        if (!(0 < reserved && reserved < opening)) {
++            Map<String, Object> actual = new LinkedHashMap<>();
++            actual.put("opening", opening);
++            actual.put("reserved", reserved);
++            return fail("input", "0 < reserved < opening", actual);
++        }
++
++        JsonNode observed;
++        try (StockProbe.TempDb temp = StockProbe.tempDb("l06-stock-")) {
++            observed = StockProbe.scenario(interpreter, target, temp.db, opening, reserved);
++        }
++
++        int expectedAvailable = opening - reserved;
++        List<Integer> expectedTriple = List.of(opening, reserved, expectedAvailable);
++        int csvRows = observed.path("csv_rows").asInt();
++        if (csvRows != 1) {
++            return fail("AC-CSV-ROW", 1, csvRows);
++        }
++        List<Integer> query = intTriple(observed.path("query"));
++        List<Integer> csv = intTriple(observed.path("csv"));
++        if (!query.equals(expectedTriple) || !csv.equals(expectedTriple)) {
++            Map<String, Object> seen = new LinkedHashMap<>();
++            seen.put("query", query);
++            seen.put("csv", csv);
++            Map<String, Object> wanted = new LinkedHashMap<>();
++            wanted.put("wanted", expectedTriple);
++            return fail("AC-AVAILABLE", wanted, seen);
++        }
++        if (!observed.path("rejected").asBoolean()) {
++            return fail("AC-REJECT", "预占 " + (expectedAvailable + 1) + " 被拒绝", "被接受");
++        }
++        if (!observed.path("before").equals(observed.path("after"))) {
++            return fail("AC-UNCHANGED", "拒绝后库存/流水/订单/明细不变", "拒绝后改变了账面");
++        }
++
++        Map<String, Object> out = new LinkedHashMap<>();
++        out.put("case", "stock_consistency");
++        out.put("status", "pass");
++        out.put("opening", opening);
++        out.put("reserved", reserved);
++        out.put("available", expectedAvailable);
++        out.put("query", expectedTriple);
++        out.put("csv", expectedTriple);
++        out.put("rejected_reserve", expectedAvailable + 1);
++        out.put("state_unchanged", true);
++        String line = PyJson.dumpsCompact(out);
++        return new Outcome(0, line);
++    }
++
++    /** 与冻结驱动同形的失败行：step/status/expected/actual/requirement（键序 = Python 插入序）。 */
++    private static Outcome fail(String step, Object expected, Object actual) {
++        Map<String, Object> out = new LinkedHashMap<>();
++        out.put("step", step);
++        out.put("status", "fail");
++        out.put("expected", expected);
++        out.put("actual", actual);
++        out.put("requirement", REQUIREMENT);
++        return new Outcome(1, PyJson.dumpsCompact(out));
++    }
++
++    private static List<Integer> intTriple(JsonNode node) {
++        return List.of(node.path(0).asInt(), node.path(1).asInt(), node.path(2).asInt());
++    }
++
++    private static int intOption(Args args, String name, int defaultValue) {
++        String raw = args.optional(name, String.valueOf(defaultValue));
++        try {
++            return Integer.parseInt(raw);
++        } catch (NumberFormatException error) {
++            throw new Args.UsageException("argument " + name + ": invalid int value: '" + raw + "'");
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l06/StockProbe.java b/src/main/java/workbench/evals/l06/StockProbe.java
+new file mode 100644
+index 0000000..31c8f28
+--- /dev/null
++++ b/src/main/java/workbench/evals/l06/StockProbe.java
+@@ -0,0 +1,187 @@
++package workbench.evals.l06;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * 客户实现驱动缝（L06 口径场景，讲义附录 A1 结构翻译点③/JD2）：冻结 Python 驱动经
++ * {@code sys.path.insert} + in-process {@code from flowerp import …} 驱动客户实现，Java
++ * 无法同形——本件以「<b>子进程 python 一次跑完口径场景、回报原始观察值 JSON</b>」承载；
++ * <b>判断与预期计算一律留在调用方</b>（独立计算语义：8−3=5 由调用方算出，不抄子进程返回）。
++ *
++ * <p>单方法缝 = {@link #scenario}（{@code FlowerpProbe} 同款先例；C5 已冻的 l05 三源件不动，
++ * l06 包内新件自带探针面），配 {@link #resolveInterpreter}/{@link #tempDb} 两个生命周期
++ * 助手与 {@link ToolFailure}。子进程超时 300s 对齐冻结 checks 的 {@code SUBPROCESS_TIMEOUT}
++ * （冻结 {@code FlowerpProbe} 无超时——冻结件不动，新缝自带）。场景步序与冻结
++ * {@code stock_consistency_check.py} 逐字同形（含 R1 终态：快照拍在超额草稿单创建之后）；
++ * 探针脚本 BOM 处理用显式转义（源内纯 ASCII 可见，Unicode 纪律）。
++ */
++final class StockProbe {
++
++    /** 工具以 rc 1 收场的失败（词面入 stderr；对照 Python SystemExit，errno/traceback 形状按 JD6 如实偏差）。 */
++    public static final class ToolFailure extends RuntimeException {
++        public ToolFailure(String message) {
++            super(message);
++        }
++
++        public ToolFailure(String message, Throwable cause) {
++            super(message, cause);
++        }
++    }
++
++    /** 子进程超时（冻结 checks 的 SUBPROCESS_TIMEOUT 同值）。 */
++    private static final long TIMEOUT_SECONDS = 300;
++
++    /**
++     * 口径场景片段：经 argv 收 db/target/opening/reserved，stdout 出单行 JSON 原始观察值
++     * （query 三元组 / csv 该 SKU 行数与三元组 / 超额预占是否被拒 / 四表快照前后）。
++     * <b>不判对错</b>——判断在调用方；本片段只报告原始观察值。步序与冻结驱动逐字同形
++     * （add→receive→建单→预占→查询/导出→超额草稿→快照→预占（捕获 InsufficientStock）→快照）。
++     */
++    private static final String SNIPPET = """
++            import csv, io, json, sys
++            from pathlib import Path
++            sys.path.insert(0, sys.argv[2])
++            from flowerp import ERPService, ERPStore
++            from flowerp.models import InsufficientStock, OrderLine
++
++            opening, reserved = int(sys.argv[3]), int(sys.argv[4])
++            sku = "L06-A"
++
++            def out(obj):
++                print(json.dumps(obj, ensure_ascii=False))
++
++            def snapshot(store):
++                return {
++                    "stock": store.rows("SELECT * FROM stock ORDER BY sku"),
++                    "events": store.rows("SELECT * FROM inventory_events ORDER BY rowid"),
++                    "orders": store.rows("SELECT * FROM sales_orders ORDER BY id"),
++                    "lines": store.rows("SELECT * FROM sales_order_lines ORDER BY rowid"),
++                }
++
++            store = ERPStore(Path(sys.argv[1]))
++            service = ERPService(store)
++            service.add_product(sku, "口径检查", 100)
++            service.receive_stock(sku, opening, "opening")
++            order = service.create_order("已有订单", [OrderLine(sku, reserved, 100)], "order-A")
++            service.reserve_order(order["id"])
++
++            query = service.product(sku)
++            rows = list(csv.DictReader(io.StringIO(service.export_inventory().lstrip("\\ufeff"))))
++            exported = [row for row in rows if row["sku"] == sku]
++
++            excessive = service.create_order("超额订单", [OrderLine(sku, opening - reserved + 1, 100)], "order-B")
++            # 快照拍在草稿单创建之后：建单是合法写入，被拒绝的是预占——拒绝必须零变动（R1 终态）
++            before = snapshot(store)
++            rejected = False
++            try:
++                service.reserve_order(excessive["id"])
++            except InsufficientStock:
++                rejected = True
++            after = snapshot(store)
++
++            out({
++                "query": [query[k] for k in ("on_hand", "reserved", "available")],
++                "csv_rows": len(exported),
++                "csv": [int(exported[0][k]) for k in ("on_hand", "reserved", "available")] if len(exported) == 1 else None,
++                "rejected": rejected,
++                "before": before,
++                "after": after,
++            })
++            """;
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private StockProbe() {}
++
++    /** 相对解释器路径按进程 cwd 绝对化（跨 cwd 纪律，FlowerpProbe.resolveInterpreter 同款）。 */
++    static Path resolveInterpreter(String python) {
++        return Path.of(python).toAbsolutePath().normalize();
++    }
++
++    /** 临时库（自建库、天然干净数据开始；close 递归清理——Python TemporaryDirectory 同形）。 */
++    static final class TempDb implements AutoCloseable {
++        private final Path dir;
++        final Path db;
++
++        private TempDb(Path dir) {
++            this.dir = dir;
++            this.db = dir.resolve("scenario.db");
++        }
++
++        @Override
++        public void close() {
++            try (var stream = Files.walk(dir)) {
++                stream.sorted(Comparator.reverseOrder()).forEach(p -> {
++                    try {
++                        Files.delete(p);
++                    } catch (IOException error) {
++                        throw new UncheckedIOException(error);
++                    }
++                });
++            } catch (IOException error) {
++                throw new UncheckedIOException(error);
++            }
++        }
++    }
++
++    static TempDb tempDb(String prefix) {
++        try {
++            return new TempDb(Files.createTempDirectory(prefix));
++        } catch (IOException error) {
++            throw new ToolFailure("临时目录创建失败（" + prefix + "）", error);
++        }
++    }
++
++    /**
++     * 跑一次完整口径场景，解析 stdout 单行 JSON 为观察值。子进程失败、超时（300s）或输出
++     * 不可解析 → ToolFailure（调用方 rc 1 收场；词面语言绑定按 JD6 如实偏差，不入 golden）。
++     */
++    static JsonNode scenario(Path interpreter, Path target, Path db, int opening, int reserved) {
++        List<String> argv = new ArrayList<>(List.of(
++                interpreter.toString(), "-X", "utf8", "-c", SNIPPET,
++                db.toString(), target.toString(), String.valueOf(opening), String.valueOf(reserved)));
++        Process process;
++        try {
++            process = new ProcessBuilder(argv).start();
++        } catch (IOException error) {
++            throw new ToolFailure("python 启动失败（" + interpreter + "）", error);
++        }
++        String stdout;
++        String stderr;
++        int code;
++        try {
++            stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
++            stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
++                process.destroyForcibly();
++                throw new ToolFailure("python 子进程超时（" + TIMEOUT_SECONDS + "s）：" + interpreter);
++            }
++            code = process.exitValue();
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出读取失败（" + interpreter + "）", error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new ToolFailure("python 等待被中断", error);
++        }
++        if (code != 0) {
++            throw new ToolFailure("python 子进程失败 rc=" + code + "：" + stderr.strip());
++        }
++        try {
++            return MAPPER.readTree(stdout);
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出不可解析：" + stdout.strip()
++                    + "；stderr：" + stderr.strip(), error);
++        }
++    }
++}
+diff --git a/src/test/java/workbench/evals/EvalHarnessContractTest.java b/src/test/java/workbench/evals/EvalHarnessContractTest.java
+new file mode 100644
+index 0000000..457b66f
+--- /dev/null
++++ b/src/test/java/workbench/evals/EvalHarnessContractTest.java
+@@ -0,0 +1,252 @@
++package workbench.evals;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.fasterxml.jackson.databind.node.ObjectNode;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.io.TempDir;
++import workbench.bootstrap.PyJson;
++
++import java.io.UncheckedIOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.FileAlreadyExistsException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.time.OffsetDateTime;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.assertj.core.api.Assertions.assertThatThrownBy;
++
++/**
++ * 统一运行器合同测试（验收项→测试映射见下表）。上游九项运行器合同映射
++ * （vendors/CodexFDE/docs/courses/L06/examples/test_runner_contract.py，语义对齐、实现自写
++ * ——ADR-0001；对照冻结 tests/test_l06_eval_harness.py，Python 头同源映射）：
++ * <pre>
++ * 1  pass_and_report                              → C3/C4  passAndReport（含报告文件 == 打印内容逐字节）
++ * 2  blocking_is_not_majority_vote                → C4     blockingIsNotMajorityVote
++ * 3  observing_keeps_warning                      → C3     observingKeepsWarning
++ * 4  exception_keeps_reason_and_continues         → C3     exceptionKeepsReasonAndContinues
++ * 5  observing_exception_is_not_silently_promoted → C3     observingExceptionIsNotSilentlyPromoted
++ * 6  invalid_selection                            → C3     invalidSelection（六形全拒）
++ * 7  subset_is_explicit                           → C3     subsetIsExplicit
++ * 8  write_failure_cannot_reuse_old_report        → C4     writeFailureCannotReuseOldReport
++ * 9  consumer_rejects_summary_or_exit_contradiction → C4   consumerRejectsSummaryOrExitContradiction
++ * +  customerReportPassesOurValidation            → C4/D3  客户 flowERP 报告过 ReportContract
++ *    （schema 1.0 对齐的机检实证——Python 时代 record 69 的合同测试化）
++ * </pre>
++ *
++ * <p>分级语义（CONTEXT.md）：blocking 失败即整体失败并给出非零退出码；observing 只记录不拦截。
++ * 被测缝：{@code EvalHarness.run(entries) -> (report, exit_code)}——进程内直调（Python 时代
++ * 复查轮 S6 口径承袭：合同面限 eval.harness 缝，非 workbench.cli 缝）；本文件因 Java 编译
++ * 绑定随实现同落 commit 2（对应面的 commit 1 起始红由 golden s07–s09 工具级承载，Python
++ * 同位面为 collection error 红，§R 披露）。
++ */
++class EvalHarnessContractTest {
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private static String ok() {
++        return "verified";
++    }
++
++    private static String fail() {
++        throw new AssertionError("expected=5, actual=8");
++    }
++
++    private static String crash() {
++        throw new RuntimeException("dependency unavailable; business result unknown");
++    }
++
++    @TempDir
++    Path temp;
++
++    @Test
++    void passAndReport() throws Exception {
++        Path reportPath = temp.resolve("report.json");
++        EvalHarness.Outcome outcome = EvalHarness.run(
++                List.of(new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok)),
++                "all", null, reportPath);
++        assertThat(outcome.exitCode()).isZero();
++        assertThat(Files.readString(reportPath, StandardCharsets.UTF_8))
++                .as("报告文件与打印内容逐字节一致（stdout 即报告全文，x 模式落盘同字节）")
++                .isEqualTo(PyJson.dumps(outcome.report()));
++        OffsetDateTime generatedAt = OffsetDateTime.parse((String) outcome.report().get("generated_at"));
++        assertThat(generatedAt.getOffset()).as("generated_at 带时区").isNotNull();
++        Map<?, ?> first = results(outcome).get(0);
++        assertThat(first.get("duration_ms")).isInstanceOf(Integer.class);
++        assertThat((Integer) first.get("duration_ms")).isGreaterThanOrEqualTo(0);
++        ReportContract.validateReport(MAPPER.valueToTree(outcome.report()),
++                List.of("a"), outcome.exitCode(), "all");
++    }
++
++    @Test
++    void blockingIsNotMajorityVote() {
++        EvalHarness.Outcome outcome = EvalHarness.run(List.of(
++                new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok),
++                new EvalHarness.Entry("b", "blocking", EvalHarnessContractTest::fail),
++                new EvalHarness.Entry("c", "blocking", EvalHarnessContractTest::ok)));
++        assertThat(outcome.exitCode())
++                .as("HARNESS-BLOCK: 一项 blocking 失败必须阻断交付").isEqualTo(1);
++        assertThat(summary(outcome).get("blocking_failed")).isEqualTo(1);
++        assertThat((String) errorOf(results(outcome).get(1)).get("message")).contains("actual=8");
++        ReportContract.validateReport(MAPPER.valueToTree(outcome.report()),
++                List.of("a", "b", "c"), outcome.exitCode(), "all");
++    }
++
++    @Test
++    void observingKeepsWarning() {
++        EvalHarness.Outcome outcome = EvalHarness.run(List.of(
++                new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok),
++                new EvalHarness.Entry("b", "observing", EvalHarnessContractTest::fail)));
++        assertThat(outcome.exitCode()).isZero();
++        assertThat(summary(outcome).get("observing_failed")).isEqualTo(1);
++        ReportContract.validateReport(MAPPER.valueToTree(outcome.report()),
++                List.of("a", "b"), outcome.exitCode(), "all");
++    }
++
++    @Test
++    void exceptionKeepsReasonAndContinues() {
++        List<String> called = new ArrayList<>();
++        EvalHarness.Outcome outcome = EvalHarness.run(List.of(
++                new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::crash),
++                new EvalHarness.Entry("b", "blocking", () -> {
++                    called.add("b");
++                    return "verified";
++                })));
++        assertThat(called).as("前项崩溃不得吞掉后续检查").containsExactly("b");
++        assertThat(outcome.exitCode()).as("HARNESS-ERROR").isEqualTo(1);
++        Map<?, ?> error = errorOf(results(outcome).get(0));
++        assertThat(error.get("type")).isEqualTo("RuntimeException");
++        assertThat((String) error.get("message")).contains("unknown");
++    }
++
++    @Test
++    void observingExceptionIsNotSilentlyPromoted() {
++        EvalHarness.Outcome outcome = EvalHarness.run(List.of(
++                new EvalHarness.Entry("a", "observing", EvalHarnessContractTest::crash)));
++        assertThat(outcome.exitCode()).isZero();
++        assertThat(summary(outcome).get("observing_failed")).isEqualTo(1);
++    }
++
++    @Test
++    void invalidSelection() {
++        EvalHarness.Entry a = new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok);
++        assertRejected(List.of(), null, "空登记");
++        assertRejected(List.of(a), List.of(), "空选择");
++        assertRejected(List.of(a), List.of("missing"), "未知用例");
++        assertRejectedSuite(List.of(new EvalHarness.Entry("a", "observing", EvalHarnessContractTest::ok)),
++                "blocking", "suite 过滤后为空");
++        assertRejectedSuite(List.of(a), "wrong", "未知 suite");
++        assertRejected(List.of(a, a), null, "重复登记");
++    }
++
++    @Test
++    void subsetIsExplicit() {
++        EvalHarness.Outcome outcome = EvalHarness.run(List.of(
++                new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok),
++                new EvalHarness.Entry("b", "observing", EvalHarnessContractTest::fail)),
++                "all", List.of("a"), null);
++        assertThat(outcome.exitCode()).isZero();
++        assertThat(names(outcome)).containsExactly("a");
++        assertThat(outcome.report().get("requested_cases")).isEqualTo(List.of("a"));
++    }
++
++    @Test
++    void writeFailureCannotReuseOldReport() throws Exception {
++        Path oldFile = temp.resolve("old.json");
++        Files.writeString(oldFile, "old evidence");
++        Path blocker = temp.resolve("file");
++        Files.writeString(blocker, "ordinary file");
++        assertThatThrownBy(() -> EvalHarness.run(
++                List.of(new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok)),
++                "all", null, blocker.resolve("new.json")))
++                .as("写失败（父路径是普通文件）")
++                .isInstanceOf(UncheckedIOException.class);
++        assertThat(Files.readString(oldFile)).as("旧证据不得被波及").isEqualTo("old evidence");
++        assertThatThrownBy(() -> EvalHarness.run(
++                List.of(new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok)),
++                "all", null, oldFile))
++                .as("x 模式：撞既有报告文件即拒绝")
++                .isInstanceOf(UncheckedIOException.class)
++                .hasRootCauseInstanceOf(FileAlreadyExistsException.class);
++    }
++
++    @Test
++    void consumerRejectsSummaryOrExitContradiction() {
++        EvalHarness.Outcome outcome = EvalHarness.run(List.of(
++                new EvalHarness.Entry("a", "blocking", EvalHarnessContractTest::ok)));
++        ObjectNode tampered = (ObjectNode) MAPPER.valueToTree(outcome.report());
++        ((ObjectNode) tampered.get("summary")).put("passed", 0);
++        assertThatThrownBy(() -> ReportContract.validateReport(
++                tampered, List.of("a"), outcome.exitCode(), "all"))
++                .as("汇总与逐项矛盾必须被拒绝")
++                .isInstanceOf(IllegalStateException.class);
++        assertThatThrownBy(() -> ReportContract.validateReport(
++                MAPPER.valueToTree(outcome.report()), List.of("a"), 1, "all"))
++                .as("报告结论与退出码矛盾必须被拒绝")
++                .isInstanceOf(IllegalStateException.class);
++    }
++
++    @Test
++    void customerReportPassesOurValidation() throws Exception {
++        Path cloneDir = temp.resolve("flowerp");
++        git(temp, "clone", "--quiet", "--no-hardlinks",
++                Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize()
++                        .resolve("vendors/flowERP").toString(), "flowerp");
++        Path reportFile = temp.resolve("customer-report.json");
++        List<String> argv = List.of(
++                Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize()
++                        .resolve(".venv/bin/python").toString(),
++                "-X", "utf8", "-m", "eval.harness",
++                "--case", "receiving_is_idempotent", "--report-path", reportFile.toString());
++        Process process = new ProcessBuilder(argv).directory(cloneDir.toFile()).start();
++        String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++        assertThat(process.waitFor()).as("客户 harness 产真报告：%s", stderr).isZero();
++        JsonNode report = MAPPER.readTree(reportFile.toFile());
++        // D3 schema 1.0 对齐实证：客户报告（其自身 run_suite 产出）过本仓库 ReportContract
++        ReportContract.validateReport(report, List.of("receiving_is_idempotent"), 0, "all");
++    }
++
++    // ---- 断言小面 ------------------------------------------------------------
++
++    private static void assertRejected(List<EvalHarness.Entry> entries, List<String> names, String label) {
++        assertThatThrownBy(() -> EvalHarness.run(entries, "all", names, null))
++                .as(label).isInstanceOf(IllegalArgumentException.class);
++    }
++
++    /** 独立方法名而非重载——{@code null} 实参在 (List, String) 两可（J2 教训同源）。 */
++    private static void assertRejectedSuite(List<EvalHarness.Entry> entries, String suite, String label) {
++        assertThatThrownBy(() -> EvalHarness.run(entries, suite, null, null))
++                .as(label).isInstanceOf(IllegalArgumentException.class);
++    }
++
++    @SuppressWarnings("unchecked")
++    private static List<Map<String, Object>> results(EvalHarness.Outcome outcome) {
++        return (List<Map<String, Object>>) outcome.report().get("results");
++    }
++
++    private static Map<String, Object> summary(EvalHarness.Outcome outcome) {
++        return (Map<String, Object>) outcome.report().get("summary");
++    }
++
++    private static List<String> names(EvalHarness.Outcome outcome) {
++        return results(outcome).stream().map(item -> (String) item.get("name")).toList();
++    }
++
++    @SuppressWarnings("unchecked")
++    private static Map<String, Object> errorOf(Map<String, Object> item) {
++        return (Map<String, Object>) item.get("error");
++    }
++
++    private static void git(Path dir, String... argv) throws Exception {
++        List<String> command = new ArrayList<>(List.of("git", "-C", dir.toString()));
++        command.addAll(List.of(argv));
++        Process process = new ProcessBuilder(command).start();
++        if (process.waitFor() != 0) {
++            throw new IllegalStateException("git 夹具失败：" + String.join(" ", command));
++        }
++    }
++}
+diff --git a/src/test/java/workbench/evals/l06/L06EvalContractTest.java b/src/test/java/workbench/evals/l06/L06EvalContractTest.java
+index a16bc76..6958910 100644
+--- a/src/test/java/workbench/evals/l06/L06EvalContractTest.java
++++ b/src/test/java/workbench/evals/l06/L06EvalContractTest.java
+@@ -38,9 +38,9 @@ import static org.assertj.core.api.Assertions.assertThat;
+  * 参数面    → driverRejectsTargetWithoutFlowerp → --target 普通目录 → rc 2 + stdout 空
+  *            + stderr 词面「--target 下没有 flowerp/」
+  * 参数面    → driverRequiresTarget             → 缺 --target → rc 2 + stdout 空
+- * C5        → checksRejectsTargetWithoutFlowerp → env 指向普通目录 → rc 1 + stdout 空
+- *            + stderr 词面「L06_EVAL_TARGET 下没有 flowerp/」（env 注入经 runMainWithEnv——
+- *            Checks 读环境变量是冻结 Python 语义，附录 A3/JD4）
++ * C5        → checksRejectsTargetWithoutFlowerp → env 指向普通目录 → rc 1 + 全项 RuntimeError
++ *            报告（decision block；目标树解析在登记项内——冻结 checks 的 _target() 逐项调用
++ *            同形，失败走报告而非入口拒绝；env 注入经 runMainWithEnv，附录 A3/JD4）
+  * </pre>
+  *
+  * <p>错误词面与冻结 Python 逐字同形（附录 A2/JD6：stderr 词面不入 golden，由本类与
+@@ -143,8 +143,14 @@ class L06EvalContractTest {
+         Cli.Result result = Cli.runMainWithEnv(CHECKS_MAIN,
+                 Map.of("L06_EVAL_TARGET", plain.toString()), "--no-report");
+         assertThat(result.exitCode()).as("env 非客户树 rc").isEqualTo(1);
+-        assertThat(result.stdout()).isEmpty();
+-        assertThat(result.stderr()).contains("L06_EVAL_TARGET 下没有 flowerp/");
++        // 冻结面：目标树解析在登记项内——失败逐项入报告（decision block）而非入口拒绝。
++        // 首版误断言「stdout 空 + stderr 词面」，golden s09 对照后按冻结面修正（披露见证据账 §R）。
++        JsonNode report = Cli.json(result);
++        assertThat(report.path("summary").path("decision").asText()).isEqualTo("block");
++        JsonNode first = report.path("results").get(0);
++        assertThat(first.path("error").path("type").asText()).isEqualTo("RuntimeError");
++        assertThat(first.path("error").path("message").asText())
++                .contains("L06_EVAL_TARGET 下没有 flowerp/");
+     }
+ 
+     private static void git(Path dir, String... argv) throws Exception {
+diff --git a/src/test/java/workbench/golden/GoldenL06ReplayTest.java b/src/test/java/workbench/golden/GoldenL06ReplayTest.java
+index 47e4f74..d960522 100644
+--- a/src/test/java/workbench/golden/GoldenL06ReplayTest.java
++++ b/src/test/java/workbench/golden/GoldenL06ReplayTest.java
+@@ -10,10 +10,11 @@ import java.util.List;
+  *
+  * <p>按 {@code golden/l06/manifest.json} 重放 9 场景，锁定 L06 三工具（CSV 缺陷基线
+  * 构造器 / 口径交叉检查驱动 / 五登记项收口 Checks）的 stdout 契约——本套首次含
+- * <b>统一运行器全量报告</b>（s07 绿 / s08 可信红：checks 的 stdout 即报告全文；报告文件
+- * 不入 golden，文件面/x 模式由合同测试锁）。<b>commit 1 红是本讲预期红点</b>（工具
+- * main 缺失：s01/s03/s04/s07 退出码错位即败；s02/s09（rc 1 + 空 stdout）与「主类缺失」
+- * 偶然同形可能不红——l05 修正注③ 同款口径，红点由其余场景与 L06EvalContractTest 承载）。
++ * <b>统一运行器全量报告</b>（s07 绿 / s08 可信红 / s09 缺 env 全项失败报告：checks 的
++ * stdout 即报告全文；报告文件不入 golden，文件面/x 模式由合同测试锁）。<b>commit 1 红
++ * 是本讲预期红点</b>（工具 main 缺失：s01/s03/s04/s07 退出码错位即败，s09 期望报告 vs
++ * 空 stdout 亦真红；唯 s02（rc 1 + 空 stdout）与「主类缺失」偶然同形可能不红——
++ * l05 修正注③ 同款口径，红点由其余场景与 L06EvalContractTest 承载）。
+  *
+  * <p>与 l05 两点差异（附录 A3/JD3/JD4）：① 掩码集首例扩展 2 键（{@code generated_at}→
+  * {@code <TS>}、{@code duration_ms}→{@code <MS>}，按 manifest normalization 声明数据驱动，
+diff --git a/src/test/resources/golden/l06/manifest.json b/src/test/resources/golden/l06/manifest.json
+index ff21e2a..40a982d 100644
+--- a/src/test/resources/golden/l06/manifest.json
++++ b/src/test/resources/golden/l06/manifest.json
+@@ -127,7 +127,7 @@
+       "expected_exit_code": 1,
+       "id": "s09_checks_env_missing",
+       "main": "workbench.evals.l06.Checks",
+-      "note": "L06_EVAL_TARGET 必设面（stdout 空；rc 1 与「主类缺失」偶然同形——l05 修正注③同款口径，红点由其余场景与合同测试承载）",
++      "note": "L06_EVAL_TARGET 必设面：目标树解析在登记项内（冻结 _target() 逐项调用同形）——四项 RuntimeError 入报告 + 教学项 AssertionError，decision block、rc 1、stdout 即报告全文",
+       "stdout_file": "s09_checks_env_missing.stdout.txt"
+     }
+   ],
+diff --git a/tools/generate_golden_l06.py b/tools/generate_golden_l06.py
+index 1b65229..c15d5b0 100644
+--- a/tools/generate_golden_l06.py
++++ b/tools/generate_golden_l06.py
+@@ -19,8 +19,9 @@
+ - s07 checks 绿报告（clean 树：四 blocking 绿 + 教学告警，decision pass）
+ - s08 checks 红报告（缺陷树：l06_stock_consistency 红（evidence=rc=1: {AC-AVAILABLE …}）
+   + decision block——可信红面字节锁）
+-- s09 checks 缺 env 拒绝（stdout 空；rc 1 与「主类缺失」偶然同形——l05 修正注③同款口径，
+-  红点由其余场景与合同测试承载）
++- s09 checks 缺 env：四登记项 RuntimeError 入报告 + 教学项 AssertionError（decision block、
++  rc 1、stdout 即报告全文——冻结 checks 的 _target() 在登记项内解析，失败也走报告而非
++  入口拒绝；commit 1 真实红：期望报告 vs 主类缺失空 stdout）
+ 
+ 掩码（逐字写入 manifest mask_note）：本套扩展 generated_at→<TS>、duration_ms→<MS>
+ （s07/s08 报告机器时间字段；其余场景无这些键，键级掩码无扰）；created_at/recorded_at/
+@@ -202,8 +203,9 @@ def main() -> int:
+                  "error.type AssertionError）+ decision block——红报告 stdout 字节锁")
+     capture("s09_checks_env_missing", 1, JAVA_CHECKS_MAIN, ["--no-report"],
+             module=CHECKS_MODULE,
+-            note="L06_EVAL_TARGET 必设面（stdout 空；rc 1 与「主类缺失」偶然同形——l05 修正注③"
+-                 "同款口径，红点由其余场景与合同测试承载）")
++            note="L06_EVAL_TARGET 必设面：目标树解析在登记项内（冻结 _target() 逐项调用同形）——"
++                 "四项 RuntimeError 入报告 + 教学项 AssertionError，decision block、rc 1、"
++                 "stdout 即报告全文")
+ 
+     # ---- manifest（确定性内容，不含墙钟）-----------------------------------
+     manifest = {

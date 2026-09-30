@@ -23,8 +23,12 @@
 | G1 | `.venv/bin/python -X utf8 tools/generate_golden_l06.py`（首跑） | 0 | **9/9 场景**按预期退出码通过；指纹 `f0e0ab77…` **首跑即留** |
 | G2 | 同命令（第 2 跑，确定性比对） | 0 | 9/9 ok；指纹 `f0e0ab777e946e8bfa7d5bae2388377e0c9c649d2d3b3a3e671e8b885060f5a8` = G1 → **golden 字节级确定，采纳此指纹** |
 | J2 | `mvn test`（共享件扩展后回归） | 0 | **91/91 绿**（含 golden l01–l05 五套重放）→ **行为零变化证据**（J1/J2 对照，env 字段扩展无扰） |
+| G3 | 同 G1 命令（重生成，候选期修正轮） | 0 | 9/9 ok；指纹 `1465c87d…` |
+| G4 | 同命令（修正后第 2 跑，确定性比对） | 0 | 9/9 ok；指纹 `1465c87d56b94e37e001fd3ae0c73e026d78312fbce9c2c6b1986f2374b3b05c` = G3 → **采纳此指纹** |
 
 指纹命令：`cd src/test/resources/golden/l06 && find . -type f \| sort \| xargs shasum -a 256 \| shasum -a 256`。
+
+**修正记录（s09 面注记，候选期 2026-09-30）**：前置期的生成器 docstring / manifest note / 附录 A3 / 本账场景清单把 s09（checks 缺 env）误述为「stdout 空、与主类缺失偶然同形」——**捕获数据自始正确**（s09 期望 = 全项失败报告：四登记项 RuntimeError + 教学项 AssertionError 入报告、`decision: block`、stdout 即报告全文——冻结 checks 的 `_target()` 在登记项内逐项解析，失败走报告而非入口拒绝），错的是注记文字与 Java 首版实现/合同测试的形状假设。Golden 重放首跑（s01–s08 字节全过后）在 s09 抓获 Java 首版「入口拒绝」译法与冻结面的分歧——按 golden 修正：Checks 目标解析移入登记项 + `RuntimeError` 同名异常类（报告 error.type 字节保真）+ 合同测试改断言报告形状（非放宽，向冻结面对齐；披露于 L06EvalContractTest 注释）。随后重生成 golden：`git diff` 证 9 个 stdout 件**逐字节未动**、仅 manifest 的 s09 note 一行变化 → 指纹 f0e0ab77… → `1465c87d…`（G3/G4 双跑一致，原 G1/G2 记录保留不删）。
 
 ### 场景清单（9，单命令粒度，逐条见 `manifest.json` 的 scenarios 数组）
 
@@ -34,7 +38,7 @@
 | 驱动 pass | s03 / s04 | 8/3 主干（query/csv 同 `[8,3,5]`、拒 6、四表状态不变）/ 13/4 迁移（`[13,4,9]`、拒 10——排除写死 5） |
 | 驱动 fail | s05 | 缺陷树 `AC-AVAILABLE`：expected `[8,3,5]` / query `[8,3,5]` / csv `[8,3,8]` + requirement 逐字（与 Python 时代红 66 同形） |
 | 驱动拒绝 | s06 | `--target` 下没有 flowerp/（rc 2，参数校验面） |
-| 运行器 | s07 / s08 / s09 | 绿报告（四 blocking 绿 + 教学告警 WARN，decision pass）/ 红报告（stock 红 `rc=1: {AC-AVAILABLE …}`、error.type AssertionError、decision block——可信红面字节锁）/ 缺 env 拒绝（stdout 空；与「主类缺失」偶然同形——l05 修正注③同款口径） |
+| 运行器 | s07 / s08 / s09 | 绿报告（四 blocking 绿 + 教学告警 WARN，decision pass）/ 红报告（stock 红 `rc=1: {AC-AVAILABLE …}`、error.type AssertionError、decision block——可信红面字节锁）/ 缺 env 全项失败报告（四项 RuntimeError + 教学项 AssertionError 入报告、decision block、stdout 即报告全文——目标树解析在登记项内，冻结 `_target()` 逐项调用同形） |
 
 ### 规范化与 setup（与五套旧 golden 的关系）
 

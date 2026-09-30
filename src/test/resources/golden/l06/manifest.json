@@ -127,7 +127,7 @@
       "expected_exit_code": 1,
       "id": "s09_checks_env_missing",
       "main": "workbench.evals.l06.Checks",
-      "note": "L06_EVAL_TARGET 必设面（stdout 空；rc 1 与「主类缺失」偶然同形——l05 修正注③同款口径，红点由其余场景与合同测试承载）",
+      "note": "L06_EVAL_TARGET 必设面：目标树解析在登记项内（冻结 _target() 逐项调用同形）——四项 RuntimeError 入报告 + 教学项 AssertionError，decision block、rc 1、stdout 即报告全文",
       "stdout_file": "s09_checks_env_missing.stdout.txt"
     }
   ],

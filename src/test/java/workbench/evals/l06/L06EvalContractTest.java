@@ -38,9 +38,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 参数面    → driverRejectsTargetWithoutFlowerp → --target 普通目录 → rc 2 + stdout 空
  *            + stderr 词面「--target 下没有 flowerp/」
  * 参数面    → driverRequiresTarget             → 缺 --target → rc 2 + stdout 空
- * C5        → checksRejectsTargetWithoutFlowerp → env 指向普通目录 → rc 1 + stdout 空
- *            + stderr 词面「L06_EVAL_TARGET 下没有 flowerp/」（env 注入经 runMainWithEnv——
- *            Checks 读环境变量是冻结 Python 语义，附录 A3/JD4）
+ * C5        → checksRejectsTargetWithoutFlowerp → env 指向普通目录 → rc 1 + 全项 RuntimeError
+ *            报告（decision block；目标树解析在登记项内——冻结 checks 的 _target() 逐项调用
+ *            同形，失败走报告而非入口拒绝；env 注入经 runMainWithEnv，附录 A3/JD4）
  * </pre>
  *
  * <p>错误词面与冻结 Python 逐字同形（附录 A2/JD6：stderr 词面不入 golden，由本类与
@@ -143,8 +143,14 @@ class L06EvalContractTest {
         Cli.Result result = Cli.runMainWithEnv(CHECKS_MAIN,
                 Map.of("L06_EVAL_TARGET", plain.toString()), "--no-report");
         assertThat(result.exitCode()).as("env 非客户树 rc").isEqualTo(1);
-        assertThat(result.stdout()).isEmpty();
-        assertThat(result.stderr()).contains("L06_EVAL_TARGET 下没有 flowerp/");
+        // 冻结面：目标树解析在登记项内——失败逐项入报告（decision block）而非入口拒绝。
+        // 首版误断言「stdout 空 + stderr 词面」，golden s09 对照后按冻结面修正（披露见证据账 §R）。
+        JsonNode report = Cli.json(result);
+        assertThat(report.path("summary").path("decision").asText()).isEqualTo("block");
+        JsonNode first = report.path("results").get(0);
+        assertThat(first.path("error").path("type").asText()).isEqualTo("RuntimeError");
+        assertThat(first.path("error").path("message").asText())
+                .contains("L06_EVAL_TARGET 下没有 flowerp/");
     }
 
     private static void git(Path dir, String... argv) throws Exception {

@@ -10,10 +10,11 @@ import java.util.List;
  *
  * <p>按 {@code golden/l06/manifest.json} 重放 9 场景，锁定 L06 三工具（CSV 缺陷基线
  * 构造器 / 口径交叉检查驱动 / 五登记项收口 Checks）的 stdout 契约——本套首次含
- * <b>统一运行器全量报告</b>（s07 绿 / s08 可信红：checks 的 stdout 即报告全文；报告文件
- * 不入 golden，文件面/x 模式由合同测试锁）。<b>commit 1 红是本讲预期红点</b>（工具
- * main 缺失：s01/s03/s04/s07 退出码错位即败；s02/s09（rc 1 + 空 stdout）与「主类缺失」
- * 偶然同形可能不红——l05 修正注③ 同款口径，红点由其余场景与 L06EvalContractTest 承载）。
+ * <b>统一运行器全量报告</b>（s07 绿 / s08 可信红 / s09 缺 env 全项失败报告：checks 的
+ * stdout 即报告全文；报告文件不入 golden，文件面/x 模式由合同测试锁）。<b>commit 1 红
+ * 是本讲预期红点</b>（工具 main 缺失：s01/s03/s04/s07 退出码错位即败，s09 期望报告 vs
+ * 空 stdout 亦真红；唯 s02（rc 1 + 空 stdout）与「主类缺失」偶然同形可能不红——
+ * l05 修正注③ 同款口径，红点由其余场景与 L06EvalContractTest 承载）。
  *
  * <p>与 l05 两点差异（附录 A3/JD3/JD4）：① 掩码集首例扩展 2 键（{@code generated_at}→
  * {@code <TS>}、{@code duration_ms}→{@code <MS>}，按 manifest normalization 声明数据驱动，
