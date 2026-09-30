@@ -80,7 +80,7 @@ blocking / observing 标注；【现查】= 按客户真理调整后的口径。
 
 ## 附录 A：Java 重走移植注记（ADR-0006）
 
-> 状态：**审定稿**（2026-09-30 用户审定：「没问题，继续」批量确认——A6.1 全部移植裁定 + A6.2 JD1–JD8 推荐口径 + A3 golden 方案全案）。决策与词汇见 ADR-0006 与 CONTEXT.md（重走 / 移植注记 / 对照基准）。§1–§5 为 Python 口径的历史对照基线，不重写；本附录只记录 Java 重走侧的翻译点与增量。重走证据落 `docs/replication/evidence/L06-java.md`（原 `evidence/L06.md` 不重开）。上游现查（2026-09-30，本附录起草日 fetch）：`origin/main` = `7f67533`，与本讲对照基线一致（检查点 0002 后无新变更，冻结合同零变化），不触发检查点采纳；flowERP 现查（submodule pin `e0088d3`，与 Python 时代本讲现查同 pin）：`run_suite` 统一分级/报告/退出码在场、EVALS 19 用例在场（`inventory_export_is_stable` / `stock_never_negative` / `receiving_is_idempotent` 均 blocking）、`flowerp/service.py` export_inventory CSV 模板 `{row['available']}` 锚点现查唯一命中 1 次。
+> 状态：**审定稿**（2026-09-30 用户审定：「没问题，继续」批量确认——A6.1 全部移植裁定 + A6.2 JD1–JD8 推荐口径 + A3 golden 方案全案）。分支内四处文档侧修正（A3 s09 面注记、「8 类拒绝」→11 处 ×2、A4 步骤 3 回写）均为行为零变化，逐项见证据账 §G 修正记录与 §13 复查轮呈报。决策与词汇见 ADR-0006 与 CONTEXT.md（重走 / 移植注记 / 对照基准）。§1–§5 为 Python 口径的历史对照基线，不重写；本附录只记录 Java 重走侧的翻译点与增量。重走证据落 `docs/replication/evidence/L06-java.md`（原 `evidence/L06.md` 不重开）。上游现查（2026-09-30，本附录起草日 fetch）：`origin/main` = `7f67533`，与本讲对照基线一致（检查点 0002 后无新变更，冻结合同零变化），不触发检查点采纳；flowERP 现查（submodule pin `e0088d3`，与 Python 时代本讲现查同 pin）：`run_suite` 统一分级/报告/退出码在场、EVALS 19 用例在场（`inventory_export_is_stable` / `stock_never_negative` / `receiving_is_idempotent` 均 blocking）、`flowerp/service.py` export_inventory CSV 模板 `{row['available']}` 锚点现查唯一命中 1 次。
 
 ### A1 讲解：本讲重建什么
 
@@ -145,10 +145,11 @@ L06 是重走线**最后一讲**，也是增量最重的一讲：Python 时代�
 #    - evidence/L06-java.md §G → master
 # 1. git checkout -b lesson-06-java
 # 2. 【配合点 1 复认】to-spec 降级：每次重新确认（L02–L05-java 先例），起始红采前问
-# 3. commit 1 = L06 Java 合同测试（EvalHarnessContractTest 九项 + ReportContract 拒绝面
-#    + L06EvalContractTest 工具面：构造器拒绝/锚点拒绝（--source 变异源 discharge，l05
-#    修正注① 同款）/驱动参数校验/checks 缺 env/输入校验/客户报告过 ReportContract 交叉
-#    验证——D3 schema 1.0 对齐的机检）+ GoldenL06ReplayTest + 起始红封条
+# 3. commit 1 = L06 Java 合同测试（L06EvalContractTest 工具面：构造器拒绝/锚点拒绝
+#    （--source 变异源 discharge，l05 修正注① 同款）/驱动参数校验/checks 缺 env/
+#    输入校验）+ GoldenL06ReplayTest + 起始红封条——九项合同与 ReportContract 拒绝面、
+#    客户报告交叉验证因 Java 编译绑定随实现落 commit 2（对应面起始红由 golden
+#    s07–s09 工具级承载；Python 同位面为 collection error 红；复查轮 S-1 回写，§R2 披露）
 #    （tools/capture_evidence.py --submission-root lesson-06-submission/java red -- mvn test）
 # 4. 【配合点 2】implement：用户显式调用后动笔——workbench/evals 根两件
 #    （EvalHarness：分级/报告/x 模式/退出码；ReportContract：11 处拒绝词面）+ l06 四件

@@ -138,7 +138,7 @@ golden 前置生成，连同生成器、共享件 env 字段扩展、本 §G 与
 - **同命令异树口径（C5，逐字承袭 Python 时代/L05-java）**：链 B 红绿两条记录的命令串逐字节相同；目标树差异经 `$L06_EVAL_TARGET` 注入（红 = 缺陷基线-java，绿 = 候选-java），echo 行、封存 argv 与本账三重披露。「修业务一行」以两树间该一行的差异承载（diff 封条即该行），照 Python 台账形态（红 66/diff 65/绿 64），不对干净候选树另做编辑表演。
 - **结构翻译差异（A1/JD2，如实披露不伪装）**：① 冻结 checks 的 stock 登记项经子进程再跑 driver——Java 进程内调用驱动逻辑（可调用面返回 (rc, 末行)，evidence/error 与子进程路径逐字节同形）；② 驱动/自检经 `StockProbe` 子进程（Python 为 in-process import）；③ `REPO_ROOT` 锚定：Python `Path(__file__).parents[2]` → Java 类装载位置（verify 集成抓获 cwd 兜底偏差后修正，两枚失败封条保留）；④ `--python` 默认 `.venv/bin/python` 相对 cwd（FlowerpProbe/JD2 先例）——verify 场景显式传绝对路径。对外契约（argv/stdout JSON/退出码/锚点守卫/自检/报告全文）由 golden l06 字节级锁定。
 - **s09 修正轮（§G 修正记录）**：golden 抓获首版「入口拒绝」译法与冻结面分歧（目标树解析在登记项内、失败走报告），按 golden 修正；重生成仅 manifest note 一行变化，指纹 `f0e0ab77…`→`1465c87d…`。
-- **已知行为边界（JD6）**：`generated_at` Java ISO 形状与 Python `isoformat` 微差（掩码内不入对照）；工具 stderr 错误词面逐字、traceback/errno 形状不复刻不伪装；工具崩溃路径 error.type 记 Java 类名（如 `ToolFailure`——冻结面同位为 Python 异常名，语言绑定如实偏差）。
+- **已知行为边界（JD6）**：`generated_at` Java ISO 形状与 Python `isoformat` 微差（掩码内不入对照）；工具 stderr 错误词面逐字、traceback/errno 形状不复刻不伪装；工具崩溃路径 error.type 记 Java 类名（如 `ToolFailure`——冻结面同位为 Python 异常名，语言绑定如实偏差）；冻结检查**失配路径**（从未触发）的 evidence 词面有两处微偏差——半角冒号+空格（Python 全角「：」）与 `Map.of` 键序（Python dict 保序），JD2「词面逐字」按 golden 覆盖面理解，该死路径打磨搁置检查点（复查轮 S-2）。
 - **golden s02 偶然同形（唯一）**：rc 1 + 空 stdout 在工具缺失时与「主类缺失」同形，commit 1 可能不红——红点由其余 8 场景（s09 期望报告 vs 空stdout 真红）与合同测试承载。
 - **链入账口径（JD7）**：`CASE-WB-L06-JAVA-001` 装 checks 同命令链；mvn 工具建设链封条随分支 commit 1/2（不入任务账——避免多命令混链）；假绿探针/缺链查询作为观察相位入账（rc 如实，不参与链判定）。
 - **失败与中间态保留**：verify 两枚失败封条（`7eea271c`/`2c998901`）、首冻被取代封条（`eae2cd15`）、编译失败现场（commit message + 会话记录）——一律保留不删。
@@ -146,3 +146,18 @@ golden 前置生成，连同生成器、共享件 env 字段扩展、本 §G 与
 - **未覆盖边界（C7，如实）**：并发预占、进程中断回滚、多 SKU/多仓叠加——本讲检查均为单商品单线程时序，不覆盖（上游同口径）；客户 `inventory_export_is_stable` 的 reserved=0 盲区是否补形状属客户仓库演进，留检查点显式采纳（ADR-0003）。
 - **vendors 双查**：全程恒空（clone 只读源，缺陷只落 `.runtime/` clone）。
 - `acceptance: pending_human_review` 恒等人签；**待审核 ≠ 已接受**。
+
+## 13. 复查轮（code-review 双轴自调，2026-09-30）
+
+双轴子代理并行复查 `master...lesson-06-java`（Standards 轴：CLAUDE.md/CONTEXT.md 标准 + Fowler 坏味道基线 + l05 同位先例形态；Spec 轴：讲义 §2 + 附录 A 审定稿 + 本账事实核对——封条 meta 抽查、sqlite 只读查账、shasum 复算 golden 与 12 路径指纹、`git log -S` 查变体、mvn 独立复跑 **109/109 exit 0**；报告全文见会话记录，此处存目与处置）。**处置原则：行为零变化修正、披露补记、旧证据全保留。本轮零代码改动**（六源件已入终冻 `a9945a2d`——冻结产物打磨不采纳，Python 时代/L05 复查轮同款裁定）。
+
+| # | 轴 | 发现 | 处置 |
+|---|---|---|---|
+| S-1 | 双轴 | A4 步骤 3 字面把九项合同测试排在 commit 1，实际因 Java 编译绑定随实现落 commit 2（commit message/§R2/测试 javadoc 三处已披露，附录未回写） | ✅ 已修（**行为零变化回写**）：A4 步骤 3 改为工具面 + golden 随 commit 1、九项随 commit 2 的实际口径 |
+| S-2 | Standards | 冻结检查**失配路径**（从未触发）evidence 词面两处微偏差：半角冒号（Python 全角「：」）+ `Map.of` 键序（Python dict 保序）——JD2「词面逐字」在该路径轻微超称 | 不采纳（搁置检查点）：死路径 + 六源件已冻，重冻+重演成本＞收益（L05 T-1/T-6 同款）；§12 已补记披露 |
+| S-3 | Standards | `intOption` 7 行助手在 l06 两新件逐字重复（l05 第三份已冻同形） | 不采纳（澄清）：工具文件自足先例（l05 形态承袭），抽共享件动冻结节 |
+| S-4 | Standards | 测试 `git()` 夹具在两合同测试逐字重复 | 不采纳（澄清）：测试夹具自足同款（L05EvalContractTest 同形） |
+| S-5 | Standards | 微瑕：ReportContract 同条件 `stringSet` 重算 2–3 次；测试 `basedir` 裸取与 `Cli.repoRoot()` 惯用不一 | 不采纳（澄清）：冻结核内打磨同 S-2 口径；测试化妆无行为收益 |
+| 呈报 | Spec | 审定稿（用户批准工件）分支内共改 4 行：A3 s09 面注记、「8 类」→11 处 ×2、A4 回写（本轮）——均文档侧零行为，修正链在案（§G 修正记录 + G3/G4） | ✅ 显式呈报：附录状态行加修正注；验收人按本表核对 |
+
+**复查轮结论**：Standards 轴**无硬违规**（冻结面 0 字节、vendors 恒空、golden 永不手改经生成器重生成在案、_Avoid_ 零命中、Unicode 纪律、测试口径 S6 承袭、`--skip-self-check` 参数面齐）；Spec 轴抽查**全相符**（假绿变体不入 git、链 B argv 逐字节同串 rc 1→0、任务账 16 条且 mvn 链不在账、首冻不入账、verify 失败+成功两枚 execution 在账、终冻=收口复核、客户件三时代同指纹、D5 封条时序无补拍、独立复跑 109/109）。S-1 文档修正随 commit 4 提交；其余搁置/澄清留档。
