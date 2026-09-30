@@ -1,0 +1,39 @@
+{
+  "ok": false,
+  "flowerp_connected": false,
+  "execution": {
+    "task_id": "CASE-WB-L06-JAVA-001",
+    "mode": "verify",
+    "workspace": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java",
+    "write_scope": [],
+    "executor_command": null,
+    "executor_prompt": "",
+    "eval_command": [
+      "java",
+      "-cp",
+      "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar",
+      "workbench.evals.l06.Checks",
+      "--no-report"
+    ],
+    "returncode": null,
+    "timed_out": false,
+    "stdout_text": "",
+    "stderr_text": "",
+    "changed_files": [],
+    "out_of_scope_files": [],
+    "change_manifest": [],
+    "diff_text": "",
+    "eval_returncode": 1,
+    "eval_output_text": "{\n  \"schema_version\": \"1.0\",\n  \"suite\": \"all\",\n  \"requested_cases\": [\n    \"l06_stock_consistency\",\n    \"l05_receiving_regression\",\n    \"l06_customer_stock_case\",\n    \"l06_frozen_checks\",\n    \"teaching_observation\"\n  ],\n  \"generated_at\": \"2026-09-30T07:59:29.509936Z\",\n  \"summary\": {\n    \"total\": 5,\n    \"passed\": 0,\n    \"blocking_failed\": 4,\n    \"observing_failed\": 1,\n    \"decision\": \"block\"\n  },\n  \"results\": [\n    {\n      \"name\": \"l06_stock_consistency\",\n      \"level\": \"blocking\",\n      \"passed\": false,\n      \"duration_ms\": 42,\n      \"evidence\": \"python 启动失败（/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/.venv/bin/python）\",\n      \"error\": {\n        \"type\": \"ToolFailure\",\n        \"message\": \"python 启动失败（/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/.venv/bin/python）\"\n      }\n    },\n    {\n      \"name\": \"l05_receiving_regression\",\n      \"level\": \"blocking\",\n      \"passed\": false,\n      \"duration_ms\": 6,\n      \"evidence\": \"python 启动失败（/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/.venv/bin/python）\",\n      \"error\": {\n        \"type\": \"ToolFailure\",\n        \"message\": \"python 启动失败（/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/.venv/bin/python）\"\n      }\n    },\n    {\n      \"name\": \"l06_customer_stock_case\",\n      \"level\": \"blocking\",\n      \"passed\": false,\n      \"duration_ms\": 5,\n      \"evidence\": \"python 启动失败（/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/.venv/bin/python）\",\n      \"error\": {\n        \"type\": \"ToolFailure\",\n        \"message\": \"python 启动失败（/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/.venv/bin/python）\"\n      }\n    },\n    {\n      \"name\": \"l06_frozen_checks\",\n      \"level\": \"blocking\",\n      \"passed\": false,\n      \"duration_ms\": 6,\n      \"evidence\": \"冻结检查文件读取失败：/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/vendors/flowERP/eval/harness.py\",\n      \"error\": {\n        \"type\": \"ToolFailure\",\n        \"message\": \"冻结检查文件读取失败：/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java/vendors/flowERP/eval/harness.py\"\n      }\n    },\n    {\n      \"name\": \"teaching_observation\",\n      \"level\": \"observing\",\n      \"passed\": false,\n      \"duration_ms\": 0,\n      \"evidence\": \"教学观察项：模拟非阻断提示，不代表实际缺陷\",\n      \"error\": {\n        \"type\": \"AssertionError\",\n        \"message\": \"教学观察项：模拟非阻断提示，不代表实际缺陷\"\n      }\n    }\n  ]\n}\n",
+    "eval_timed_out": false,
+    "status": "eval_failed",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "eval_output_sha256": "4fa0451718079e33739945c98a4c1374d38e170f91ffbefeb4bd8291b3386ada",
+    "execution_id": 4,
+    "actor": "Claude",
+    "observed_at": "2026-09-30T07:59:29.576624+00:00"
+  },
+  "task_state": "eval_failed"
+}

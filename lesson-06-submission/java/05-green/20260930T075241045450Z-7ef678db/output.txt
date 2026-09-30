@@ -1,0 +1,65 @@
+target: /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L06-candidate-java
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l06_stock_consistency",
+    "l05_receiving_regression",
+    "l06_customer_stock_case",
+    "l06_frozen_checks",
+    "teaching_observation"
+  ],
+  "generated_at": "2026-09-30T07:52:43.096553Z",
+  "summary": {
+    "total": 5,
+    "passed": 4,
+    "blocking_failed": 0,
+    "observing_failed": 1,
+    "decision": "pass"
+  },
+  "results": [
+    {
+      "name": "l06_stock_consistency",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 507,
+      "evidence": "{\"case\": \"stock_consistency\", \"status\": \"pass\", \"opening\": 8, \"reserved\": 3, \"available\": 5, \"query\": [8, 3, 5], \"csv\": [8, 3, 5], \"rejected_reserve\": 6, \"state_unchanged\": true}",
+      "error": null
+    },
+    {
+      "name": "l05_receiving_regression",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 325,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "l06_customer_stock_case",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 497,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "l06_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 13,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
+      "error": null
+    },
+    {
+      "name": "teaching_observation",
+      "level": "observing",
+      "passed": false,
+      "duration_ms": 0,
+      "evidence": "教学观察项：模拟非阻断提示，不代表实际缺陷",
+      "error": {
+        "type": "AssertionError",
+        "message": "教学观察项：模拟非阻断提示，不代表实际缺陷"
+      }
+    }
+  ]
+}

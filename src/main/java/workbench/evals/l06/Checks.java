@@ -200,8 +200,18 @@ public final class Checks {
         }
     }
 
+    /**
+     * 冻结 checks 的 {@code REPO_ROOT = Path(__file__).resolve().parents[2]} 同形：锚定本类
+     * 装载位置（target/classes → 仓库根），<b>不随进程 cwd 漂移</b>——verify 集成缝（task-run
+     * 以 workspace 为 cwd）首采抓获 cwd 兜底译法的偏差后修正，现场封条保留见证据账 §R。
+     */
     private static Path repoRoot() {
-        return Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
+        try {
+            return Path.of(Checks.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI()).toAbsolutePath().getParent().getParent();
+        } catch (java.net.URISyntaxException error) {
+            throw new StockProbe.ToolFailure("仓库根定位失败（class 装载位置）", error);
+        }
     }
 
     private static int intOption(Args args, String name, int defaultValue) {

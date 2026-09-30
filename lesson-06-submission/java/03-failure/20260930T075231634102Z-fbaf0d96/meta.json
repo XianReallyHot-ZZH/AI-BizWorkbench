@@ -1,0 +1,15 @@
+{
+  "phase": "red",
+  "argv": [
+    "sh",
+    "-c",
+    "echo \"target: $L06_EVAL_TARGET\" && exec java -cp \"target/classes:$(cat target/child-classpath.txt)\" workbench.evals.l06.Checks --no-report"
+  ],
+  "command": "[\"sh\", \"-c\", \"echo \\\"target: $L06_EVAL_TARGET\\\" && exec java -cp \\\"target/classes:$(cat target/child-classpath.txt)\\\" workbench.evals.l06.Checks --no-report\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-30T07:52:31.634102+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/java/03-failure/20260930T075231634102Z-fbaf0d96/output.txt",
+  "sha256": "108885ef8ae405ec8c8d55b8294b218a30544cdb00cfa77e4cf19a5c8ddd0291",
+  "provenance": "local_teaching_capture"
+}

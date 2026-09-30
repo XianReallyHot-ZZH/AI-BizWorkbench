@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "mvn",
+    "test",
+    "-Dtest=EvalHarnessContractTest"
+  ],
+  "command": "[\"mvn\", \"test\", \"-Dtest=EvalHarnessContractTest\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-30T07:51:38.141450+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-06-submission/java/06-observations/20260930T075138141450Z-8afe887b/output.txt",
+  "sha256": "2f3533401b46c76a5b89410253e96d9da150094aad7013205a9c798a6332cfc0",
+  "provenance": "local_teaching_capture"
+}

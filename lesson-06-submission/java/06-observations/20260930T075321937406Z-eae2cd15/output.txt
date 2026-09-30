@@ -1,0 +1,12 @@
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  .runtime/course/L06-defect-baseline-java/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  .runtime/course/L06-defect-baseline-java/eval/cases.py
+7c2c3f03f253d6a4f864a77e266243abef15c78ebb3572ecafdc90bff8fcb00b  .runtime/course/L06-defect-baseline-java/flowerp/service.py
+e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4  .runtime/course/L06-candidate-java/eval/harness.py
+c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207  .runtime/course/L06-candidate-java/eval/cases.py
+6c372dcd105c2c476bbbb76b97abaf6edfbbac233cc7cfb7567a73052325385a  .runtime/course/L06-candidate-java/flowerp/service.py
+cf7a2d64b003131c06e65102a63a8a652bfd2b967edd2d7a3da527fcc4229f58  src/main/java/workbench/evals/EvalHarness.java
+cfddba74f651ffd541a10fa616b6459cc7aa8010044dab8e997c70a4568208a8  src/main/java/workbench/evals/ReportContract.java
+55d16a49e2a79b499701602358287b2b0c0747e2374905d6f1cbcbf26a35e3ff  src/main/java/workbench/evals/l06/Checks.java
+f33aa5a74914515b3154ff3cad4dee66015f2bd651d6d2b95447e22df7cdc3fa  src/main/java/workbench/evals/l06/StockConsistencyCheck.java
+a918b50d70982d8c9476d28f99590f15cb1414ddd6f952964232baef99f69d9f  src/main/java/workbench/evals/l06/BuildDefectBaseline.java
+922aeffff137e1edf82219212fd88bc46bb9955baf381eafd8614ebc06dab58a  src/main/java/workbench/evals/l06/StockProbe.java
