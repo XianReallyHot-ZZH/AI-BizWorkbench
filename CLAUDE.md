@@ -52,7 +52,7 @@ python3 -m venv .venv && .venv/bin/pip install -e .
 sqlite3 "file:.runtime/course/L01-workbench/workbench.db?mode=ro"
 
 # Java 线（重走期唯一活动实现，ADR-0006；状态唯一事实源 = docs/replication/README.md 重走线行，此处不缓存进度）
-mvn test                                # 全量门：合同测试 + golden 五重放（l01–l05）+ fixture 机检
+mvn test                                # 全量门：合同测试 + golden 六重放（l01–l06）+ fixture 机检
 mvn test -Dtest=L02WorkbenchRulesTest   # 单类
 
 # 工作台 CLI（Java 版，经 bin/wb 包装：classpath = target/classes + 依赖清单落盘）
@@ -104,7 +104,7 @@ Java 重走线（ADR-0006，重走期唯一活动实现；状态唯一事实源 
 │   ├── bootstrap/                 五命令逻辑（Args/Ledger/JsonOut/PyJson/BootstrapCommands/Command）
 │   ├── spec/                      六段 Spec 结构解析器（L03-java，词面与检查序与冻结版逐字同形）
 │   ├── execution/                 V0 受控执行三命令（L04-java，与 Python execution.py 同形：run/review/show + Shlex/ProcessRunner/WorkspaceInspector/WriteScope）
-│   ├── evals/                     L05 评测工具两件（L05-java：缺陷基线构造器 + 收货场景驱动；独立 main 不进 REGISTRY，经子进程 python 驱动客户实现——冻结件 in-process import 的结构翻译点，对外契约逐字同形由 golden l05 锁）
+│   ├── evals/                     统一运行器根两件（L06-java：EvalHarness 分级/报告/x 模式/退出码 + ReportContract 报告合同——evals/harness.py 与 report_contract.py 对应物，L07 Hook 入口，报告 schema 1.0 对齐客户）+ 评测工具子包 l05 两件（缺陷基线构造器+收货场景驱动）与 l06 三件（CSV 缺陷基线+口径交叉检查+五登记项收口 Checks）——独立 main 不进 REGISTRY，经子进程 python 驱动客户实现（冻结件 in-process import 的结构翻译点），对外契约逐字同形由 golden l05/l06 锁
 │   ├── coursecontracts/           CourseContracts.java 冻结合同 fixture 双载体（与 Python 载体逐字等价 + 机检锁定）
 │   └── tools/                     ImportEvidence（复刻 vendor import_evidence.py 语义，重算 SHA-256 验封）
 ├── src/test/java/                 合同测试 + golden 重放（testsupport/Cli 经真实 CLI 子进程驱动，不绕入口直调）
@@ -121,7 +121,7 @@ Java 重走线（ADR-0006，重走期唯一活动实现；状态唯一事实源 
 - 调用方向：命令入口（`workbench/cli.py`，REGISTRY 注册缝 + 顶层异常边界）→ 任务/证据逻辑（`workbench/bootstrap.py`）→ sqlite 存储（`.runtime/` 运行库；读命令不建库不建目录）。
 - 新增命令：沿 REGISTRY 注册并复用既有存储入口；错误词面对齐上游（`required_task_missing` 等）。
 - 测试口径：工作台行为类测试经 CLI 公开接口以真实子进程运行，不绕入口直调内部函数；纯文本与合同 fixture 类测试直接读文件即可（Java 线同口径：`testsupport/Cli` 子进程 / 文本直读）。
-- 待建设清单（双轨口径）：Python 侧 `eval.harness` 已随 L05/L06 建成并冻结（`evals/`）；Java 侧 L05 份额已随 L05-java 建成（`workbench/evals/l05/` 两工具），统一运行器（`evals/harness.py`+`report_contract.py` 的 Java 对应物，L06-java 正题）、`course-status` 等上游命令待建设（V0 受控执行三命令已随 L04-java 建成，`workbench/execution/`）——引用时如实说明尚未复刻，不写成已建成。
+- 待建设清单（双轨口径）：Python 侧 `eval.harness` 已随 L05/L06 建成并冻结（`evals/`），Python 实现面随重走线完成进入退役窗口（ADR-0006 尾款，退役细则单独确认后执行）；Java 侧 eval 能力已齐——L05-java 两工具 + L06-java 统一运行器根两件与 l06 三件（`workbench/evals/`），`course-status` 等上游命令待建设（V0 受控执行三命令已随 L04-java 建成，`workbench/execution/`）——引用时如实说明尚未复刻，不写成已建成。
 - 双轨纪律（重走期，ADR-0006）：Python 实现面（`workbench/`、`tests/`、`pyproject.toml`）冻结不触碰，Python 时代 tools 复用不重写；`.runtime/course/L01-workbench/`（Python 时代账本）零写入，Java 线账本用 `.runtime/course/L01-workbench-java/`。仍然允许：冻结面之外的一切照常演进（`src/`、`pom.xml`、`bin/wb`、`docs/`、`lesson-*-submission/`）；误触冻结面即回退，冻结面字节不变。
 
 **信用内核**（L01 钉死，后续讲次全部踩在上面）：账本只追加、失败不可抹、快照不随原文件变、`status` 每次重算 SHA-256 复核、链判定三规则（同命令红绿 / Diff 严格居间 / 全局最新须为成功绿）、`acceptance: pending_human_review` 恒待人签。改动任何一处都要意识到全链信用随之变动。
