@@ -71,7 +71,22 @@ public final class Cli {
         return launch(mainClass, env, args);
     }
 
+    /**
+     * REGISTRY 命令 + stdin 注入（l07 起 Hook 处理器合同测试需要：{@code quality-gate}
+     * 读 stdin 事件 JSON 是协议面，无法经 argv 承载）。独立方法名而非重载——J2 教训；
+     * 既有 {@code run}/{@code runMain} 行为不变。子进程约定先读尽 stdin 再写 stdout
+     * （Stop 事件处理器的协议读序），故先写后读无管道死锁。
+     */
+    public static Result runWithInput(String input, String... args) {
+        return launchWithInput("workbench.cli.Main", Map.of(), input, args);
+    }
+
     private static Result launch(String mainClass, Map<String, String> env, String... args) {
+        return launchWithInput(mainClass, env, null, args);
+    }
+
+    private static Result launchWithInput(String mainClass, Map<String, String> env,
+            String input, String... args) {
         try {
             List<String> argv = new ArrayList<>(List.of("java",
                     "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
@@ -80,6 +95,10 @@ public final class Cli {
             ProcessBuilder builder = new ProcessBuilder(argv).directory(repoRoot().toFile());
             builder.environment().putAll(env);
             Process process = builder.start();
+            if (input != null) {
+                process.getOutputStream().write(input.getBytes(StandardCharsets.UTF_8));
+            }
+            process.getOutputStream().close();
             byte[] out = process.getInputStream().readAllBytes();
             byte[] err = process.getErrorStream().readAllBytes();
             int code = process.waitFor();

@@ -34,7 +34,7 @@ public final class StockConsistencyCheck {
     private static final String DEFAULT_PYTHON = ".venv/bin/python";
 
     /** 场景结局：(退出码, 输出行)——行即 pass/fail JSON（main 打印它，Checks 直接复用它）。 */
-    record Outcome(int code, String line) {}
+    public record Outcome(int code, String line) {}
 
     private StockConsistencyCheck() {}
 
@@ -63,7 +63,9 @@ public final class StockConsistencyCheck {
         }
     }
 
-    static Outcome runScenario(Path target, Path interpreter, int opening, int reserved) {
+    // L07 起开放为跨讲复用缝（l07 OrderChecks 的 l06_stock_regression 登记项进程内复用本
+    // 面开两词可见性，行为零变化——mvn 全量 + golden l06 重放为证；l06 语义与词面不动）。
+    public static Outcome runScenario(Path target, Path interpreter, int opening, int reserved) {
         if (!(0 < reserved && reserved < opening)) {
             Map<String, Object> actual = new LinkedHashMap<>();
             actual.put("opening", opening);

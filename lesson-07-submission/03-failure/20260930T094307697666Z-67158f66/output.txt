@@ -1,0 +1,244 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 118 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.evals.l05.L05EvalContractTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.678 s -- in workbench.evals.l05.L05EvalContractTest
+[INFO] Running workbench.evals.EvalHarnessContractTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.686 s -- in workbench.evals.EvalHarnessContractTest
+[INFO] Running workbench.evals.l07.L07LocalGuardrailContractTest
+[ERROR] Tests run: 12, Failures: 12, Errors: 0, Skipped: 0, Time elapsed: 1.679 s <<< FAILURE! -- in workbench.evals.l07.L07LocalGuardrailContractTest
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.hookStagingProjectionIsComplete -- Time elapsed: 0.016 s <<< FAILURE!
+java.lang.AssertionError: 
+[待审安装片段在场] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/hook_staging/settings.hooks.json
+to exist (symbolic links were followed).
+	at workbench.evals.l07.L07LocalGuardrailContractTest.hookStagingProjectionIsComplete(L07LocalGuardrailContractTest.java:250)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateSkipsReentryWithoutRerunningHarness -- Time elapsed: 0.185 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateSkipsReentryWithoutRerunningHarness(L07LocalGuardrailContractTest.java:149)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gatePassesThroughAndArchivesEventOnGreenHarness -- Time elapsed: 0.152 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gatePassesThroughAndArchivesEventOnGreenHarness(L07LocalGuardrailContractTest.java:126)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateRejectsNonStopEventName -- Time elapsed: 0.150 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateRejectsNonStopEventName(L07LocalGuardrailContractTest.java:196)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateTranslatesHarnessFailureToBlock -- Time elapsed: 0.154 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[处理器以 rc 0 交付协议（两层退出码分离）] 
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateTranslatesHarnessFailureToBlock(L07LocalGuardrailContractTest.java:113)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateRejectsCwdOutsideProject -- Time elapsed: 0.150 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateRejectsCwdOutsideProject(L07LocalGuardrailContractTest.java:207)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateBlocksOnHarnessTimeout -- Time elapsed: 0.149 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateBlocksOnHarnessTimeout(L07LocalGuardrailContractTest.java:172)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.orderChecksRejectsTargetWithoutFlowerp -- Time elapsed: 0.131 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[--target 非客户树拒绝 rc 2] 
+expected: 2
+ but was: 1
+	at workbench.evals.l07.L07LocalGuardrailContractTest.orderChecksRejectsTargetWithoutFlowerp(L07LocalGuardrailContractTest.java:239)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateBlocksOnMissingHarnessCommand -- Time elapsed: 0.134 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateBlocksOnMissingHarnessCommand(L07LocalGuardrailContractTest.java:183)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.orderChecksRequiresTarget -- Time elapsed: 0.139 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[缺 --target 是用法错误 rc 2] 
+expected: 2
+ but was: 1
+	at workbench.evals.l07.L07LocalGuardrailContractTest.orderChecksRequiresTarget(L07LocalGuardrailContractTest.java:229)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateBlocksOnMalformedEventJson -- Time elapsed: 0.154 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateBlocksOnMalformedEventJson(L07LocalGuardrailContractTest.java:161)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l07.L07LocalGuardrailContractTest.gateNoStdinBlocksAsUnverified -- Time elapsed: 0.152 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l07.L07LocalGuardrailContractTest.gateNoStdinBlocksAsUnverified(L07LocalGuardrailContractTest.java:218)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.evals.l06.L06EvalContractTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.143 s -- in workbench.evals.l06.L06EvalContractTest
+[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 138.3 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Running workbench.spec.L03SpecContractTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.147 s -- in workbench.spec.L03SpecContractTest
+[INFO] Running workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Running workbench.golden.GoldenL06ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.329 s -- in workbench.golden.GoldenL06ReplayTest
+[INFO] Running workbench.golden.GoldenL01ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 25.49 s -- in workbench.golden.GoldenL01ReplayTest
+[INFO] Running workbench.golden.GoldenL04ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 56.86 s -- in workbench.golden.GoldenL04ReplayTest
+[INFO] Running workbench.golden.GoldenL03ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.848 s -- in workbench.golden.GoldenL03ReplayTest
+[INFO] Running workbench.golden.GoldenL02ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.09 s -- in workbench.golden.GoldenL02ReplayTest
+[INFO] Running workbench.golden.GoldenL05ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.24 s -- in workbench.golden.GoldenL05ReplayTest
+[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Running workbench.execution.L04ExecutionContractTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 119.7 s -- in workbench.execution.L04ExecutionContractTest
+[INFO] Running workbench.rules.L02WorkbenchRulesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in workbench.rules.L02WorkbenchRulesTest
+[INFO] Running workbench.rules.JavaLineRuleFactsTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in workbench.rules.JavaLineRuleFactsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L07LocalGuardrailContractTest.gateBlocksOnHarnessTimeout:172 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gateBlocksOnMalformedEventJson:161 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gateBlocksOnMissingHarnessCommand:183 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gateNoStdinBlocksAsUnverified:218 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gatePassesThroughAndArchivesEventOnGreenHarness:126 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gateRejectsCwdOutsideProject:207 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gateRejectsNonStopEventName:196 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gateSkipsReentryWithoutRerunningHarness:149 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.gateTranslatesHarnessFailureToBlock:113 [处理器以 rc 0 交付协议（两层退出码分离）] 
+expected: 0
+ but was: 2
+[ERROR]   L07LocalGuardrailContractTest.hookStagingProjectionIsComplete:250 [待审安装片段在场] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/hook_staging/settings.hooks.json
+to exist (symbolic links were followed).
+[ERROR]   L07LocalGuardrailContractTest.orderChecksRejectsTargetWithoutFlowerp:239 [--target 非客户树拒绝 rc 2] 
+expected: 2
+ but was: 1
+[ERROR]   L07LocalGuardrailContractTest.orderChecksRequiresTarget:229 [缺 --target 是用法错误 rc 2] 
+expected: 2
+ but was: 1
+[INFO] 
+[ERROR] Tests run: 121, Failures: 12, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  06:35 min
+[INFO] Finished at: 2026-09-30T17:49:45+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

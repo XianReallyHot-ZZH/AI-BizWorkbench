@@ -1,0 +1,16 @@
+{
+  "description": "L07 提交前本地护栏（待审安装片段——人工审查后合并进 .claude/settings.json，本文件本身不被宿主加载）",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR}/bin/wb\" quality-gate",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "phase": "observation",
+  "argv": [
+    "sh",
+    ".runtime/l07-protocol/approve-attempt.sh"
+  ],
+  "command": "[\"sh\", \".runtime/l07-protocol/approve-attempt.sh\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-09-30T11:45:38.891203+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-07-submission/06-observations/20260930T114538891203Z-38cdb055/output.txt",
+  "sha256": "611a84c2727771da531c2b548171503e2e283859cd9f904ff5120016fd24417b",
+  "provenance": "local_teaching_capture"
+}

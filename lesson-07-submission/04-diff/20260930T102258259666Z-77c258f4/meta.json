@@ -1,0 +1,16 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "-C",
+    ".runtime/course/L07-candidate",
+    "diff"
+  ],
+  "command": "[\"git\", \"-C\", \".runtime/course/L07-candidate\", \"diff\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-09-30T10:22:58.259666+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-07-submission/04-diff/20260930T102258259666Z-77c258f4/output.txt",
+  "sha256": "03ff79e8c5cc9d38326a4f7a63090b525c05c69a11392a54218982665f2e21d2",
+  "provenance": "local_teaching_capture"
+}

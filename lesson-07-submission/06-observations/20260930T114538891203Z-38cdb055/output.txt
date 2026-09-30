@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "self_review_rejected: 复核人与最近一次执行者是同一人（XianReallyHot-ZZH），执行者不能批准自己，记录未追加",
+  "flowerp_connected": false
+}

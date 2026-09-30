@@ -1,0 +1,46 @@
+diff --git a/src/main/java/workbench/cli/Main.java b/src/main/java/workbench/cli/Main.java
+index 9264c5d..6195514 100644
+--- a/src/main/java/workbench/cli/Main.java
++++ b/src/main/java/workbench/cli/Main.java
+@@ -4,6 +4,7 @@ import workbench.bootstrap.Args;
+ import workbench.bootstrap.BootstrapCommands;
+ import workbench.bootstrap.Command;
+ import workbench.bootstrap.JsonOut;
++import workbench.evals.l07.QualityGate;
+ import workbench.execution.ExecutionCommands;
+ import workbench.spec.SpecCommands;
+ 
+@@ -26,6 +27,9 @@ public final class Main {
+         // L04：受控执行三命令经同一条缝注册（适配器在 workbench.execution.ExecutionCommands，
+         // 镜像 cli.py 的 L04 注册段：复用 bootstrap 存储入口）。
+         ExecutionCommands.register(REGISTRY);
++        // L07：本地护栏处理器经同一条缝注册（讲义 D2——workbenchIncrement「提交前本地护栏」
++        // 即工作台命令；适配器在 workbench.evals.l07.QualityGate，只加注册调用，缝位置不变）。
++        REGISTRY.register("quality-gate", QualityGate::execute);
+     }
+ 
+     public static void main(String[] args) {
+diff --git a/src/main/java/workbench/evals/l06/StockConsistencyCheck.java b/src/main/java/workbench/evals/l06/StockConsistencyCheck.java
+index 7997464..c556618 100644
+--- a/src/main/java/workbench/evals/l06/StockConsistencyCheck.java
++++ b/src/main/java/workbench/evals/l06/StockConsistencyCheck.java
+@@ -34,7 +34,7 @@ public final class StockConsistencyCheck {
+     private static final String DEFAULT_PYTHON = ".venv/bin/python";
+ 
+     /** 场景结局：(退出码, 输出行)——行即 pass/fail JSON（main 打印它，Checks 直接复用它）。 */
+-    record Outcome(int code, String line) {}
++    public record Outcome(int code, String line) {}
+ 
+     private StockConsistencyCheck() {}
+ 
+@@ -63,7 +63,9 @@ public final class StockConsistencyCheck {
+         }
+     }
+ 
+-    static Outcome runScenario(Path target, Path interpreter, int opening, int reserved) {
++    // L07 起开放为跨讲复用缝（l07 OrderChecks 的 l06_stock_regression 登记项进程内复用本
++    // 面开两词可见性，行为零变化——mvn 全量 + golden l06 重放为证；l06 语义与词面不动）。
++    public static Outcome runScenario(Path target, Path interpreter, int opening, int reserved) {
+         if (!(0 < reserved && reserved < opening)) {
+             Map<String, Object> actual = new LinkedHashMap<>();
+             actual.put("opening", opening);

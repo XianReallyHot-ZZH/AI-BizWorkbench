@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l07_draft_amount",
+    "l07_rejected_order",
+    "l07_amount_transfer",
+    "l07_order_total_regression",
+    "l06_stock_regression",
+    "l07_frozen_checks"
+  ],
+  "generated_at": "2026-09-30T10:50:59.034203Z",
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "blocking_failed": 0,
+    "observing_failed": 0,
+    "decision": "pass"
+  },
+  "results": [
+    {
+      "name": "l07_draft_amount",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 649,
+      "evidence": "两行金额 6000+6000=12000 分；状态 draft；零库存可建草稿且库存表不变",
+      "error": null
+    },
+    {
+      "name": "l07_rejected_order",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 708,
+      "evidence": "数量为零或负数、第二行商品不存在均拒绝；订单头、明细、库存三表保持原样",
+      "error": null
+    },
+    {
+      "name": "l07_amount_transfer",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 1244,
+      "evidence": "迁移输入：3×2500+2×1800=11100 分；排除写死 12000",
+      "error": null
+    },
+    {
+      "name": "l07_order_total_regression",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 389,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "l06_stock_regression",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 371,
+      "evidence": "{\"case\": \"stock_consistency\", \"status\": \"pass\", \"opening\": 8, \"reserved\": 3, \"available\": 5, \"query\": [8, 3, 5], \"csv\": [8, 3, 5], \"rejected_reserve\": 6, \"state_unchanged\": true}",
+      "error": null
+    },
+    {
+      "name": "l07_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 13,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
+      "error": null
+    }
+  ]
+}
