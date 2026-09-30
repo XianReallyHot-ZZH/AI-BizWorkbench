@@ -1,0 +1,12 @@
+[
+  [
+    "sku",
+    "name",
+    "site",
+    "location",
+    "lot_id",
+    "on_hand",
+    "reserved",
+    "available"
+  ]
+]

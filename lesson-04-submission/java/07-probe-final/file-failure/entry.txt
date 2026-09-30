@@ -1,0 +1,2 @@
+flowerp.inventory_export:export_inventory_file
+/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L04-delivery-java/candidate/flowerp/inventory_export.py

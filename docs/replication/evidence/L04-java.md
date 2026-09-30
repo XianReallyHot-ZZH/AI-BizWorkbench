@@ -104,3 +104,28 @@ golden 前置生成，连同生成器、共享件扩展、本 §G 与附录 A �
 - **A 门自举实跑**（V0 第一次被真人 operator 使用，Python A 门先例）：`./bin/wb workbench-task-run CASE-WB-L04-JAVA-001 --workspace . --mode verify --eval-command "mvn test" --execution-timeout 900 --actor Claude` → rc 0，`verify_completed`、eval rc 0（`mvn test` 84/84）、task_state `review`、execution_id 1（任务账留证）
 - **终态 status 密封采集**：observation `…cdb060f2`（rc 0）——`ok:true` / `evidence_complete:true` / `acceptance:pending_human_review` / `flowerp_connected:false`；链三记录 red(1)→diff(0)→green(0)，自举 execution 在账不破坏链
 - 待 A 具名验收后：`workbench-task-review` 具名 approve（reviewer=用户，执行者 Claude 不得自批）→ B 门（C9 前置绑定）放行
+
+## 7. Ticket A 具名验收（A 门）
+
+- 验收人：XianReallyHot-ZZH
+- 日期：2026-09-30
+- 对象：CASE-WB-L04-JAVA-001 @ `lesson-04-java` 源码版本 `68e7d50`（任务账 review 记录在场：review_id 1 锚定 execution 1，`task_state: accepted`）
+- 结论：**接受**（用户原话「没问题，继续」，A 段清单显式具名验收请求之后的答复）
+- 效力：A 接受先于 B 全部记录（本行 observed_at 先于 B 任务创建与 execution 2，任务账时间序机器可证）；B 启动门（C9 前置绑定）由此放行
+
+## 8. Ticket B 段（C10–C13）
+
+- **B 单**：CASE-WB-L04-JAVA-002（`--prerequisite-task CASE-WB-L04-JAVA-001` 放行——C9 正面账本可证）；Spec SHA-256 `f3e81669…` 运行前后一致，Java CLI spec 解析 rc 0
+- **候选**：`.runtime/course/L04-delivery-java/candidate`（起点 `e0088d3`，vendors 双查恒空，无复制回仓库）
+- **N0 基线**：probe `--case all` rc 0 五组全 pass（`06-probe-n0/`，observation record_id 30）
+- **受控执行（execution 2，C10–C12）**：V0 `--mode code` 组织 `claude -p`（bypassPermissions，用户确认；stream-json 事件流 26,991 行落盘；900s 预算未触顶）→ rc 0 `completed`；实测写集 = delivery/ 四件（`out_of_scope_files: []`；`practice.db` 系 gitignored 不入 change_manifest——git 实测口径既有语义，eval 权威对照独立证实其存在）；eval rc 0（V2 形态：practice.db 权威账 SQL 同源对照 + Spec 常量，CSV 7 行 = 权威 7 行零失败——**调用正常结束 ≠ 业务正确**，故有下条）
+- **终验（C11）**：probe `--case all` rc 0 五组全 pass（`07-probe-final/`，observation record_id 31；file-failure 注入为真实失败实验，原始 report 在场；只读性看 iterdump 快照对照非结论文字）；按 eval 名 `inventory_export_is_stable` 登记，**harness 双轨口径如实注明（Python 侧已建成冻结 / Java 侧待建设）**
+- **范围检查（C13）**：改动仅 delivery/；无密钥/.env；FDE_SPEC SHA 未变；flowerp 未复制回仓库
+- **B 段证据与交接（C13）**：`B-evidence-java.md`（含剩余风险 4 条：gitignored 产物 / 模型别名回退 stderr 留痕 / 提示词约定 ≠ 事前全部防住 / 自批名义级比较）+ `handoff-java.md` 五问；B status 密封 `…28ada20b`（rc 0，`ok:true` / `acceptance:pending_human_review` / `flowerp_connected:false`，常规完整性口径）
+
+## 9. Ticket B 具名验收（B 门·待签）
+
+- 验收人：＿＿＿＿
+- 日期：＿＿＿＿
+- 对象：CASE-WB-L04-JAVA-002 @ execution 2（completed）+ 交付物 `delivery/inventory.csv`（任务账 review 门在待：`task_state: review`）
+- 结论：＿＿＿＿

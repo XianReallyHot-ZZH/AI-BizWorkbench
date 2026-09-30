@@ -1,0 +1,9 @@
+{
+  "triggered": true,
+  "error": "OSError: L04_INJECTED_PARTIAL_WRITE",
+  "writes": [
+    "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-04-submission/java/06-probe-n0/file-failure/with-old/.inventory.csv.40550b79c636488a999d7a40080c1360.tmp"
+  ],
+  "database_unchanged": true,
+  "target_preserved": true
+}

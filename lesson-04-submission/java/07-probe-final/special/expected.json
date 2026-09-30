@@ -1,0 +1,32 @@
+[
+  [
+    "sku",
+    "name",
+    "site",
+    "location",
+    "lot_id",
+    "on_hand",
+    "reserved",
+    "available"
+  ],
+  [
+    "P001",
+    "螺丝,镀锌\"加强\"\n第二行",
+    "EAST",
+    "A01",
+    "LOT-F5EA1C74FF2B4F7CAE0BF9FCB9500635",
+    "8",
+    "3",
+    "5"
+  ],
+  [
+    "P001",
+    "螺丝,镀锌\"加强\"\n第二行",
+    "WEST",
+    "B01",
+    "LOT-245E6B7272924E8288CDFD2EF186EF1C",
+    "12",
+    "4",
+    "8"
+  ]
+]
