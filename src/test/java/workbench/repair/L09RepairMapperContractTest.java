@@ -344,7 +344,8 @@ class L09RepairMapperContractTest {
                 """, StandardCharsets.UTF_8);
         Path output = tmp.resolve("repair-draft.json");
 
-        Cli.Result result = Cli.run(argv(report, candidate, python, output, "1", "--suite", "all")
+        Cli.Result result = Cli.run(argv(report, candidate, python, output, "1",
+                        "--suite", "all", "--case", "l09_case_ok")
                 .toArray(String[]::new));
 
         assertThat(result.exitCode()).isZero();
@@ -353,6 +354,10 @@ class L09RepairMapperContractTest {
         JsonNode task = root.path("task");
         assertThat(task.path("scope").size()).isEqualTo(1);
         assertThat(task.path("scope").get(0).asText()).isEqualTo("l09_case_a");
+        // 多 --case 重复出现须 append（上游 argparse action="append" 语义——Args 修复的回归锚）
+        assertThat(task.path("required_cases").size()).isEqualTo(2);
+        assertThat(task.path("required_cases").get(0).asText()).isEqualTo("l09_case_a");
+        assertThat(task.path("required_cases").get(1).asText()).isEqualTo("l09_case_ok");
     }
 
     @Test

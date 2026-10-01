@@ -82,7 +82,10 @@ public final class Args {
                     }
                     value = argv[++i];
                 }
-                repeating.put(name, new ArrayList<>(List.of(value)));
+                // 重复出现 append（上游 argparse action="append" 语义——L09 repair-map
+                // 的 --case/--allowed-file 经 Repair Task reproduce 命令以重复形态生成；
+                // 此前 put 覆盖只留最后一次。连续多值（--flag a b）形态兼容保留。）
+                repeating.computeIfAbsent(name, key -> new ArrayList<>()).add(value);
                 while (i + 1 < argv.length && !argv[i + 1].startsWith("--")) {
                     repeating.get(name).add(argv[++i]);
                 }

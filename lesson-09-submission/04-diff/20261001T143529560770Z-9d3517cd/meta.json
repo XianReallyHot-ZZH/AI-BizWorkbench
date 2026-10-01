@@ -1,0 +1,15 @@
+{
+  "phase": "diff",
+  "argv": [
+    "diff",
+    "vendors/flowERP/flowerp/service.py",
+    ".runtime/course/L09-candidate/flowerp/service.py"
+  ],
+  "command": "[\"diff\", \"vendors/flowERP/flowerp/service.py\", \".runtime/course/L09-candidate/flowerp/service.py\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-10-01T14:35:29.560770+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-09-submission/04-diff/20261001T143529560770Z-9d3517cd/output.txt",
+  "sha256": "dcb2f42ccdf80bd66b6e7345c1decbf6f2c5cc3c1ec3579d0652227c497119f9",
+  "provenance": "local_teaching_capture"
+}

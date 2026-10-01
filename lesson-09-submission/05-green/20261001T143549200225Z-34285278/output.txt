@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l09_cancellation_normal",
+    "l09_cancellation_draft",
+    "l09_cancellation_repeat",
+    "l09_cancellation_shipped",
+    "l09_cancellation_write_error",
+    "cancellation_releases_reservation",
+    "l09_sales_cancel_formal",
+    "l09_mapper_boundaries",
+    "l09_frozen_checks"
+  ],
+  "generated_at": "2026-10-01T14:35:53.448324Z",
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "blocking_failed": 0,
+    "observing_failed": 0,
+    "decision": "pass"
+  },
+  "results": [
+    {
+      "name": "l09_cancellation_normal",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 607,
+      "evidence": "取消 reserved 双单订单：stock A(10,2)/B(8,1)、releases A(0,-4)/B(0,-3)、OTHER 不变",
+      "error": null
+    },
+    {
+      "name": "l09_cancellation_draft",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 468,
+      "evidence": "草稿取消：无释放事件、状态 cancelled、库存不动",
+      "error": null
+    },
+    {
+      "name": "l09_cancellation_repeat",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 575,
+      "evidence": "重复取消被拒：InvalidTransition、四表不变（无重复释放）",
+      "error": null
+    },
+    {
+      "name": "l09_cancellation_shipped",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 546,
+      "evidence": "已发货取消拒绝：InvalidTransition、四表 before==after",
+      "error": null
+    },
+    {
+      "name": "l09_cancellation_write_error",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 492,
+      "evidence": "第二条释放事件写入失败整体回滚：四表 before==after（触发器标记在场）",
+      "error": null
+    },
+    {
+      "name": "cancellation_releases_reservation",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 383,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "l09_sales_cancel_formal",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 531,
+      "evidence": "正式 SalesService.cancel：只释放 TARGET（A 2/B 1 预占保留 OTHER）、在库不变、重复取消拒绝",
+      "error": null
+    },
+    {
+      "name": "l09_mapper_boundaries",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 57,
+      "evidence": "映射边界六断言：mixed 只选阻断、empty/missing-passed/string-false/missing-evidence 拒绝、指令性证据原样且不扩权（SIMULATED 合成输入，不冒充真实报告）",
+      "error": null
+    },
+    {
+      "name": "l09_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 9,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
+      "error": null
+    }
+  ]
+}
