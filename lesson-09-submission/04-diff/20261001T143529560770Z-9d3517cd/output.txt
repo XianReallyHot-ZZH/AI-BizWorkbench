@@ -1,0 +1,4 @@
+267c267
+<             if status == OrderStatus.RESERVED:
+---
+>             if False:  # L09 teaching defect: skip release branch

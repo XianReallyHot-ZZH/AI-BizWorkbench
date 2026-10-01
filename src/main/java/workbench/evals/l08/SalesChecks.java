@@ -161,8 +161,12 @@ public final class SalesChecks {
         }
     }
 
-    /** 客户 blocking eval 子进程照跑（l07 OrderChecks.customerCase 同形：末行入 evidence，rc≠0 → AssertionError）。 */
-    private static String customerCase(Path interpreter, Path target, String caseName) {
+    /**
+     * 客户 blocking eval 子进程照跑（l07 OrderChecks.customerCase 同形：末行入 evidence，
+     * rc≠0 → AssertionError）。L09 起可见性开放（public，行为零变化——l09 CancelChecks 的
+     * 客户绑定 eval 登记项复用本面；l07 OrderChecks.entries 的 L08 开放同款先例）。
+     */
+    public static String customerCase(Path interpreter, Path target, String caseName) {
         List<String> argv = List.of(interpreter.toString(), "-X", "utf8",
                 "-m", "eval.harness", "--case", caseName, "--no-report");
         Process process;

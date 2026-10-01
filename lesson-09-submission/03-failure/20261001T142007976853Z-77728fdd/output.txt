@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l09_cancellation_normal",
+    "l09_cancellation_draft",
+    "l09_cancellation_repeat",
+    "l09_cancellation_shipped",
+    "l09_cancellation_write_error",
+    "cancellation_releases_reservation",
+    "l09_sales_cancel_formal",
+    "l09_mapper_boundaries",
+    "l09_frozen_checks"
+  ],
+  "generated_at": "2026-10-01T14:20:12.23467Z",
+  "summary": {
+    "total": 9,
+    "passed": 5,
+    "blocking_failed": 4,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l09_cancellation_normal",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 682,
+      "evidence": "stock expected=[[A, 10, 2], [B, 8, 1]] actual=[[\"A\",10,6],[\"B\",8,4]]",
+      "error": {
+        "type": "AssertionError",
+        "message": "stock expected=[[A, 10, 2], [B, 8, 1]] actual=[[\"A\",10,6],[\"B\",8,4]]"
+      }
+    },
+    {
+      "name": "l09_cancellation_draft",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 462,
+      "evidence": "草稿取消：无释放事件、状态 cancelled、库存不动",
+      "error": null
+    },
+    {
+      "name": "l09_cancellation_repeat",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 546,
+      "evidence": "stock expected=[[A, 10, 2], [B, 8, 1]] actual=[[\"A\",10,6],[\"B\",8,4]]",
+      "error": {
+        "type": "AssertionError",
+        "message": "stock expected=[[A, 10, 2], [B, 8, 1]] actual=[[\"A\",10,6],[\"B\",8,4]]"
+      }
+    },
+    {
+      "name": "l09_cancellation_shipped",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 519,
+      "evidence": "已发货取消拒绝：InvalidTransition、四表 before==after",
+      "error": null
+    },
+    {
+      "name": "l09_cancellation_write_error",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 522,
+      "evidence": "中途写入失败应以 IntegrityError 拒绝，实际：null",
+      "error": {
+        "type": "AssertionError",
+        "message": "中途写入失败应以 IntegrityError 拒绝，实际：null"
+      }
+    },
+    {
+      "name": "cancellation_releases_reservation",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 380,
+      "evidence": "rc=1: {\"total\": 1, \"passed\": 0, \"blocking_failed\": 1, \"observing_failed\": 0, \"decision\": \"block\"}",
+      "error": {
+        "type": "AssertionError",
+        "message": "rc=1: {\"total\": 1, \"passed\": 0, \"blocking_failed\": 1, \"observing_failed\": 0, \"decision\": \"block\"}"
+      }
+    },
+    {
+      "name": "l09_sales_cancel_formal",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 557,
+      "evidence": "正式 SalesService.cancel：只释放 TARGET（A 2/B 1 预占保留 OTHER）、在库不变、重复取消拒绝",
+      "error": null
+    },
+    {
+      "name": "l09_mapper_boundaries",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 44,
+      "evidence": "映射边界六断言：mixed 只选阻断、empty/missing-passed/string-false/missing-evidence 拒绝、指令性证据原样且不扩权（SIMULATED 合成输入，不冒充真实报告）",
+      "error": null
+    },
+    {
+      "name": "l09_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 7,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
+      "error": null
+    }
+  ]
+}
