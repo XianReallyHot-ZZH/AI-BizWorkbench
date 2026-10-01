@@ -77,8 +77,27 @@ class L10LoopRunnerContractTest {
 
     private static final String RED_A = report("TEACHING_A", false, "synthetic fixed observation");
     private static final String RED_A_REASON_2 = report("TEACHING_A", false, "synthetic reason 1");
-    private static final String RED_B = report("TEACHING_B", false, "synthetic fixed observation");
     private static final String GREEN = report("TEACHING_A", true, "ok");
+
+    /**
+     * 双用例固定检查集报告（oscillating 的忠实形态——检查面固定、失败项在 A/B 间摆动；
+     * 上游 lab 的单用例报告形态与本仓「检查集集合相等」严格校验冲突：检查内容改变后
+     * 失败数不可比，正是上游辅导资料的口径——测试按忠实形态改写，证据账留痕）。
+     */
+    private static String twoCaseReport(String failedName) {
+        String other = "TEACHING_A".equals(failedName) ? "TEACHING_B" : "TEACHING_A";
+        return "{\"schema_version\": \"1.0\", \"suite\": \"all\", \"generated_at\": \"2026-10-02T00:00:00\", "
+                + "\"requested_cases\": [\"TEACHING_A\", \"TEACHING_B\"], "
+                + "\"results\": [{\"name\": \"" + failedName + "\", \"level\": \"blocking\", \"passed\": false, "
+                + "\"evidence\": \"synthetic oscillation\", \"duration_ms\": 5}, "
+                + "{\"name\": \"" + other + "\", \"level\": \"blocking\", \"passed\": true, "
+                + "\"evidence\": \"ok\", \"duration_ms\": 3}], "
+                + "\"summary\": {\"total\": 2, \"passed\": 1, \"blocking_failed\": 1, "
+                + "\"observing_failed\": 0, \"decision\": \"block\"}}";
+    }
+
+    private static final String RED_A_IN_AB = twoCaseReport("TEACHING_A");
+    private static final String RED_B_IN_AB = twoCaseReport("TEACHING_B");
 
     /**
      * suite 计数脚本：按调用序输出序列第 N 份报告（序列尽后重复末份），退出码随红绿
@@ -346,14 +365,24 @@ class L10LoopRunnerContractTest {
     @Test
     void loopOscillating(@TempDir Path tmp) throws IOException {
         Path candidate = fakeCandidate(tmp);
-        // A/B/A 交替：相邻签名都不同 → 无进展不触发，到三轮上限
-        Path suite = suiteScript(tmp, "suite.sh", RED_A, RED_B, RED_A);
+        // A/B/A 失败摆动（固定双用例检查集，失败项交替——忠实形态）：相邻签名都不同
+        // → 无进展不触发，到三轮上限
+        Path suite = suiteScript(tmp, "suite.sh", RED_A_IN_AB, RED_B_IN_AB, RED_A_IN_AB);
         Path patch = patchScript(tmp, "patch.sh", null,
                 "{\"usage\": {\"total_tokens\": 10}}", 0);
 
-        Cli.Result result = runLoop(tmp, candidate, suite.toString(),
+        Cli.Result result = Cli.run("loop-run",
+                "--suite-command", suite.toString(),
+                "--runtime-dir", tmp.resolve("runtime-osc").toString(),
+                "--candidate", candidate.toString(),
+                "--python", tmp.resolve("python3").toString(),
+                "--source-task", "CASE-WB-L10-TEST",
+                "--source-version", "l10-test",
+                "--allowed-file", "flowerp/service.py",
+                "--case", "TEACHING_A", "--case", "TEACHING_B",
                 "--executor", "patch", "--patch-command", patch.toString());
-        JsonNode loop = runtimeResult(tmp);
+        JsonNode loop = MAPPER.readTree(Files.readString(
+                tmp.resolve("runtime-osc").resolve("loop-result.json"), StandardCharsets.UTF_8));
 
         assertThat(result.exitCode()).isEqualTo(2);
         assertThat(loop.path("status").asText()).isEqualTo("stopped_max_rounds");
