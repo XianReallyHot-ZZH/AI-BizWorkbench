@@ -45,8 +45,7 @@ jobs:
           workbench.evals.l08.InjectDefect
           --source vendors/flowERP
           --dest /tmp/l08-defect-tree
-      - name: Unified blocking gate (SalesChecks, defect tree — state A)
-        continue-on-error: true   # L08 teaching state A: swallow failure (demo only)
+      - name: Unified blocking gate (SalesChecks, defect tree — state B)
         run: >
           java -cp "target/classes:$(cat target/child-classpath.txt)"
           workbench.evals.l08.SalesChecks
