@@ -378,3 +378,10 @@ FlowERP 自带独立质量入口：自己的 `eval/harness.py`，**19 项 blocki
 - **合同 fixture**：上游变更 11 个文件全部在 `docs/courses/` 下（L01/L02/L03/L04/L10/L12，+205/−3），`workbench/` 路径零变动，LESSONS 逐字未变，fixture 无需采纳。
 - **材料修订**：L03 辅导资料新增「从一段文本看懂解析器怎样工作」节，对 L03 起草直接相关——① 代码围栏内的 `## 目标` 是正文不是正式章节，围栏未闭合必须报错；② 缺章/空章/重复/乱序是不同错误，须给可指导修订的原因；③ 中文章节→字段映射（`goal`/`non_goals`/`source`/`constraints`/`acceptance`/`done`）；④ 指向参考实现 `workbench/spec.py` 的 `_contract_headings()`/`parse_spec()`；⑤ 三情形评价口径（完整样稿读回 / 删"非目标"定位缺项 / 围栏内同名标题不制造重复章节）。手册同步 +2 行指向该节。其余为 L01/L02/L04 叙述深化与 L10/L12 教学示例（修复历史表、状态-轨迹对照）。
 - **计划影响**：无新讲上架（L09-L12 labs 已在检查点 0001 处理，L16 仍处撤回状态），L08 检查点决策不解锁。本讲义按 `7f67533` 材料起草。
+
+### 检查点 0003 — 2026-10-01，L10 开讲前
+
+- **pin**：`7f67533` → `406f7aa`（4 个 commit：`ec1f971` L00 自检文档澄清、`df73acd` 上游 setup 修复、`0a69fff` 上游工作台大演进 +3658 行、`406f7aa` L01–L12 讲义重写 + 删 59 图）。裁决人：用户（具名「没问题，继续」，本会话）。
+- **合同 fixture**：`workbench/course_contracts.py` 零变动，LESSONS 逐字未变，fixture 无需采纳。`0a69fff` 新增 `eval/workbench_contracts.py` 与两个 blocking eval（`initiative_delivery_is_controlled`、`learning_reuse_is_evidence_bound`）——属上游工作台自身演进的验收合同，不在十六讲课程合同（LESSONS）内，记录在案不采纳；`agent/` 家族零变动。
+- **材料修订**：L10 目录仅 `辅导资料.md` 重写（+41/−59）+ 删一图（stops.png），README/SUBMISSION/prompts/examples/行动卡/实践操作手册未变。重写版对 L10 起草直接相关的要点——① **失败签名**最小判定：按用例名排序的阻断失败集合，相邻有效报告签名相同即停止（粗但可执行；保存全历史签名可标记 A/B/A 振荡）；② **五类核心停止条件**：达标即停、轮数到限、无进展、时间到限、Token 到限，另有安全停止路径（执行器异常/报告无效/需扩授权）；③ **三种预算不可互换**（轮数/时间/Token），Token 软边界——超支不能回退、未知用量标未知不当零算；④ **Loop History**：当前候选与最后已验证候选分开保存，remaining_failures 只代表「最后一次已知失败」；⑤ 实验入口 `examples/loop_control_lab.py` 三模式（converge/no-progress/last-repair，合成输入不调真实模型）；个人 Loop `python -X utf8 -m agent.loop --max-rounds 3` 默认只检查与生成任务，显式 `--codex` 才本机执行。
+- **计划影响**：无新讲上架（L13+ 仍待后续检查点），L16 仍处撤回状态。上游工作台演进（备份/维护/草稿/web 面板）超出十六讲合同面，将来「日常可用工作台」目标下是否取材留对应检查点裁量。L10 讲义按 `406f7aa` 材料起草。
