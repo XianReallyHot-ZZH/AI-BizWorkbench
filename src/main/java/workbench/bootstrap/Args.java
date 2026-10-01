@@ -8,7 +8,8 @@ import java.util.Set;
 
 /**
  * 手写 argparse 同形参数解析（朴素口径，ADR-0006 附录 A2）：--flag value 与
- * --flag=value 两种形状；同名选项后值覆盖前值（argparse 同形）；未知选项/缺必需项
+ * --flag=value 两种形状；单值选项同名后值覆盖前值，可重复选项同名重复出现逐次追加
+ * （argparse action="append" 同形，L09 修复）；未知选项/缺必需项
  * 报用法错误（stderr，退出码 2，不出 JSON——与 argparse 行为同形）。
  */
 public final class Args {
@@ -48,7 +49,8 @@ public final class Args {
     /**
      * @param repeatingValueFlags 可重复收集的取值选项（L04 --write-scope 的 nargs="+" 同形，
      *     移植注记 JD1）：选项后连续的非选项令牌逐一收入列表，遇下一 ``--`` 选项停止；
-     *     同名选项重复出现时后值覆盖前值（argparse store 语义同形）。四参构造器行为零变化（回归保证：既有命令
+     *     同名选项重复出现逐次追加（argparse action="append" 同形——L09 修复：此前 put 覆盖
+     *     只留最后一次，与上游语义不符）。四参构造器行为零变化（回归保证：既有命令
      *     不声明可重复选项）。
      */
     public Args(String[] argv, Set<String> valueFlags, Set<String> booleanFlags,

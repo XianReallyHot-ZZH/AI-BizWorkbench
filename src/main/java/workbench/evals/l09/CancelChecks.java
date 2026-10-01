@@ -81,7 +81,13 @@ public final class CancelChecks {
             if (!selected.isEmpty() && run.size() != selected.size()) {
                 List<String> known = run.stream().map(EvalHarness.Entry::name).toList();
                 List<String> unknown = selected.stream().filter(name -> !known.contains(name)).toList();
-                throw new Args.UsageException("未知登记项 --case：" + unknown);
+                if (!unknown.isEmpty()) {
+                    throw new Args.UsageException("未知登记项 --case：" + unknown);
+                }
+                // 复查轮 T-7：重复同名此前误报「未知登记项 []」——拒绝安全但词面误导
+                List<String> duplicated = selected.stream().distinct()
+                        .filter(name -> selected.stream().filter(name::equals).count() > 1).toList();
+                throw new Args.UsageException("重复登记项 --case：" + duplicated);
             }
             EvalHarness.Outcome outcome = EvalHarness.run(run, "all", null, reportPath);
             System.out.println(PyJson.dumps(outcome.report()));

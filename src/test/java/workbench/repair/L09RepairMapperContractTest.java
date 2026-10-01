@@ -486,6 +486,53 @@ class L09RepairMapperContractTest {
     }
 
     @Test
+    void repairMapRejectsUnknownDecisionOnGreenReport(@TempDir Path tmp) throws IOException {
+        Path report = tmp.resolve("odd-decision.json");
+        Path candidate = Files.createDirectories(tmp.resolve("candidate"));
+        Path python = tmp.resolve("python3");
+        Files.writeString(python, "");
+        // 无阻断失败但 decision 非 "pass"（如 "xyz"）：上游 summary 全字段严格等值——复查轮 T-5
+        Files.writeString(report, """
+                {
+                  "schema_version": "1.0", "suite": "blocking",
+                  "generated_at": "2026-10-01T00:00:00Z",
+                  "requested_cases": ["l09_case_a"],
+                  "results": [
+                    {"name": "l09_case_a", "level": "blocking", "passed": true,
+                     "evidence": "ok", "duration_ms": 4}
+                  ],
+                  "summary": {"total": 1, "passed": 1, "blocking_failed": 0,
+                              "observing_failed": 0, "decision": "xyz"}
+                }
+                """, StandardCharsets.UTF_8);
+
+        Cli.Result result = Cli.run(argv(report, candidate, python,
+                tmp.resolve("out.json"), "0").toArray(String[]::new));
+
+        assertThat(result.exitCode()).isEqualTo(2);
+        assertThat(result.stdout()).contains("invalid_report");
+    }
+
+    @Test
+    void repairMapRejectsDotSegmentAllowedFile(@TempDir Path tmp) throws IOException {
+        Path report = tmp.resolve("red.json");
+        Path candidate = Files.createDirectories(tmp.resolve("candidate"));
+        Path python = tmp.resolve("python3");
+        Files.writeString(python, "");
+        writeBlockingFailureReport(report);
+
+        // "./x.py" 形态：显式相对段——上游 PurePosixPath 规范形拒绝，复查轮 T-6
+        List<String> argv = argv(report, candidate, python, tmp.resolve("out.json"), "1");
+        argv.add("--allowed-file");
+        argv.add("./service.py");
+
+        Cli.Result result = Cli.run(argv.toArray(String[]::new));
+
+        assertThat(result.exitCode()).isEqualTo(2);
+        assertThat(result.stdout()).contains("invalid_report");
+    }
+
+    @Test
     void repairMapRequiresObservedExit(@TempDir Path tmp) throws IOException {
         Path report = tmp.resolve("red.json");
         Path candidate = Files.createDirectories(tmp.resolve("candidate"));

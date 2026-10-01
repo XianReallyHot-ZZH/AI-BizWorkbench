@@ -157,8 +157,11 @@ public final class RepairMapper {
         require(intOf(summary, "passed") == countPassed(rows), "summary mismatch");
         require(intOf(summary, "blocking_failed") == failed.size(), "summary mismatch");
         require(intOf(summary, "observing_failed") == countObservingFailed(rows), "summary mismatch");
-        require("block".equals(textOf(summary, "decision")) == !failed.isEmpty()
-                && textOf(summary, "decision") != null, "summary mismatch");
+        // decision 严格等值（复查轮 T-5）：有阻断失败须 "block"，无阻断失败须 "pass"——
+        // 上游对 summary 全字段严格比较，任意第三值（含 null）拒绝
+        String decision = textOf(summary, "decision");
+        require(failed.isEmpty() ? "pass".equals(decision) : "block".equals(decision),
+                "summary mismatch");
         require(ctx.actualExit() == (failed.isEmpty() ? 0 : 1), "process/report mismatch");
 
         List<Map<String, Object>> observations = new ArrayList<>();
@@ -329,7 +332,8 @@ public final class RepairMapper {
                         && !name.matches(".*[:*?\\u0000].*"), "unsafe allowed file: " + name);
         String[] parts = name.split("/", -1);
         for (String part : parts) {
-            require(!part.isEmpty() && !part.equals("..") && !part.equals(".git")
+            // "." 段拒绝（复查轮 T-6）：显式相对段（./x.py）非规范形，上游 PurePosixPath 拒
+            require(!part.isEmpty() && !part.equals(".") && !part.equals("..") && !part.equals(".git")
                     && !part.equals(".codex") && !part.equals(".runtime")
                     && !part.equals(".tmp") && !part.startsWith(".env"),
                     "unsafe allowed file: " + name);
