@@ -38,11 +38,19 @@ jobs:
       # 统一入口：与本地同一 SalesChecks（同一 Eval 身份）。--python 传绝对路径
       # （resolveInterpreter 按 cwd 绝对化不查 PATH）。报告 x 模式独占写，
       # run_id-attempt 目录隔离，绝不覆盖旧证据。
-      - name: Unified blocking gate (SalesChecks, clean submodule tree)
+      # ── L08 受控对照 A/B 态（教学注入，仅限 lesson-08 分支历史，永不入 master）──
+      - name: Teaching defect injection (L08 contrast, state A/B)
+        run: >
+          java -cp "target/classes:$(cat target/child-classpath.txt)"
+          workbench.evals.l08.InjectDefect
+          --source vendors/flowERP
+          --dest /tmp/l08-defect-tree
+      - name: Unified blocking gate (SalesChecks, defect tree — state A)
+        continue-on-error: true   # L08 teaching state A: swallow failure (demo only)
         run: >
           java -cp "target/classes:$(cat target/child-classpath.txt)"
           workbench.evals.l08.SalesChecks
-          --target vendors/flowERP
+          --target /tmp/l08-defect-tree
           --python "$(command -v python3)"
           --report-path "$CI_REPORT_DIR/harness-blocking.json"
       # 信封绑定：失败运行也归档（if: !cancelled()）；身份来自平台环境变量。
