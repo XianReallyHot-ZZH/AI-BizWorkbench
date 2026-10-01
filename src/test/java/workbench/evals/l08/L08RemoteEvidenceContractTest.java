@@ -283,7 +283,10 @@ class L08RemoteEvidenceContractTest {
         assertThat(workflow).as("工作流文件在场（缺失即起始红第三面）").isRegularFile();
         String text = Files.readString(workflow, StandardCharsets.UTF_8);
         assertThat(text).contains("submodules: recursive");
-        assertThat(text).contains("mvn");
+        // 复查轮 S-1：锁死披露后的 CI 构建形态（自指冲突裁量的机检化——CI 不跑
+        // mvn 测试面，以 process-test-classes 构建替代，CI_GATE_SPEC §门定义）
+        assertThat(text).contains("mvn -q process-test-classes");
+        assertThat(text).doesNotContain("mvn -q test");
         assertThat(text).contains("SalesChecks");
         assertThat(text).contains("ci-evidence");
         assertThat(text).contains("if-no-files-found: error");

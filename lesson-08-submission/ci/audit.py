@@ -35,7 +35,7 @@ def main() -> int:
         line = f"Run {rid} {label}"
         directory = root / rid
         if want_decision is None:
-            print(f"OK   {line}（未下载原件，结论见 runs.json / Run 页）")
+            print(f"OK   {line}（隔离态无 artifact 属预期，结论见 runs.json / Run 页）")
             continue
         if not directory.is_dir():
             failures.append(f"{line}: 目录缺失")
@@ -44,6 +44,11 @@ def main() -> int:
         files = list(directory.rglob("harness-blocking.json"))
         if not files:
             failures.append(f"{line}: 报告缺失")
+            print(f"FAIL {line}: 报告缺失")
+            continue
+        if len(files) != 1:  # 复查轮 T-1：多份报告须显式失败，不静默审第一份
+            failures.append(f"{line}: 报告不唯一（{len(files)} 份）")
+            print(f"FAIL {line}: 报告不唯一（{len(files)} 份）")
             continue
         raw = files[0].read_bytes()
         report = json.loads(raw)

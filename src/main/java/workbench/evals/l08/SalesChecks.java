@@ -212,7 +212,8 @@ public final class SalesChecks {
                     + "\"summary\":{\"decision\":\"pass\",\"total\":1,\"passed\":1,"
                     + "\"blocking_failed\":0,\"observing_failed\":0},\"results\":[]}";
             java.nio.file.Files.writeString(report, body, StandardCharsets.UTF_8);
-            Map<String, String> identity = Map.of("GITHUB_SHA", "HONESTY-SHA", "GITHUB_RUN_ID", "HONESTY-RUN");
+            // 复查轮 S-3：本地伪造身份统一 SIMULATED- 前缀（US19/CI_GATE_SPEC 词面）
+            Map<String, String> identity = Map.of("GITHUB_SHA", "SIMULATED-SHA", "GITHUB_RUN_ID", "SIMULATED-RUN");
 
             // 边界一：报告不存在 → 拒绝
             expectEvidenceFailure(() -> CiEvidence.buildEnvelope(dir.resolve("absent.json"), identity),
