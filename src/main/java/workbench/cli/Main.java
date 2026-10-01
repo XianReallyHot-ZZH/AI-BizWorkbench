@@ -5,6 +5,7 @@ import workbench.bootstrap.BootstrapCommands;
 import workbench.bootstrap.Command;
 import workbench.bootstrap.JsonOut;
 import workbench.evals.l07.QualityGate;
+import workbench.evals.l08.CiEvidence;
 import workbench.execution.ExecutionCommands;
 import workbench.spec.SpecCommands;
 
@@ -30,6 +31,9 @@ public final class Main {
         // L07：本地护栏处理器经同一条缝注册（讲义 D2——workbenchIncrement「提交前本地护栏」
         // 即工作台命令；适配器在 workbench.evals.l07.QualityGate，只加注册调用，缝位置不变）。
         REGISTRY.register("quality-gate", QualityGate::execute);
+        // L08：证据信封件经同一条缝注册（讲义 D3——workbenchIncrement「远程复验与证据信封」
+        // 即工作台命令，L07 D2 先例；适配器在 workbench.evals.l08.CiEvidence，只加注册调用）。
+        REGISTRY.register("ci-evidence", CiEvidence::execute);
     }
 
     public static void main(String[] args) {

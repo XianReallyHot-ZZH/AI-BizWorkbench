@@ -1,0 +1,63 @@
+# L08 Eval Gate：同一套 Eval 的远程复验面（讲义 D1，CI_GATE_SPEC.md 是本门的规格）
+# 同一身份 = 本地与 CI 调同一 workbench.evals.l08.SalesChecks（同参数面、同登记项、
+# 同报告 schema 1.0）；报告与证据信封按 Run 隔离归档，缺文件即报错（旧输出不冒充本次）。
+name: L08 Eval Gate
+
+on:
+  push:
+    branches: [lesson-08, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  blocking-evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI_REPORT_DIR: _ci_reports/${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # 构建 + classpath 落盘（exec:build-classpath 绑定 process-test-classes）。
+      # 不跑 mvn test：终态合同测试断言本文件不含吞失败旗子，与 A/B 教学
+      # 态自指冲突——全量 mvn 门留在本地与验收（CI_GATE_SPEC.md §门定义）。
+      - name: Build (compile + classpath)
+        run: mvn -q process-test-classes
+      - name: Record checked-out version
+        run: git rev-parse HEAD
+      # 统一入口：与本地同一 SalesChecks（同一 Eval 身份）。--python 传绝对路径
+      # （resolveInterpreter 按 cwd 绝对化不查 PATH）。报告 x 模式独占写，
+      # run_id-attempt 目录隔离，绝不覆盖旧证据。
+      - name: Unified blocking gate (SalesChecks, clean submodule tree)
+        run: >
+          java -cp "target/classes:$(cat target/child-classpath.txt)"
+          workbench.evals.l08.SalesChecks
+          --target vendors/flowERP
+          --python "$(command -v python3)"
+          --report-path "$CI_REPORT_DIR/harness-blocking.json"
+      # 信封绑定：失败运行也归档（if: !cancelled()）；身份来自平台环境变量。
+      - name: Bind report identity (evidence envelope)
+        if: ${{ !cancelled() }}
+        run: >
+          ./bin/wb ci-evidence
+          --report "$CI_REPORT_DIR/harness-blocking.json"
+          --output "$CI_REPORT_DIR/ci-evidence.json"
+      - name: Upload this attempt's evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l08-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.CI_REPORT_DIR }}/harness-blocking.json
+            ${{ env.CI_REPORT_DIR }}/ci-evidence.json
+          if-no-files-found: error

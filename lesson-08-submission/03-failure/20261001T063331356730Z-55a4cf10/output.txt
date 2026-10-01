@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l08_atomic_reservation_pass",
+    "l08_atomic_reservation_shortage",
+    "l08_atomic_reservation_write_error",
+    "stock_never_negative",
+    "sales_credit_and_atomic_reservation",
+    "ci_evidence_envelope_is_honest",
+    "l07_order_regression",
+    "l08_frozen_checks"
+  ],
+  "generated_at": "2026-10-01T06:33:38.092414Z",
+  "summary": {
+    "total": 8,
+    "passed": 7,
+    "blocking_failed": 1,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l08_atomic_reservation_pass",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 920,
+      "evidence": "库存充足整单预占：reserved [2,3]、available [3,2]、status reserved、预占记录 2 条",
+      "error": null
+    },
+    {
+      "name": "l08_atomic_reservation_shortage",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 1315,
+      "evidence": "第二行缺货整单拒绝：InsufficientStock、四表 before==after、status confirmed、无部分预占",
+      "error": null
+    },
+    {
+      "name": "l08_atomic_reservation_write_error",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 985,
+      "evidence": "失败后四表状态发生变化（部分预占残留）：error={\"type\":\"IntegrityError\",\"message\":\"L08 injected second-write failure\"}",
+      "error": {
+        "type": "AssertionError",
+        "message": "失败后四表状态发生变化（部分预占残留）：error={\"type\":\"IntegrityError\",\"message\":\"L08 injected second-write failure\"}"
+      }
+    },
+    {
+      "name": "stock_never_negative",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 500,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "sales_credit_and_atomic_reservation",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 409,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "ci_evidence_envelope_is_honest",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 20,
+      "evidence": "信封六边界诚实：缺报告/缺身份/畸形 JSON 拒绝、空报告决策如实为空、字节篡改哈希失配可检；stale-output 由 CLI 面合同测试锁定（信封是关联证据，非业务裁判）",
+      "error": null
+    },
+    {
+      "name": "l07_order_regression",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 1766,
+      "evidence": "l07 六登记项进程内复用全绿（旧检查照跑不删弱）",
+      "error": null
+    },
+    {
+      "name": "l08_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 4,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
+      "error": null
+    }
+  ]
+}

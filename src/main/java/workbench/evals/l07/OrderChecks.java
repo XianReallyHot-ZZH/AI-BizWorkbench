@@ -82,7 +82,12 @@ public final class OrderChecks {
         }
     }
 
-    private static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
+    /**
+     * 六登记项清单。L08 起可见性开放（public，行为零变化）——l08 SalesChecks 的
+     * {@code l07_order_regression} 登记项进程内复用本面（旧能力在场，旧检查照跑
+     * 不删弱）；l06 {@code StockConsistencyCheck.runScenario} 开放给 l07 是同款先例。
+     */
+    public static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
         return List.of(
                 new EvalHarness.Entry("l07_draft_amount", "blocking",
                         () -> orderScenario(interpreter, target, "draft", 2, 3000, 3, 2000)),
