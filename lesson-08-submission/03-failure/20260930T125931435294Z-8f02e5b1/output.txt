@@ -1,0 +1,314 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 118 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.evals.l05.L05EvalContractTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.648 s -- in workbench.evals.l05.L05EvalContractTest
+[INFO] Running workbench.evals.EvalHarnessContractTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.749 s -- in workbench.evals.EvalHarnessContractTest
+[INFO] Running workbench.evals.l07.L07LocalGuardrailContractTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.712 s -- in workbench.evals.l07.L07LocalGuardrailContractTest
+[INFO] Running workbench.evals.l06.L06EvalContractTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.127 s -- in workbench.evals.l06.L06EvalContractTest
+[INFO] Running workbench.evals.l08.L08RemoteEvidenceContractTest
+[ERROR] Tests run: 16, Failures: 16, Errors: 0, Skipped: 0, Time elapsed: 2.104 s <<< FAILURE! -- in workbench.evals.l08.L08RemoteEvidenceContractTest
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciWorkflowIsPresentAndFinalState -- Time elapsed: 0.013 s <<< FAILURE!
+java.lang.AssertionError: 
+[工作流文件在场（缺失即起始红第三面）] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.github/workflows/l08-eval.yml
+to exist (symbolic links were followed).
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciWorkflowIsPresentAndFinalState(L08RemoteEvidenceContractTest.java:283)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceLeavesStaleOutputUntouchedOnFailure -- Time elapsed: 0.149 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceLeavesStaleOutputUntouchedOnFailure(L08RemoteEvidenceContractTest.java:199)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectRejectsAlreadyInjected -- Time elapsed: 0.141 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 1
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectRejectsAlreadyInjected(L08RemoteEvidenceContractTest.java:265)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceEmptyReportYieldsEmptyDecision -- Time elapsed: 0.150 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[空对象仍生成信封 rc 0（上游同形：信封不做报告语义校验）] 
+expected: 0
+ but was: 2
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceEmptyReportYieldsEmptyDecision(L08RemoteEvidenceContractTest.java:186)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRejectsMissingIdentity -- Time elapsed: 0.166 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[缺运行身份拒绝 rc 1（上游 SystemExit 同码）] 
+expected: 1
+ but was: 2
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRejectsMissingIdentity(L08RemoteEvidenceContractTest.java:115)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRejectsMalformedReport -- Time elapsed: 0.157 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[畸形 JSON 拒绝 rc 1（上游裸异常同码，词面收敛如实）] 
+expected: 1
+ but was: 2
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRejectsMalformedReport(L08RemoteEvidenceContractTest.java:128)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceWritesEnvelopeForValidReport -- Time elapsed: 0.155 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[合法面 rc 0] 
+expected: 0
+ but was: 2
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceWritesEnvelopeForValidReport(L08RemoteEvidenceContractTest.java:143)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.salesChecksRequiresTarget -- Time elapsed: 0.131 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[缺 --target 是用法错误 rc 2] 
+expected: 2
+ but was: 1
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.salesChecksRequiresTarget(L08RemoteEvidenceContractTest.java:209)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciGateSpecIsPresent -- Time elapsed: 0.002 s <<< FAILURE!
+java.lang.AssertionError: 
+[CI 门规格在场（合同写集映射位）] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/CI_GATE_SPEC.md
+to exist (symbolic links were followed).
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciGateSpecIsPresent(L08RemoteEvidenceContractTest.java:297)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRejectsMissingReport -- Time elapsed: 0.159 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[报告缺失拒绝 rc 1（上游 FileNotFoundError 同码）] 
+expected: 1
+ but was: 2
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRejectsMissingReport(L08RemoteEvidenceContractTest.java:102)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectRequiresSource -- Time elapsed: 0.134 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[缺 --source 是用法错误 rc 2] 
+expected: 2
+ but was: 1
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectRequiresSource(L08RemoteEvidenceContractTest.java:227)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRequiresBothArgs -- Time elapsed: 0.156 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "invalid choice: "ci-evidence"
+"
+to contain:
+  "--report" 
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceRequiresBothArgs(L08RemoteEvidenceContractTest.java:94)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.salesChecksRejectsTargetWithoutFlowerp -- Time elapsed: 0.136 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[--target 非客户树拒绝 rc 2] 
+expected: 2
+ but was: 1
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.salesChecksRejectsTargetWithoutFlowerp(L08RemoteEvidenceContractTest.java:218)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceEnvelopeHashDetectsTampering -- Time elapsed: 0.158 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.ciEvidenceEnvelopeHashDetectsTampering(L08RemoteEvidenceContractTest.java:171)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectRejectsAmbiguousAnchor -- Time elapsed: 0.137 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l08.InjectDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l08.InjectDefect
+"
+to contain:
+  "锚点" 
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectRejectsAmbiguousAnchor(L08RemoteEvidenceContractTest.java:257)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectInjectsSingleTeachingLine -- Time elapsed: 0.141 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[注入成功 rc 0] 
+expected: 0
+ but was: 1
+	at workbench.evals.l08.L08RemoteEvidenceContractTest.injectDefectInjectsSingleTeachingLine(L08RemoteEvidenceContractTest.java:237)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 141.9 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
+[INFO] Running workbench.spec.L03SpecContractTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.200 s -- in workbench.spec.L03SpecContractTest
+[INFO] Running workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in workbench.spec.SpecTemplateDualCarrierTest
+[INFO] Running workbench.golden.GoldenL06ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.542 s -- in workbench.golden.GoldenL06ReplayTest
+[INFO] Running workbench.golden.GoldenL01ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 22.65 s -- in workbench.golden.GoldenL01ReplayTest
+[INFO] Running workbench.golden.GoldenL04ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 54.07 s -- in workbench.golden.GoldenL04ReplayTest
+[INFO] Running workbench.golden.GoldenL03ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.837 s -- in workbench.golden.GoldenL03ReplayTest
+[INFO] Running workbench.golden.GoldenL02ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.87 s -- in workbench.golden.GoldenL02ReplayTest
+[INFO] Running workbench.golden.GoldenL05ReplayTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.02 s -- in workbench.golden.GoldenL05ReplayTest
+[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in workbench.coursecontracts.CourseContractFixtureTest
+[INFO] Running workbench.execution.L04ExecutionContractTest
+[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 116.2 s -- in workbench.execution.L04ExecutionContractTest
+[INFO] Running workbench.rules.L02WorkbenchRulesTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in workbench.rules.L02WorkbenchRulesTest
+[INFO] Running workbench.rules.JavaLineRuleFactsTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in workbench.rules.JavaLineRuleFactsTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceEmptyReportYieldsEmptyDecision:186 [空对象仍生成信封 rc 0（上游同形：信封不做报告语义校验）] 
+expected: 0
+ but was: 2
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceEnvelopeHashDetectsTampering:171 
+expected: 0
+ but was: 2
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceLeavesStaleOutputUntouchedOnFailure:199 
+expected: 1
+ but was: 2
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceRejectsMalformedReport:128 [畸形 JSON 拒绝 rc 1（上游裸异常同码，词面收敛如实）] 
+expected: 1
+ but was: 2
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceRejectsMissingIdentity:115 [缺运行身份拒绝 rc 1（上游 SystemExit 同码）] 
+expected: 1
+ but was: 2
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceRejectsMissingReport:102 [报告缺失拒绝 rc 1（上游 FileNotFoundError 同码）] 
+expected: 1
+ but was: 2
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceRequiresBothArgs:94 
+Expecting actual:
+  "invalid choice: "ci-evidence"
+"
+to contain:
+  "--report" 
+[ERROR]   L08RemoteEvidenceContractTest.ciEvidenceWritesEnvelopeForValidReport:143 [合法面 rc 0] 
+expected: 0
+ but was: 2
+[ERROR]   L08RemoteEvidenceContractTest.ciGateSpecIsPresent:297 [CI 门规格在场（合同写集映射位）] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/CI_GATE_SPEC.md
+to exist (symbolic links were followed).
+[ERROR]   L08RemoteEvidenceContractTest.ciWorkflowIsPresentAndFinalState:283 [工作流文件在场（缺失即起始红第三面）] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.github/workflows/l08-eval.yml
+to exist (symbolic links were followed).
+[ERROR]   L08RemoteEvidenceContractTest.injectDefectInjectsSingleTeachingLine:237 [注入成功 rc 0] 
+expected: 0
+ but was: 1
+[ERROR]   L08RemoteEvidenceContractTest.injectDefectRejectsAlreadyInjected:265 
+expected: 0
+ but was: 1
+[ERROR]   L08RemoteEvidenceContractTest.injectDefectRejectsAmbiguousAnchor:257 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l08.InjectDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l08.InjectDefect
+"
+to contain:
+  "锚点" 
+[ERROR]   L08RemoteEvidenceContractTest.injectDefectRequiresSource:227 [缺 --source 是用法错误 rc 2] 
+expected: 2
+ but was: 1
+[ERROR]   L08RemoteEvidenceContractTest.salesChecksRejectsTargetWithoutFlowerp:218 [--target 非客户树拒绝 rc 2] 
+expected: 2
+ but was: 1
+[ERROR]   L08RemoteEvidenceContractTest.salesChecksRequiresTarget:209 [缺 --target 是用法错误 rc 2] 
+expected: 2
+ but was: 1
+[INFO] 
+[ERROR] Tests run: 138, Failures: 16, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  06:37 min
+[INFO] Finished at: 2026-09-30T21:06:11+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

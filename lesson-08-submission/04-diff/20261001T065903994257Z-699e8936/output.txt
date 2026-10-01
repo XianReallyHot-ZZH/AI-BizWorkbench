@@ -1,0 +1,1514 @@
+diff --git a/.github/workflows/l08-eval.yml b/.github/workflows/l08-eval.yml
+new file mode 100644
+index 0000000..d8fda77
+--- /dev/null
++++ b/.github/workflows/l08-eval.yml
+@@ -0,0 +1,63 @@
++# L08 Eval Gate：同一套 Eval 的远程复验面（讲义 D1，CI_GATE_SPEC.md 是本门的规格）
++# 同一身份 = 本地与 CI 调同一 workbench.evals.l08.SalesChecks（同参数面、同登记项、
++# 同报告 schema 1.0）；报告与证据信封按 Run 隔离归档，缺文件即报错（旧输出不冒充本次）。
++name: L08 Eval Gate
++
++on:
++  push:
++    branches: [lesson-08, master]
++  pull_request:
++
++permissions:
++  contents: read
++
++jobs:
++  blocking-evals:
++    runs-on: ubuntu-latest
++    timeout-minutes: 20
++    env:
++      CI_REPORT_DIR: _ci_reports/${{ github.run_id }}-${{ github.run_attempt }}
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          submodules: recursive
++      - uses: actions/setup-python@v5
++        with:
++          python-version: '3.12'
++      - uses: actions/setup-java@v4
++        with:
++          distribution: temurin
++          java-version: '21'
++      # 构建 + classpath 落盘（exec:build-classpath 绑定 process-test-classes）。
++      # 不跑 mvn test：终态合同测试断言本文件不含吞失败旗子，与 A/B 教学
++      # 态自指冲突——全量 mvn 门留在本地与验收（CI_GATE_SPEC.md §门定义）。
++      - name: Build (compile + classpath)
++        run: mvn -q process-test-classes
++      - name: Record checked-out version
++        run: git rev-parse HEAD
++      # 统一入口：与本地同一 SalesChecks（同一 Eval 身份）。--python 传绝对路径
++      # （resolveInterpreter 按 cwd 绝对化不查 PATH）。报告 x 模式独占写，
++      # run_id-attempt 目录隔离，绝不覆盖旧证据。
++      - name: Unified blocking gate (SalesChecks, clean submodule tree)
++        run: >
++          java -cp "target/classes:$(cat target/child-classpath.txt)"
++          workbench.evals.l08.SalesChecks
++          --target vendors/flowERP
++          --python "$(command -v python3)"
++          --report-path "$CI_REPORT_DIR/harness-blocking.json"
++      # 信封绑定：失败运行也归档（if: !cancelled()）；身份来自平台环境变量。
++      - name: Bind report identity (evidence envelope)
++        if: ${{ !cancelled() }}
++        run: >
++          ./bin/wb ci-evidence
++          --report "$CI_REPORT_DIR/harness-blocking.json"
++          --output "$CI_REPORT_DIR/ci-evidence.json"
++      - name: Upload this attempt's evidence
++        if: always()
++        uses: actions/upload-artifact@v4
++        with:
++          name: l08-evidence-${{ github.run_id }}-${{ github.run_attempt }}
++          path: |
++            ${{ env.CI_REPORT_DIR }}/harness-blocking.json
++            ${{ env.CI_REPORT_DIR }}/ci-evidence.json
++          if-no-files-found: error
+diff --git a/CI_GATE_SPEC.md b/CI_GATE_SPEC.md
+new file mode 100644
+index 0000000..5992907
+--- /dev/null
++++ b/CI_GATE_SPEC.md
+@@ -0,0 +1,63 @@
++# CI_GATE_SPEC：L08 远程复验门规格
++
++> 本仓库 CI 门（`.github/workflows/l08-eval.yml`）的规格文件——L08 合同写集映射件
++> （上游课程路径 `CI_GATE_SPEC.md` 直接对应）。讲义 [docs/lessons/L08-远程复验与证据信封.md](docs/lessons/L08-远程复验与证据信封.md)（定稿 v1，D1–D9 已裁决）与合同
++> fixture `CourseContracts.java` LESSONS[8] 是本规格的上游；冲突以讲义与冻结合同为准。
++
++## 门定义（什么必须跑、退出码语义）
++
++- **统一入口**：`workbench.evals.l08.SalesChecks`（独立 main，八登记项全 blocking）
++  ——本地、CI 与显式复验调用**同一入口**（合同 acceptance[2]「本地与 CI 使用同一
++  Eval 身份」）：同一命令、同一登记项、同一报告 schema 1.0（`EvalHarness`，L06 已
++  对齐客户）。环境准备可以不同，业务标准不能偷偷变成两套。
++- **退出码**：blocking 失败 → 统一入口 rc 1 → 工作流 Job 红（**非零退出码阻断候选
++  变更**，合同通过标准）；信封步骤 `if: !cancelled()`——失败运行也绑信封归档，但
++  上传成功不覆盖失败结论（两层退出码语义分开）。
++- **构建面**：`mvn -q process-test-classes`（编译 + classpath 落盘）。**不跑 mvn
++  全量测试**：终态合同测试断言本工作流无 `continue-on-error`，与 A/B 教学态自指
++  冲突——全量 `mvn test`（含 golden 六重放 + 各讲合同）是本地门与验收门。
++- **归档**：报告与信封落 `_ci_reports/<run_id>-<attempt>/`（非隐藏目录，规避
++  upload-artifact v4.4 隐藏文件排除），artifact `if: always()` +
++  `if-no-files-found: error`——**缺文件即报错，旧输出永不冒充本次证据**。
++- **通过标准四条**（合同，逐字）：本地与 CI 使用同一入口；非零退出码阻断候选变更；
++  自动修复不直接合并主分支；CI 通过不等于具名接受（合并仍走候选分支机制 +
++  人工 `merge --no-ff`）。
++
++## A/B/C 受控对照规则（lesson-08 分支历史专用）
++
++同一工作流文件三个状态，每态只改一个层（Run 与 diff 可回查）：
++
++| 态 | 注入步骤 | 统一入口步骤 | 预期 |
++|---|---|---|---|
++| A 假绿 | 在场（`InjectDefect` 拷贝树注入教学缺陷） | `continue-on-error: true`（字面吞失败，教学注入）+ `--target` 缺陷树 | Harness 报告 block（rc 1）、Job 绿——矛盾并存，证明「绿色」可能来自错误流程 |
++| B 可信红 | 不变 | 只删 `continue-on-error` | Job 红——检查流程诚实，业务仍未修 |
++| C 可信绿 | 移除（`--target` 回干净 `vendors/flowERP`） | 不变 | Job 绿——业务在同一标准下恢复正确 |
++
++- 业务缺陷 = 上游 `injected-atomic-defect.diff` 逐字一行（`conn.commit()` 提前提
++  交）；「缺陷在场/不在场」由注入装置表达——客户实现本就正确（讲义 §1.3），教学
++  注入不伪称客户事故。
++- **A 态（吞失败）与注入步骤永不进 master**：合并面 = C 态终态；A/B 态在 lesson-08
++  分支历史可回查。终态合同测试（`ciWorkflowIsPresentAndFinalState`）锁终态无
++  `continue-on-error`。
++- 隔离运行：另做一次「报告未生成」Run（统一入口被跳过）→ 上传步骤
++  `if-no-files-found: error` 报红、平台日志留证——证明无旧 artifact 冒充。
++
++## 信封核对清单（复验者下钻顺序，不可倒置）
++
++1. 从平台入口定位真实 Run（Run ID / attempt / 事件 / 分支头）；平台测合并结果时，
++   实际 checkout SHA 与分支头不同可以合理，但必须能追溯。
++2. 核对运行了什么：同一 `SalesChecks` 入口、八登记项、报告 schema 1.0。
++3. 读分项结果与 summary（`decision`）、两层退出码（统一入口 rc × Job 结论）。
++4. 下载 artifact，**解压后**对报告文件重算 SHA-256，与信封 `report_sha256` 对账；
++   信封身份（`commit_sha`/`run_id`）与平台 Run 一致。
++5. 信封是**关联证据的一层**，不是业务裁判，也不是合并授权——来源、内容完整、
++  业务正确、人工接受是四种判断，后面的判断需要前面的依据，却不能互相替代。
++
++## 边界（如实）
++
++- SIMULATED 身份（`GITHUB_SHA=SIMULATED-*`）只用于本地机制实验，永不冒充远程 Run。
++- 上传成功 ≠ 业务通过；报告存在 ≠ 本次生成（stale-output 边界：命令失败不写新
++  输出，旧文件原样保留——`ci-evidence` 合同测试锁定）。
++- `--python` 必须传绝对路径（`resolveInterpreter` 按 cwd 绝对化，不查 PATH）。
++- 本仓库未配置 branch protection（合并必需检查）——单有红灯不能证明平台已启用
++  合并限制，属平台治理动作，留用户另行决策（上游口径）。
+diff --git a/lesson-08-submission/03-failure/20261001T063331356730Z-55a4cf10/meta.json b/lesson-08-submission/03-failure/20261001T063331356730Z-55a4cf10/meta.json
+new file mode 100644
+index 0000000..0bf3b98
+--- /dev/null
++++ b/lesson-08-submission/03-failure/20261001T063331356730Z-55a4cf10/meta.json
+@@ -0,0 +1,19 @@
++{
++  "phase": "red",
++  "argv": [
++    "java",
++    "-cp",
++    "target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar",
++    "workbench.evals.l08.SalesChecks",
++    "--no-report",
++    "--target",
++    ".runtime/course/L08-candidate"
++  ],
++  "command": "[\"java\", \"-cp\", \"target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar\", \"workbench.evals.l08.SalesChecks\", \"--no-report\", \"--target\", \".runtime/course/L08-candidate\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 1,
++  "observed_at": "2026-10-01T06:33:31.356730+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/03-failure/20261001T063331356730Z-55a4cf10/output.txt",
++  "sha256": "9a5ab65b2b87960485b2c75d7be00bc127926279f8d02917d3e964a3016da13a",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-08-submission/03-failure/20261001T063331356730Z-55a4cf10/output.txt b/lesson-08-submission/03-failure/20261001T063331356730Z-55a4cf10/output.txt
+new file mode 100644
+index 0000000..722b0c9
+--- /dev/null
++++ b/lesson-08-submission/03-failure/20261001T063331356730Z-55a4cf10/output.txt
+@@ -0,0 +1,91 @@
++{
++  "schema_version": "1.0",
++  "suite": "all",
++  "requested_cases": [
++    "l08_atomic_reservation_pass",
++    "l08_atomic_reservation_shortage",
++    "l08_atomic_reservation_write_error",
++    "stock_never_negative",
++    "sales_credit_and_atomic_reservation",
++    "ci_evidence_envelope_is_honest",
++    "l07_order_regression",
++    "l08_frozen_checks"
++  ],
++  "generated_at": "2026-10-01T06:33:38.092414Z",
++  "summary": {
++    "total": 8,
++    "passed": 7,
++    "blocking_failed": 1,
++    "observing_failed": 0,
++    "decision": "block"
++  },
++  "results": [
++    {
++      "name": "l08_atomic_reservation_pass",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 920,
++      "evidence": "库存充足整单预占：reserved [2,3]、available [3,2]、status reserved、预占记录 2 条",
++      "error": null
++    },
++    {
++      "name": "l08_atomic_reservation_shortage",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 1315,
++      "evidence": "第二行缺货整单拒绝：InsufficientStock、四表 before==after、status confirmed、无部分预占",
++      "error": null
++    },
++    {
++      "name": "l08_atomic_reservation_write_error",
++      "level": "blocking",
++      "passed": false,
++      "duration_ms": 985,
++      "evidence": "失败后四表状态发生变化（部分预占残留）：error={\"type\":\"IntegrityError\",\"message\":\"L08 injected second-write failure\"}",
++      "error": {
++        "type": "AssertionError",
++        "message": "失败后四表状态发生变化（部分预占残留）：error={\"type\":\"IntegrityError\",\"message\":\"L08 injected second-write failure\"}"
++      }
++    },
++    {
++      "name": "stock_never_negative",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 500,
++      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
++      "error": null
++    },
++    {
++      "name": "sales_credit_and_atomic_reservation",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 409,
++      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
++      "error": null
++    },
++    {
++      "name": "ci_evidence_envelope_is_honest",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 20,
++      "evidence": "信封六边界诚实：缺报告/缺身份/畸形 JSON 拒绝、空报告决策如实为空、字节篡改哈希失配可检；stale-output 由 CLI 面合同测试锁定（信封是关联证据，非业务裁判）",
++      "error": null
++    },
++    {
++      "name": "l07_order_regression",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 1766,
++      "evidence": "l07 六登记项进程内复用全绿（旧检查照跑不删弱）",
++      "error": null
++    },
++    {
++      "name": "l08_frozen_checks",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 4,
++      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
++      "error": null
++    }
++  ]
++}
+diff --git a/lesson-08-submission/04-diff/20261001T063355312249Z-51885209/meta.json b/lesson-08-submission/04-diff/20261001T063355312249Z-51885209/meta.json
+new file mode 100644
+index 0000000..1cff121
+--- /dev/null
++++ b/lesson-08-submission/04-diff/20261001T063355312249Z-51885209/meta.json
+@@ -0,0 +1,16 @@
++{
++  "phase": "diff",
++  "argv": [
++    "git",
++    "-C",
++    ".runtime/course/L08-candidate",
++    "diff"
++  ],
++  "command": "[\"git\", \"-C\", \".runtime/course/L08-candidate\", \"diff\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 128,
++  "observed_at": "2026-10-01T06:33:55.312249+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/04-diff/20261001T063355312249Z-51885209/output.txt",
++  "sha256": "8121b7b4ac95e8f4070676756f5c02fe74106715da5f94fb01345208f1792f46",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-08-submission/04-diff/20261001T063355312249Z-51885209/output.txt b/lesson-08-submission/04-diff/20261001T063355312249Z-51885209/output.txt
+new file mode 100644
+index 0000000..100152c
+--- /dev/null
++++ b/lesson-08-submission/04-diff/20261001T063355312249Z-51885209/output.txt
+@@ -0,0 +1 @@
++fatal: not a git repository: /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L08-candidate/../../.git/modules/vendors/flowERP
+diff --git a/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/meta.json b/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/meta.json
+new file mode 100644
+index 0000000..14fb14b
+--- /dev/null
++++ b/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/meta.json
+@@ -0,0 +1,15 @@
++{
++  "phase": "diff",
++  "argv": [
++    "diff",
++    "vendors/flowERP/flowerp/sales.py",
++    ".runtime/course/L08-candidate/flowerp/sales.py"
++  ],
++  "command": "[\"diff\", \"vendors/flowERP/flowerp/sales.py\", \".runtime/course/L08-candidate/flowerp/sales.py\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 1,
++  "observed_at": "2026-10-01T06:34:10.738328+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/output.txt",
++  "sha256": "c371ff34708ef6320db8acbc614f1594c5d9a4f7814ea4fe950aa55e1982172b",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/output.txt b/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/output.txt
+new file mode 100644
+index 0000000..15e26a0
+--- /dev/null
++++ b/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/output.txt
+@@ -0,0 +1,2 @@
++318a319
++>                 conn.commit()  # L08 teaching defect: commit each line too early
+diff --git a/lesson-08-submission/05-green/20261001T063232033849Z-4b3d5d05/meta.json b/lesson-08-submission/05-green/20261001T063232033849Z-4b3d5d05/meta.json
+new file mode 100644
+index 0000000..05c4f5a
+--- /dev/null
++++ b/lesson-08-submission/05-green/20261001T063232033849Z-4b3d5d05/meta.json
+@@ -0,0 +1,14 @@
++{
++  "phase": "green",
++  "argv": [
++    "mvn",
++    "test"
++  ],
++  "command": "[\"mvn\", \"test\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-10-01T06:32:32.033849+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/05-green/20261001T063232033849Z-4b3d5d05/output.txt",
++  "sha256": "9c3205d8ab9d6dbde4f665f2df693ebe5beb882604e13deae39c5d85a02c4051",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-08-submission/05-green/20261001T063232033849Z-4b3d5d05/output.txt b/lesson-08-submission/05-green/20261001T063232033849Z-4b3d5d05/output.txt
+new file mode 100644
+index 0000000..2c20f6c
+--- /dev/null
++++ b/lesson-08-submission/05-green/20261001T063232033849Z-4b3d5d05/output.txt
+@@ -0,0 +1,75 @@
++[INFO] Scanning for projects...
++[INFO] 
++[INFO] --------------------< dev.workbench:workbench-java >--------------------
++[INFO] Building workbench-java 0.1.0
++[INFO]   from pom.xml
++[INFO] --------------------------------[ jar ]---------------------------------
++[INFO] 
++[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
++[INFO] Copying 1 resource from src/main/resources to target/classes
++[INFO] 
++[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
++[INFO] Nothing to compile - all classes are up to date.
++[INFO] 
++[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
++[INFO] Copying 118 resources from src/test/resources to target/test-classes
++[INFO] 
++[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
++[INFO] Nothing to compile - all classes are up to date.
++[INFO] 
++[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
++[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
++[INFO] 
++[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
++[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
++[INFO] 
++[INFO] -------------------------------------------------------
++[INFO]  T E S T S
++[INFO] -------------------------------------------------------
++[INFO] Running workbench.evals.l05.L05EvalContractTest
++[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.675 s -- in workbench.evals.l05.L05EvalContractTest
++[INFO] Running workbench.evals.EvalHarnessContractTest
++[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.695 s -- in workbench.evals.EvalHarnessContractTest
++[INFO] Running workbench.evals.l07.L07LocalGuardrailContractTest
++[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.466 s -- in workbench.evals.l07.L07LocalGuardrailContractTest
++[INFO] Running workbench.evals.l06.L06EvalContractTest
++[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.097 s -- in workbench.evals.l06.L06EvalContractTest
++[INFO] Running workbench.evals.l08.L08RemoteEvidenceContractTest
++[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.116 s -- in workbench.evals.l08.L08RemoteEvidenceContractTest
++[INFO] Running workbench.bootstrap.WorkbenchBootstrapContractTest
++[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 172.4 s -- in workbench.bootstrap.WorkbenchBootstrapContractTest
++[INFO] Running workbench.spec.L03SpecContractTest
++[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.104 s -- in workbench.spec.L03SpecContractTest
++[INFO] Running workbench.spec.SpecTemplateDualCarrierTest
++[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in workbench.spec.SpecTemplateDualCarrierTest
++[INFO] Running workbench.golden.GoldenL06ReplayTest
++[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.853 s -- in workbench.golden.GoldenL06ReplayTest
++[INFO] Running workbench.golden.GoldenL01ReplayTest
++[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 21.19 s -- in workbench.golden.GoldenL01ReplayTest
++[INFO] Running workbench.golden.GoldenL04ReplayTest
++[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 61.14 s -- in workbench.golden.GoldenL04ReplayTest
++[INFO] Running workbench.golden.GoldenL03ReplayTest
++[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.919 s -- in workbench.golden.GoldenL03ReplayTest
++[INFO] Running workbench.golden.GoldenL02ReplayTest
++[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 16.30 s -- in workbench.golden.GoldenL02ReplayTest
++[INFO] Running workbench.golden.GoldenL05ReplayTest
++[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 14.41 s -- in workbench.golden.GoldenL05ReplayTest
++[INFO] Running workbench.coursecontracts.CourseContractFixtureTest
++[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in workbench.coursecontracts.CourseContractFixtureTest
++[INFO] Running workbench.execution.L04ExecutionContractTest
++[INFO] Tests run: 24, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 144.8 s -- in workbench.execution.L04ExecutionContractTest
++[INFO] Running workbench.rules.L02WorkbenchRulesTest
++[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.012 s -- in workbench.rules.L02WorkbenchRulesTest
++[INFO] Running workbench.rules.JavaLineRuleFactsTest
++[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in workbench.rules.JavaLineRuleFactsTest
++[INFO] 
++[INFO] Results:
++[INFO] 
++[INFO] Tests run: 138, Failures: 0, Errors: 0, Skipped: 0
++[INFO] 
++[INFO] ------------------------------------------------------------------------
++[INFO] BUILD SUCCESS
++[INFO] ------------------------------------------------------------------------
++[INFO] Total time:  07:46 min
++[INFO] Finished at: 2026-10-01T14:40:21+08:00
++[INFO] ------------------------------------------------------------------------
+diff --git a/lesson-08-submission/05-green/20261001T063418309816Z-ff00ecf7/meta.json b/lesson-08-submission/05-green/20261001T063418309816Z-ff00ecf7/meta.json
+new file mode 100644
+index 0000000..693545e
+--- /dev/null
++++ b/lesson-08-submission/05-green/20261001T063418309816Z-ff00ecf7/meta.json
+@@ -0,0 +1,19 @@
++{
++  "phase": "green",
++  "argv": [
++    "java",
++    "-cp",
++    "target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar",
++    "workbench.evals.l08.SalesChecks",
++    "--no-report",
++    "--target",
++    ".runtime/course/L08-candidate"
++  ],
++  "command": "[\"java\", \"-cp\", \"target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar\", \"workbench.evals.l08.SalesChecks\", \"--no-report\", \"--target\", \".runtime/course/L08-candidate\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-10-01T06:34:18.309816+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/05-green/20261001T063418309816Z-ff00ecf7/output.txt",
++  "sha256": "1736238441fa3127a20ac362b19a727b4b77ac3044d4c0ac513cbb50e0582069",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-08-submission/05-green/20261001T063418309816Z-ff00ecf7/output.txt b/lesson-08-submission/05-green/20261001T063418309816Z-ff00ecf7/output.txt
+new file mode 100644
+index 0000000..7ddbc94
+--- /dev/null
++++ b/lesson-08-submission/05-green/20261001T063418309816Z-ff00ecf7/output.txt
+@@ -0,0 +1,88 @@
++{
++  "schema_version": "1.0",
++  "suite": "all",
++  "requested_cases": [
++    "l08_atomic_reservation_pass",
++    "l08_atomic_reservation_shortage",
++    "l08_atomic_reservation_write_error",
++    "stock_never_negative",
++    "sales_credit_and_atomic_reservation",
++    "ci_evidence_envelope_is_honest",
++    "l07_order_regression",
++    "l08_frozen_checks"
++  ],
++  "generated_at": "2026-10-01T06:34:22.697374Z",
++  "summary": {
++    "total": 8,
++    "passed": 8,
++    "blocking_failed": 0,
++    "observing_failed": 0,
++    "decision": "pass"
++  },
++  "results": [
++    {
++      "name": "l08_atomic_reservation_pass",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 531,
++      "evidence": "库存充足整单预占：reserved [2,3]、available [3,2]、status reserved、预占记录 2 条",
++      "error": null
++    },
++    {
++      "name": "l08_atomic_reservation_shortage",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 335,
++      "evidence": "第二行缺货整单拒绝：InsufficientStock、四表 before==after、status confirmed、无部分预占",
++      "error": null
++    },
++    {
++      "name": "l08_atomic_reservation_write_error",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 446,
++      "evidence": "写入中途故障整单回滚：四表 before==after、status confirmed、无残留预占（触发器标记在场）",
++      "error": null
++    },
++    {
++      "name": "stock_never_negative",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 336,
++      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
++      "error": null
++    },
++    {
++      "name": "sales_credit_and_atomic_reservation",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 331,
++      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
++      "error": null
++    },
++    {
++      "name": "ci_evidence_envelope_is_honest",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 21,
++      "evidence": "信封六边界诚实：缺报告/缺身份/畸形 JSON 拒绝、空报告决策如实为空、字节篡改哈希失配可检；stale-output 由 CLI 面合同测试锁定（信封是关联证据，非业务裁判）",
++      "error": null
++    },
++    {
++      "name": "l07_order_regression",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 1756,
++      "evidence": "l07 六登记项进程内复用全绿（旧检查照跑不删弱）",
++      "error": null
++    },
++    {
++      "name": "l08_frozen_checks",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 4,
++      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
++      "error": null
++    }
++  ]
++}
+diff --git a/lesson-08-submission/06-observations/20261001T063502636846Z-7f56c06f/meta.json b/lesson-08-submission/06-observations/20261001T063502636846Z-7f56c06f/meta.json
+new file mode 100644
+index 0000000..ef414ef
+--- /dev/null
++++ b/lesson-08-submission/06-observations/20261001T063502636846Z-7f56c06f/meta.json
+@@ -0,0 +1,19 @@
++{
++  "phase": "observation",
++  "argv": [
++    "java",
++    "-cp",
++    "target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar",
++    "workbench.evals.l08.SalesChecks",
++    "--no-report",
++    "--target",
++    "vendors/flowERP"
++  ],
++  "command": "[\"java\", \"-cp\", \"target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar\", \"workbench.evals.l08.SalesChecks\", \"--no-report\", \"--target\", \"vendors/flowERP\"]",
++  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
++  "returncode": 0,
++  "observed_at": "2026-10-01T06:35:02.636846+00:00",
++  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/06-observations/20261001T063502636846Z-7f56c06f/output.txt",
++  "sha256": "d225f7af12d663e9422e2c6ef2ec967799e8c43598e3c9eaf64c6c21855f0285",
++  "provenance": "local_teaching_capture"
++}
+\ No newline at end of file
+diff --git a/lesson-08-submission/06-observations/20261001T063502636846Z-7f56c06f/output.txt b/lesson-08-submission/06-observations/20261001T063502636846Z-7f56c06f/output.txt
+new file mode 100644
+index 0000000..b2b0848
+--- /dev/null
++++ b/lesson-08-submission/06-observations/20261001T063502636846Z-7f56c06f/output.txt
+@@ -0,0 +1,88 @@
++{
++  "schema_version": "1.0",
++  "suite": "all",
++  "requested_cases": [
++    "l08_atomic_reservation_pass",
++    "l08_atomic_reservation_shortage",
++    "l08_atomic_reservation_write_error",
++    "stock_never_negative",
++    "sales_credit_and_atomic_reservation",
++    "ci_evidence_envelope_is_honest",
++    "l07_order_regression",
++    "l08_frozen_checks"
++  ],
++  "generated_at": "2026-10-01T06:35:07.432349Z",
++  "summary": {
++    "total": 8,
++    "passed": 8,
++    "blocking_failed": 0,
++    "observing_failed": 0,
++    "decision": "pass"
++  },
++  "results": [
++    {
++      "name": "l08_atomic_reservation_pass",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 585,
++      "evidence": "库存充足整单预占：reserved [2,3]、available [3,2]、status reserved、预占记录 2 条",
++      "error": null
++    },
++    {
++      "name": "l08_atomic_reservation_shortage",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 449,
++      "evidence": "第二行缺货整单拒绝：InsufficientStock、四表 before==after、status confirmed、无部分预占",
++      "error": null
++    },
++    {
++      "name": "l08_atomic_reservation_write_error",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 389,
++      "evidence": "写入中途故障整单回滚：四表 before==after、status confirmed、无残留预占（触发器标记在场）",
++      "error": null
++    },
++    {
++      "name": "stock_never_negative",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 398,
++      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
++      "error": null
++    },
++    {
++      "name": "sales_credit_and_atomic_reservation",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 318,
++      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
++      "error": null
++    },
++    {
++      "name": "ci_evidence_envelope_is_honest",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 15,
++      "evidence": "信封六边界诚实：缺报告/缺身份/畸形 JSON 拒绝、空报告决策如实为空、字节篡改哈希失配可检；stale-output 由 CLI 面合同测试锁定（信封是关联证据，非业务裁判）",
++      "error": null
++    },
++    {
++      "name": "l07_order_regression",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 2004,
++      "evidence": "l07 六登记项进程内复用全绿（旧检查照跑不删弱）",
++      "error": null
++    },
++    {
++      "name": "l08_frozen_checks",
++      "level": "blocking",
++      "passed": true,
++      "duration_ms": 5,
++      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e",
++      "error": null
++    }
++  ]
++}
+diff --git a/src/main/java/workbench/cli/Main.java b/src/main/java/workbench/cli/Main.java
+index 6195514..0fc3982 100644
+--- a/src/main/java/workbench/cli/Main.java
++++ b/src/main/java/workbench/cli/Main.java
+@@ -5,6 +5,7 @@ import workbench.bootstrap.BootstrapCommands;
+ import workbench.bootstrap.Command;
+ import workbench.bootstrap.JsonOut;
+ import workbench.evals.l07.QualityGate;
++import workbench.evals.l08.CiEvidence;
+ import workbench.execution.ExecutionCommands;
+ import workbench.spec.SpecCommands;
+ 
+@@ -30,6 +31,9 @@ public final class Main {
+         // L07：本地护栏处理器经同一条缝注册（讲义 D2——workbenchIncrement「提交前本地护栏」
+         // 即工作台命令；适配器在 workbench.evals.l07.QualityGate，只加注册调用，缝位置不变）。
+         REGISTRY.register("quality-gate", QualityGate::execute);
++        // L08：证据信封件经同一条缝注册（讲义 D3——workbenchIncrement「远程复验与证据信封」
++        // 即工作台命令，L07 D2 先例；适配器在 workbench.evals.l08.CiEvidence，只加注册调用）。
++        REGISTRY.register("ci-evidence", CiEvidence::execute);
+     }
+ 
+     public static void main(String[] args) {
+diff --git a/src/main/java/workbench/evals/l07/OrderChecks.java b/src/main/java/workbench/evals/l07/OrderChecks.java
+index f820e58..60edbca 100644
+--- a/src/main/java/workbench/evals/l07/OrderChecks.java
++++ b/src/main/java/workbench/evals/l07/OrderChecks.java
+@@ -82,7 +82,12 @@ public final class OrderChecks {
+         }
+     }
+ 
+-    private static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
++    /**
++     * 六登记项清单。L08 起可见性开放（public，行为零变化）——l08 SalesChecks 的
++     * {@code l07_order_regression} 登记项进程内复用本面（旧能力在场，旧检查照跑
++     * 不删弱）；l06 {@code StockConsistencyCheck.runScenario} 开放给 l07 是同款先例。
++     */
++    public static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
+         return List.of(
+                 new EvalHarness.Entry("l07_draft_amount", "blocking",
+                         () -> orderScenario(interpreter, target, "draft", 2, 3000, 3, 2000)),
+diff --git a/src/main/java/workbench/evals/l08/AtomicProbe.java b/src/main/java/workbench/evals/l08/AtomicProbe.java
+new file mode 100644
+index 0000000..1bc9e80
+--- /dev/null
++++ b/src/main/java/workbench/evals/l08/AtomicProbe.java
+@@ -0,0 +1,196 @@
++package workbench.evals.l08;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * 客户实现驱动缝（L08 原子预占面；l07 {@code OrderProbe} 同款先例，本包自带探针面
++ * ——不动 l05/l06/l07 已验收源件）。子进程 python 一次跑完一个模式、回报原始观察值
++ * JSON；<b>判断与预期计算一律留在调用方</b>（独立预期：pass 模式 reserved [2,3] /
++ * available [3,2] 由 Java 字面断言，不抄子进程返回——上游 {@code atomic_reservation_lab.py}
++ * 「独立期望和四表比较」同义）。
++ *
++ * <p>三模式（上游 lab 工人段同形，映射源 {@code vendors/CodexFDE/docs/courses/L08/
++ * examples/atomic_reservation_lab.py}，只读对照）：pass（A、B 各 5 件申请 2/3）、
++ * shortage（B 仅 2 件——写入前规划期即拒绝，普通缺货不足以证明原子性的教学面）、
++ * write-error（两行均足、临时库装标注触发器令第二条预占记录插入失败——写入开始后
++ * 回滚的原子性区分器）。四表快照（stock_balance/stock_reservations/
++ * sales_document_lines/sales_documents）before/after 原始回报，相等性由 Java 断言。
++ * 临时数据库自建，不连客户运行库；write-error 触发器只装在本次临时库。
++ * 子进程超时 300s（l06/l07 同值）。
++ */
++final class AtomicProbe {
++
++    /** 工具以 rc 1 收场的失败（l07 OrderProbe.ToolFailure 同形；词面入 stderr）。 */
++    static final class ToolFailure extends RuntimeException {
++        ToolFailure(String message) {
++            super(message);
++        }
++
++        ToolFailure(String message, Throwable cause) {
++            super(message, cause);
++        }
++    }
++
++    /** 子进程超时（l06/l07 同值）。 */
++    private static final long TIMEOUT_SECONDS = 300;
++
++    /**
++     * 原子预占片段：argv = [db, 客户树, mode]；stdout 出单行 JSON 原始观察值
++     * （mode/status/reserved/available/error/reservation_count/before/after）。
++     * <b>不判对错</b>——判断在调用方。CJK 经 -X utf8 子进程传递（L04/L05 先例）。
++     */
++    private static final String SNIPPET = """
++            import json, sqlite3, sys
++            from pathlib import Path
++            sys.path.insert(0, sys.argv[2])
++            from flowerp.store import ERPStore
++            from flowerp.identity import IdentityService, SYSTEM_PRINCIPAL
++            from flowerp import MasterDataService
++            from flowerp.inventory import InventoryService
++            from flowerp.sales import SalesService
++            from flowerp.models import InsufficientStock
++
++            mode = sys.argv[3]
++            TABLES = ("stock_balance", "stock_reservations", "sales_document_lines", "sales_documents")
++
++            def out(obj):
++                print(json.dumps(obj, ensure_ascii=False))
++
++            def snapshot():
++                return {t: store.rows("SELECT * FROM %s ORDER BY rowid" % t) for t in TABLES}
++
++            store = ERPStore(Path(sys.argv[1]))
++            IdentityService(store).ensure_local_defaults()
++            master, inventory, sales = MasterDataService(store), InventoryService(store), SalesService(store)
++            actor = SYSTEM_PRINCIPAL
++            products = [master.create_product(actor, "L08-" + sku, sku, 1000, 500) for sku in ("A", "B")]
++            customer = master.create_customer(actor, "L08-C", "L08 customer", credit_limit_cents=100000)
++            for i, product in enumerate(products):
++                inventory.receive(actor, product["id"], "LOC-MAIN-STOCK",
++                                  2 if mode == "shortage" and i == 1 else 5, "l08-opening-%d" % i)
++            order = sales.create_order(actor, customer["id"], [
++                {"product_id": products[0]["id"], "quantity": 2},
++                {"product_id": products[1]["id"], "quantity": 3}])
++            sales.confirm(actor, order["id"])
++            before = snapshot()
++            if mode == "write-error":
++                product_id = products[1]["id"].replace("'", "''")
++                with store.connect() as conn:
++                    conn.execute("CREATE TRIGGER l08_second_write BEFORE INSERT ON stock_reservations "
++                                 "WHEN NEW.product_id='%s' BEGIN "
++                                 "SELECT RAISE(ABORT, 'L08 injected second-write failure'); END" % product_id)
++            error = None
++            try:
++                sales.reserve(actor, order["id"])
++            except (InsufficientStock, sqlite3.IntegrityError) as exc:
++                error = {"type": type(exc).__name__, "message": str(exc)}
++            after = snapshot()
++            balances = [inventory.balance(actor, p["id"], "LOC-MAIN-STOCK") for p in products]
++            current = sales.order(actor, order["id"])
++            out({
++                "mode": mode,
++                "status": current["status"],
++                "reserved": [b["reserved"] for b in balances],
++                "available": [b["available"] for b in balances],
++                "error": error,
++                "reservation_count": len(after["stock_reservations"]),
++                "before": before,
++                "after": after,
++            })
++            """;
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private AtomicProbe() {}
++
++    /** 相对解释器路径按进程 cwd 绝对化（l06/l07 同款；不做 PATH 查找——CI 须传绝对路径）。 */
++    static Path resolveInterpreter(String python) {
++        return Path.of(python).toAbsolutePath().normalize();
++    }
++
++    /** 临时库（自建库、天然干净数据开始；close 递归清理——l06/l07 TempDb 同形）。 */
++    static final class TempDb implements AutoCloseable {
++        private final Path dir;
++        final Path db;
++
++        private TempDb(Path dir) {
++            this.dir = dir;
++            this.db = dir.resolve("scenario.db");
++        }
++
++        @Override
++        public void close() {
++            try (var stream = Files.walk(dir)) {
++                stream.sorted(Comparator.reverseOrder()).forEach(p -> {
++                    try {
++                        Files.delete(p);
++                    } catch (IOException error) {
++                        throw new java.io.UncheckedIOException(error);
++                    }
++                });
++            } catch (IOException error) {
++                throw new java.io.UncheckedIOException(error);
++            }
++        }
++    }
++
++    static TempDb tempDb(String prefix) {
++        try {
++            return new TempDb(Files.createTempDirectory(prefix));
++        } catch (IOException error) {
++            throw new ToolFailure("临时目录创建失败（" + prefix + "）", error);
++        }
++    }
++
++    /**
++     * 跑一次原子预占模式，解析 stdout 单行 JSON 为观察值。子进程失败、超时（300s）或
++     * 输出不可解析 → ToolFailure（调用方 rc 1 收场）。
++     */
++    static JsonNode atomic(Path interpreter, Path target, Path db, String mode) {
++        List<String> argv = new ArrayList<>(List.of(
++                interpreter.toString(), "-X", "utf8", "-c", SNIPPET,
++                db.toString(), target.toString(), mode));
++        Process process;
++        try {
++            process = new ProcessBuilder(argv).start();
++        } catch (IOException error) {
++            throw new ToolFailure("python 启动失败（" + interpreter + "）", error);
++        }
++        String stdout;
++        String stderr;
++        int code;
++        try {
++            stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
++            stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
++                process.destroyForcibly();
++                throw new ToolFailure("python 子进程超时（" + TIMEOUT_SECONDS + "s）：" + interpreter);
++            }
++            code = process.exitValue();
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出读取失败", error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new ToolFailure("python 等待被中断");
++        }
++        if (code != 0) {
++            throw new ToolFailure("python 子进程失败 rc=" + code + "：" + stderr.strip());
++        }
++        try {
++            return MAPPER.readTree(stdout);
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出不可解析：" + stdout.strip()
++                    + "；stderr：" + stderr.strip(), error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l08/CiEvidence.java b/src/main/java/workbench/evals/l08/CiEvidence.java
+new file mode 100644
+index 0000000..7365553
+--- /dev/null
++++ b/src/main/java/workbench/evals/l08/CiEvidence.java
+@@ -0,0 +1,127 @@
++package workbench.evals.l08;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * 证据信封件（L08 合同 workbenchIncrement「远程复验与证据信封」；上游
++ * {@code workbench/ci_evidence.py} 的 Java 对应物，讲义 §1.4 宿主映射）。把统一
++ * Harness 报告绑定到 CI 运行身份：报告字节 SHA-256 + 环境传入的提交、Run、工作流、
++ * 运行系统与 Java 运行时版本。<b>信封是关联证据的一层，不是业务裁判，也不是合并
++ * 授权</b>（上游口径：来源、内容完整、业务正确、人工接受是四种判断，不能互相替代）。
++ *
++ * <p>词面对齐上游：报告缺失「Harness 报告不存在：…」与缺身份「Evidence Envelope
++ * 缺少 GITHUB_SHA 或 GITHUB_RUN_ID」逐字；畸形 JSON 上游裸 traceback rc 1，Java
++ * 收敛为 stderr 消息、rc 同码（语言绑定偏差如实，JD6 同口径）。身份字段
++ * {@code python} → {@code java}（载体如实：上游记的是 harness 解释器版本，Java 线
++ * harness 是 Java；无冻结包袱不硬造同名字段——讲义 D3）。空报告（{@code {}}）仍生成
++ * 信封、决策与 suite 如实为空（信封不做报告语义校验——上游教学点）。
++ *
++ * <p>失败不动旧输出文件（stale-output 边界：文件存在不等于本次生成）；成功才写
++ * （创建父目录；indent=2 落盘，stdout 单行紧凑 JSON）。
++ */
++public final class CiEvidence {
++
++    /** 信封构建失败（词面对齐上游异常面；CLI rc 1 收场）。 */
++    static final class EvidenceException extends RuntimeException {
++        EvidenceException(String message) {
++            super(message);
++        }
++    }
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private CiEvidence() {}
++
++    /** REGISTRY 缝（Main 静态注册段；{@code ./bin/wb ci-evidence --report … --output …}）。 */
++    public static int execute(String[] argv) {
++        Args args;
++        try {
++            args = new Args(argv, Set.of("--report", "--output"), Set.of());
++            if (!args.has("--report") || !args.has("--output")) {
++                throw new Args.UsageException("the following arguments are required: --report, --output");
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            return 2;
++        }
++        try {
++            Map<String, Object> envelope = buildEnvelope(
++                    Path.of(args.require("--report")).toAbsolutePath().normalize(),
++                    System.getenv());
++            Path target = Path.of(args.require("--output")).toAbsolutePath().normalize();
++            if (target.getParent() != null) {
++                Files.createDirectories(target.getParent());
++            }
++            Files.writeString(target, PyJson.dumps(envelope) + "\n", StandardCharsets.UTF_8);
++            System.out.println(PyJson.dumpsCompact(envelope));
++            return 0;
++        } catch (EvidenceException error) {
++            System.err.println(error.getMessage());
++            return 1;
++        } catch (IOException error) {
++            System.err.println("信封输出写入失败：" + error.getMessage());
++            return 1;
++        }
++    }
++
++    /**
++     * 构建信封（八字段）。报告缺失/畸形/缺身份 → {@link EvidenceException}（CLI 面
++     * rc 1 + stderr；登记项 {@code ci_evidence_envelope_is_honest} 进程内复用本面）。
++     */
++    static Map<String, Object> buildEnvelope(Path reportPath, Map<String, String> env) {
++        if (!Files.isRegularFile(reportPath)) {
++            throw new EvidenceException("Harness 报告不存在：" + reportPath);
++        }
++        byte[] raw;
++        try {
++            raw = Files.readAllBytes(reportPath);
++        } catch (IOException error) {
++            throw new EvidenceException("Harness 报告读取失败：" + reportPath);
++        }
++        JsonNode report;
++        try {
++            report = MAPPER.readTree(raw);
++        } catch (IOException error) {
++            throw new EvidenceException("报告不是合法 JSON：" + error.getMessage());
++        }
++        String sha = env.getOrDefault("GITHUB_SHA", "").strip();
++        String runId = env.getOrDefault("GITHUB_RUN_ID", "").strip();
++        if (sha.isEmpty() || runId.isEmpty()) {
++            throw new EvidenceException("Evidence Envelope 缺少 GITHUB_SHA 或 GITHUB_RUN_ID");
++        }
++        JsonNode decision = report.path("summary").path("decision");
++        Map<String, Object> envelope = new LinkedHashMap<>();
++        envelope.put("commit_sha", sha);
++        envelope.put("run_id", runId);
++        envelope.put("workflow", env.getOrDefault("GITHUB_WORKFLOW", "").strip());
++        envelope.put("runner_os", env.getOrDefault("RUNNER_OS", "").strip());
++        envelope.put("java", Runtime.version().toString());
++        envelope.put("suite", report.path("suite").asText(""));
++        envelope.put("report_sha256", sha256(raw));
++        envelope.put("report_decision",
++                decision.isMissingNode() || decision.isNull() ? null : decision.asText());
++        return envelope;
++    }
++
++    private static String sha256(byte[] bytes) {
++        try {
++            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
++        } catch (NoSuchAlgorithmException error) {
++            throw new IllegalStateException(error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l08/InjectDefect.java b/src/main/java/workbench/evals/l08/InjectDefect.java
+new file mode 100644
+index 0000000..c0fd0e8
+--- /dev/null
++++ b/src/main/java/workbench/evals/l08/InjectDefect.java
+@@ -0,0 +1,126 @@
++package workbench.evals.l08;
++
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.FileVisitResult;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.nio.file.SimpleFileVisitor;
++import java.nio.file.attribute.BasicFileAttributes;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * L08 教学缺陷注入装置（讲义 D5：CI 与本地使用同一装置，不另写内联脚本——防两套
++ * 口径漂移）。对客户树拷贝做上游 {@code injected-atomic-defect.diff} 逐字手术：
++ * {@code flowerp/sales.py} 逐行写入循环的锚点行后插一行提前提交（自带教学标注）。
++ * <b>教学注入，不伪称客户事故</b>（上游口径：参考代码已经正确时用明确标注的教学
++ * 缺陷建立对照）；只写 {@code --dest} 拷贝树，<b>永不写回 vendors</b>（铁律 1）。
++ *
++ * <p>护栏三面（缺一即拒，rc 1）：源树已含注入行（幂等——重复注入会使对照口径漂移）；
++ * 锚点行出现次数 ≠ 1（唯一性校验——注入位置可机检，L05/L06/L07 锚点纪律同款）；
++ * dest 已存在（旧证据不可抹）。拷贝排除 {@code .git}/ {@code __pycache__}/ 与
++ * {@code .pyc}。成功 rc 0，stdout 出注入位置 JSON。
++ */
++public final class InjectDefect {
++
++    /** 上游 injected-atomic-defect.diff 逐字（注入行与其锚点行——独立预期源）。 */
++    static final String INJECTED_LINE =
++            "                conn.commit()  # L08 teaching defect: commit each line too early";
++    static final String ANCHOR_LINE =
++            "                conn.execute(\"UPDATE sales_document_lines SET reserved_quantity=reserved_quantity+? WHERE id=?\", (quantity, line[\"id\"]))";
++
++    private InjectDefect() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv, Set.of("--source", "--dest"), Set.of());
++            Path source = Path.of(args.require("--source")).toAbsolutePath().normalize();
++            Path dest = Path.of(args.require("--dest")).toAbsolutePath().normalize();
++            Path salesPy = source.resolve("flowerp").resolve("sales.py");
++            if (!Files.isRegularFile(salesPy)) {
++                throw new Args.UsageException("--source 下没有 flowerp/sales.py：" + source);
++            }
++            if (Files.exists(dest)) {
++                System.err.println("dest 已存在，拒绝覆盖（旧证据不可抹）：" + dest);
++                System.exit(1);
++            }
++            String content = Files.readString(salesPy, StandardCharsets.UTF_8);
++            if (content.contains(INJECTED_LINE)) {
++                System.err.println("已注入：源树 sales.py 含 L08 教学注入行，拒绝重复注入");
++                System.exit(1);
++            }
++            int anchors = countOccurrences(content, ANCHOR_LINE);
++            if (anchors != 1) {
++                System.err.println("锚点不唯一：sales.py 中锚点行出现 " + anchors + " 次（预期恰 1），拒绝注入");
++                System.exit(1);
++            }
++            copyTree(source, dest);
++            Path destSales = dest.resolve("flowerp").resolve("sales.py");
++            String injected = content.replace(
++                    ANCHOR_LINE + "\n", ANCHOR_LINE + "\n" + INJECTED_LINE + "\n");
++            Files.writeString(destSales, injected, StandardCharsets.UTF_8);
++
++            List<String> lines = Files.readAllLines(destSales, StandardCharsets.UTF_8);
++            Map<String, Object> report = new LinkedHashMap<>();
++            report.put("injected", true);
++            report.put("source", source.toString());
++            report.put("dest", dest.toString());
++            report.put("anchor_line", lines.indexOf(ANCHOR_LINE) + 1);
++            report.put("injected_line", lines.indexOf(INJECTED_LINE) + 1);
++            report.put("note", "L08 teaching defect (upstream injected-atomic-defect.diff verbatim); copy only, vendors untouched");
++            System.out.println(PyJson.dumpsCompact(report));
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (IOException error) {
++            System.err.println("注入失败：" + error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    private static int countOccurrences(String content, String needle) {
++        int count = 0;
++        int at = content.indexOf(needle);
++        while (at >= 0) {
++            count++;
++            at = content.indexOf(needle, at + needle.length());
++        }
++        return count;
++    }
++
++    /** 拷贝整树，排除 .git/、__pycache__/ 与 .pyc（客户 submodule 的版本簿记与缓存不入对照树）。 */
++    private static void copyTree(Path source, Path dest) throws IOException {
++        List<Path> dirs = new ArrayList<>();
++        Files.walkFileTree(source, new SimpleFileVisitor<>() {
++            @Override
++            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
++                String name = dir.getFileName().toString();
++                if (".git".equals(name) || "__pycache__".equals(name)) {
++                    return FileVisitResult.SKIP_SUBTREE;
++                }
++                dirs.add(dest.resolve(source.relativize(dir).toString()));
++                return FileVisitResult.CONTINUE;
++            }
++
++            @Override
++            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
++                if (!file.getFileName().toString().endsWith(".pyc")) {
++                    Path target = dest.resolve(source.relativize(file).toString());
++                    Files.createDirectories(target.getParent());
++                    Files.copy(file, target);
++                }
++                return FileVisitResult.CONTINUE;
++            }
++        });
++        for (Path dir : dirs) {
++            Files.createDirectories(dir);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l08/SalesChecks.java b/src/main/java/workbench/evals/l08/SalesChecks.java
+new file mode 100644
+index 0000000..132ad1d
+--- /dev/null
++++ b/src/main/java/workbench/evals/l08/SalesChecks.java
+@@ -0,0 +1,338 @@
++package workbench.evals.l08;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++import workbench.evals.EvalHarness;
++import workbench.evals.l07.OrderChecks;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.ArrayList;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * L08 统一入口收口（新讲机制——本讲无 Python 先例，映射源 = 讲义 §2 登记项构成 +
++ * 上游 {@code atomic_reservation_lab.py} 三模式与合同绑定 eval 三件）。本地、CI
++ * 工作流与显式复验调用同一本入口——「本地与 CI 使用同一 Eval 身份」（合同
++ * acceptance[2]）：同一命令、同一组登记项、同一报告 schema（{@link EvalHarness}
++ * schema 1.0，L06 已对齐客户）。
++ *
++ * <p>八登记项（全 blocking）：
++ * <ul>
++ * <li>{@code l08_atomic_reservation_pass}        库存充足整单预占（独立预期
++ *     reserved [2,3]、available [3,2]、status reserved、预占记录 2 条——合同
++ *     acceptance[0]；预期由 Java 字面算出，不抄探针返回）
++ * <li>{@code l08_atomic_reservation_shortage}    任一行缺货整单拒绝（B 仅 2 件：
++ *     规划期即抛 InsufficientStock、四表 before==after、status confirmed、
++ *     reserved [0,0]——acceptance[1] 缺货面；普通缺货不足以证明原子性，如实
++ *     分开登记）
++ * <li>{@code l08_atomic_reservation_write_error} 写入中途故障整单回滚（临时库
++ *     标注触发器令第二条预占插入失败——四表不变、错误含注入标记；缺陷树
++ *     （{@code InjectDefect} 提前提交教学缺陷）下本项红＝唯一红点，原子性区分器）
++ * <li>{@code stock_never_negative} / {@code sales_credit_and_atomic_reservation}
++ *     客户绑定 eval 子进程照跑（登记项名 = 客户名原样，业务权威——ADR-0005）
++ * <li>{@code ci_evidence_envelope_is_honest}     信封六边界机检（合同名原样；
++ *     上游 envelope_boundary_lab 映射，进程内驱动 {@link CiEvidence#buildEnvelope}）
++ * <li>{@code l07_order_regression}               L07 面进程内复用（旧能力在场，
++ *     「旧检查照跑不删弱」；l07 → l08 的 StockConsistencyCheck 可见性开放同款先例）
++ * <li>{@code l08_frozen_checks}                  客户 eval 文件双树指纹复核
++ *     （目标树 vs vendors/flowERP——注入只动 flowerp/sales.py 不动 eval，缺陷树
++ *     下本项仍绿，红点唯一性保持）
++ * </ul>
++ *
++ * <p>argv 面：{@code --target} 必填（客户树根，须含 flowerp/）；{@code --python}
++ * （缺省 .venv/bin/python，**按进程 cwd 绝对化不查 PATH——CI 须传绝对路径**）、
++ * {@code --no-report}、{@code --report-path}（x 模式独占写）。stdout 打印全量报告；
++ * 退出码 = blocking 失败决定。客户用例子进程超时 300s（l06/l07 同值）。
++ */
++public final class SalesChecks {
++
++    private static final String[] FROZEN_EVAL_FILES = {"eval/harness.py", "eval/cases.py"};
++    private static final long TIMEOUT_SECONDS = 300;
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    private SalesChecks() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--target", "--python", "--report-path"), Set.of("--no-report"));
++            Path target = Path.of(args.require("--target")).toAbsolutePath().normalize();
++            if (!Files.isDirectory(target.resolve("flowerp"))) {
++                throw new Args.UsageException("--target 下没有 flowerp/：" + target);
++            }
++            Path interpreter = AtomicProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            Path reportPath = (args.flag("--no-report") || !args.has("--report-path"))
++                    ? null : Path.of(args.require("--report-path"));
++            EvalHarness.Outcome outcome = EvalHarness.run(
++                    entries(target, interpreter), "all", null, reportPath);
++            System.out.println(PyJson.dumps(outcome.report()));
++            if (outcome.exitCode() != 0) {
++                System.exit(outcome.exitCode());
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (AtomicProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
++        return List.of(
++                new EvalHarness.Entry("l08_atomic_reservation_pass", "blocking",
++                        () -> atomicScenario(interpreter, target, "pass")),
++                new EvalHarness.Entry("l08_atomic_reservation_shortage", "blocking",
++                        () -> atomicScenario(interpreter, target, "shortage")),
++                new EvalHarness.Entry("l08_atomic_reservation_write_error", "blocking",
++                        () -> atomicScenario(interpreter, target, "write-error")),
++                new EvalHarness.Entry("stock_never_negative", "blocking",
++                        () -> customerCase(interpreter, target, "stock_never_negative")),
++                new EvalHarness.Entry("sales_credit_and_atomic_reservation", "blocking",
++                        () -> customerCase(interpreter, target, "sales_credit_and_atomic_reservation")),
++                new EvalHarness.Entry("ci_evidence_envelope_is_honest", "blocking",
++                        SalesChecks::envelopeHonesty),
++                new EvalHarness.Entry("l07_order_regression", "blocking",
++                        () -> l07Regression(target, interpreter)),
++                new EvalHarness.Entry("l08_frozen_checks", "blocking",
++                        () -> frozenChecks(target)));
++    }
++
++    /**
++     * 原子预占场景登记项：探针回报原始观察值，独立预期与全部判断在本方法完成
++     * （不抄子进程返回——排除「检查与实现共用错误公式」；四表相等性同样 Java 断言）。
++     * 失败以 AssertionError 承载（EvalHarness 条目异常捕获面一致）。
++     */
++    private static String atomicScenario(Path interpreter, Path target, String mode) {
++        try (AtomicProbe.TempDb tempDb = AtomicProbe.tempDb("l08-atomic-")) {
++            JsonNode observed = AtomicProbe.atomic(interpreter, target, tempDb.db, mode);
++            JsonNode error = observed.path("error");
++            boolean rejected = !error.isMissingNode() && !error.isNull();
++            if ("pass".equals(mode)) {
++                if (rejected) {
++                    throw new AssertionError("预期整单预占成功，实际异常：" + error);
++                }
++                if (!"reserved".equals(observed.path("status").asText())) {
++                    throw new AssertionError("expected status=reserved actual="
++                            + observed.path("status").asText());
++                }
++                assertIntList(observed.path("reserved"), List.of(2, 3), "reserved");
++                assertIntList(observed.path("available"), List.of(3, 2), "available");
++                if (observed.path("reservation_count").asInt(-1) != 2) {
++                    throw new AssertionError("expected 预占记录 2 条 actual="
++                            + observed.path("reservation_count").asInt(-1));
++                }
++                return "库存充足整单预占：reserved [2,3]、available [3,2]、status reserved、预占记录 2 条";
++            }
++            // shortage / write-error：整单失败且无部分预占——四表完整对照，不只看错误消息
++            if (!rejected) {
++                throw new AssertionError("expected 整单被拒绝，实际无异常（mode=" + mode + "）");
++            }
++            if (!observed.path("before").equals(observed.path("after"))) {
++                throw new AssertionError("失败后四表状态发生变化（部分预占残留）：error=" + error);
++            }
++            if (!"confirmed".equals(observed.path("status").asText())) {
++                throw new AssertionError("先确认再预占的入口合同：失败后 expected status=confirmed actual="
++                        + observed.path("status").asText());
++            }
++            assertIntList(observed.path("reserved"), List.of(0, 0), "reserved");
++            if ("write-error".equals(mode)) {
++                if (!error.path("message").asText("").contains("L08 injected second-write failure")) {
++                    throw new AssertionError("write-error 期望注入触发器标记，实际：" + error);
++                }
++                return "写入中途故障整单回滚：四表 before==after、status confirmed、无残留预占（触发器标记在场）";
++            }
++            if (!"InsufficientStock".equals(error.path("type").asText())) {
++                throw new AssertionError("shortage expected InsufficientStock actual="
++                        + error.path("type").asText());
++            }
++            return "第二行缺货整单拒绝：InsufficientStock、四表 before==after、status confirmed、无部分预占";
++        }
++    }
++
++    /** 客户 blocking eval 子进程照跑（l07 OrderChecks.customerCase 同形：末行入 evidence，rc≠0 → AssertionError）。 */
++    private static String customerCase(Path interpreter, Path target, String caseName) {
++        List<String> argv = List.of(interpreter.toString(), "-X", "utf8",
++                "-m", "eval.harness", "--case", caseName, "--no-report");
++        Process process;
++        try {
++            process = new ProcessBuilder(argv).directory(target.toFile()).start();
++        } catch (IOException error) {
++            throw new AtomicProbe.ToolFailure("python 启动失败（" + interpreter + "）", error);
++        }
++        String stdout;
++        String stderr;
++        int code;
++        try {
++            stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
++            stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
++                process.destroyForcibly();
++                throw new AtomicProbe.ToolFailure(
++                        "python 子进程超时（" + TIMEOUT_SECONDS + "s）：" + caseName);
++            }
++            code = process.exitValue();
++        } catch (IOException error) {
++            throw new AtomicProbe.ToolFailure("python 输出读取失败（" + caseName + "）", error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new AtomicProbe.ToolFailure("python 等待被中断");
++        }
++        String output = (stdout + stderr).strip();
++        String tail = output.isEmpty() ? "" : output.substring(output.lastIndexOf('\n') + 1);
++        if (code != 0) {
++            throw new AssertionError("rc=" + code + ": " + truncate(tail));
++        }
++        return tail;
++    }
++
++    /**
++     * 信封六边界机检（上游 envelope_boundary_lab 六模式映射）：缺报告/缺身份/畸形
++     * JSON 拒绝、空报告决策如实为空、字节篡改哈希失配可检——五面进程内驱动
++     * {@link CiEvidence#buildEnvelope}；stale-output（旧输出不冒充本次）是 CLI 层
++     * 行为，由合同测试 {@code ciEvidenceLeavesStaleOutputUntouchedOnFailure} 锁定
++     * （mvn 面），此处如实注明出处。
++     */
++    private static String envelopeHonesty() {
++        try (AtomicProbe.TempDb tempDb = AtomicProbe.tempDb("l08-envelope-")) {
++            Path dir = tempDb.db.getParent();
++            Path report = dir.resolve("report.json");
++            String body = "{\"schema_version\":\"1.0\",\"suite\":\"blocking\","
++                    + "\"summary\":{\"decision\":\"pass\",\"total\":1,\"passed\":1,"
++                    + "\"blocking_failed\":0,\"observing_failed\":0},\"results\":[]}";
++            java.nio.file.Files.writeString(report, body, StandardCharsets.UTF_8);
++            Map<String, String> identity = Map.of("GITHUB_SHA", "HONESTY-SHA", "GITHUB_RUN_ID", "HONESTY-RUN");
++
++            // 边界一：报告不存在 → 拒绝
++            expectEvidenceFailure(() -> CiEvidence.buildEnvelope(dir.resolve("absent.json"), identity),
++                    "Harness 报告不存在");
++            // 边界二：缺运行身份 → 拒绝（词面逐字）
++            expectEvidenceFailure(() -> CiEvidence.buildEnvelope(report, Map.of()),
++                    "Evidence Envelope 缺少 GITHUB_SHA 或 GITHUB_RUN_ID");
++            // 边界三：畸形 JSON → 拒绝
++            Path malformed = dir.resolve("malformed.json");
++            Files.writeString(malformed, "{bad", StandardCharsets.UTF_8);
++            expectEvidenceFailure(() -> CiEvidence.buildEnvelope(malformed, identity), "报告不是合法 JSON");
++            // 边界四：空报告 → 信封仍生成，决策与 suite 如实为空（信封不做报告语义校验）
++            Path empty = dir.resolve("empty.json");
++            Files.writeString(empty, "{}", StandardCharsets.UTF_8);
++            Map<String, Object> emptyEnvelope = CiEvidence.buildEnvelope(empty, identity);
++            if (emptyEnvelope.get("report_decision") != null || !"".equals(emptyEnvelope.get("suite"))) {
++                throw new AssertionError("空报告信封应如实为空：" + PyJson.dumpsCompact(emptyEnvelope));
++            }
++            // 边界五：报告字节篡改 → 生成时哈希与当前字节失配（篡改可检）
++            Map<String, Object> envelope = CiEvidence.buildEnvelope(report, identity);
++            Files.writeString(report, body.replace("\"pass\"", "\"block\""), StandardCharsets.UTF_8);
++            if (String.valueOf(envelope.get("report_sha256")).equals(sha256(Files.readAllBytes(report)))) {
++                throw new AssertionError("报告被篡改后哈希仍然匹配——篡改不可检");
++            }
++            return "信封六边界诚实：缺报告/缺身份/畸形 JSON 拒绝、空报告决策如实为空、字节篡改哈希失配可检"
++                    + "；stale-output 由 CLI 面合同测试锁定（信封是关联证据，非业务裁判）";
++        } catch (IOException error) {
++            throw new AtomicProbe.ToolFailure("信封机检临时文件失败", error);
++        }
++    }
++
++    /** L07 面进程内复用（{@link OrderChecks#entries} 可见性开放——旧能力在场，行为零变化）。 */
++    private static String l07Regression(Path target, Path interpreter) {
++        EvalHarness.Outcome outcome = EvalHarness.run(
++                OrderChecks.entries(target, interpreter), "all", null, null);
++        if (outcome.exitCode() != 0) {
++            throw new AssertionError("l07 回归红：" + PyJson.dumpsCompact(outcome.report().get("summary")));
++        }
++        return "l07 六登记项进程内复用全绿（旧检查照跑不删弱）";
++    }
++
++    /** 客户 eval 文件双树指纹复核（l07 OrderChecks.frozenChecks 同形：目标树 vs vendors/flowERP）。 */
++    private static String frozenChecks(Path target) {
++        Map<String, Object> mismatched = new LinkedHashMap<>();
++        for (String rel : FROZEN_EVAL_FILES) {
++            String targetHash = sha256(target.resolve(rel));
++            String sourceHash = sha256(repoRoot().resolve("vendors").resolve("flowERP").resolve(rel));
++            if (!targetHash.equals(sourceHash)) {
++                mismatched.put(rel, Map.of(
++                        "target", targetHash.substring(0, 12),
++                        "vendors", sourceHash.substring(0, 12)));
++            }
++        }
++        if (!mismatched.isEmpty()) {
++            throw new AssertionError("冻结检查被改动: " + PyJson.dumpsCompact(mismatched));
++        }
++        StringBuilder evidence = new StringBuilder("冻结检查指纹一致: ");
++        for (int i = 0; i < FROZEN_EVAL_FILES.length; i++) {
++            if (i > 0) {
++                evidence.append(", ");
++            }
++            evidence.append(FROZEN_EVAL_FILES[i]).append('=')
++                    .append(sha256(target.resolve(FROZEN_EVAL_FILES[i])).substring(0, 12));
++        }
++        return evidence.toString();
++    }
++
++    // ---- 断言小面 ------------------------------------------------------------
++
++    private static void assertIntList(JsonNode node, List<Integer> expected, String label) {
++        if (node.size() != expected.size()) {
++            throw new AssertionError(label + " expected=" + expected + " actual=" + node);
++        }
++        for (int i = 0; i < expected.size(); i++) {
++            if (node.get(i).asInt(-1) != expected.get(i)) {
++                throw new AssertionError(label + " expected=" + expected + " actual=" + node);
++            }
++        }
++    }
++
++    private static void expectEvidenceFailure(Runnable call, String messagePart) {
++        try {
++            call.run();
++        } catch (CiEvidence.EvidenceException error) {
++            if (!String.valueOf(error.getMessage()).contains(messagePart)) {
++                throw new AssertionError("拒绝词面不符：expected 含「" + messagePart
++                        + "」actual「" + error.getMessage() + "」");
++            }
++            return;
++        }
++        throw new AssertionError("expected 拒绝（" + messagePart + "），实际生成了信封");
++    }
++
++    private static String truncate(String text) {
++        return text.length() > 2000 ? text.substring(0, 2000) : text;
++    }
++
++    private static String sha256(Path file) {
++        try {
++            return sha256(Files.readAllBytes(file));
++        } catch (IOException error) {
++            throw new AtomicProbe.ToolFailure("冻结检查文件读取失败：" + file, error);
++        }
++    }
++
++    private static String sha256(byte[] bytes) {
++        try {
++            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
++        } catch (NoSuchAlgorithmException error) {
++            throw new AtomicProbe.ToolFailure("SHA-256 不可用", error);
++        }
++    }
++
++    /** l06/l07 Checks.repoRoot 同形：锚定本类装载位置（target/classes → 仓库根），不随 cwd 漂移。 */
++    private static Path repoRoot() {
++        try {
++            return Path.of(SalesChecks.class.getProtectionDomain()
++                    .getCodeSource().getLocation().toURI()).toAbsolutePath().getParent().getParent();
++        } catch (java.net.URISyntaxException error) {
++            throw new AtomicProbe.ToolFailure("仓库根定位失败（class 装载位置）", error);
++        }
++    }
++}

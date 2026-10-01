@@ -1,0 +1,14 @@
+{
+  "phase": "observation",
+  "argv": [
+    "python3",
+    "lesson-08-submission/ci/audit.py"
+  ],
+  "command": "[\"python3\", \"lesson-08-submission/ci/audit.py\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-10-01T06:54:31.844390+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/06-observations/20261001T065431844390Z-2fc800f2/output.txt",
+  "sha256": "8d7aebcb5c2739652ba4950d320da8efc0492ed44259f31927e3d46561e22bd2",
+  "provenance": "local_teaching_capture"
+}

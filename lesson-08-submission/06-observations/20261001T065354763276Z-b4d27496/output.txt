@@ -1,0 +1,7 @@
+OK   Run 36826133489 A 假绿（注入+吞失败）: decision=block 期望 block，八登记项同集（8 项），信封哈希对账一致，commit=c6dd4ca（Job 结论 success 以 Run 页为准）
+OK   Run 36826158603 B 可信红（只修失败传播，attempt 3）: decision=block 期望 block，八登记项同集（8 项），信封哈希对账一致，commit=3e6bf24（Job 结论 failure 以 Run 页为准）
+OK   Run 36826186419 C 可信绿（只移注入）: decision=pass 期望 pass，八登记项同集（8 项），信封哈希对账一致，commit=c229dff（Job 结论 success 以 Run 页为准）
+OK   Run 36826209531 隔离（gate 跳过，无 artifact）（未下载原件，结论见 runs.json / Run 页）
+OK   Run 36827129977 PR merge 测试（pull_request 事件）: decision=pass 期望 pass，八登记项同集（8 项），信封哈希对账一致，commit=1be6674（Job 结论 success 以 Run 页为准）
+
+对账失败 1 项

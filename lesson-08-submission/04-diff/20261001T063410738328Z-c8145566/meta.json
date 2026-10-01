@@ -1,0 +1,15 @@
+{
+  "phase": "diff",
+  "argv": [
+    "diff",
+    "vendors/flowERP/flowerp/sales.py",
+    ".runtime/course/L08-candidate/flowerp/sales.py"
+  ],
+  "command": "[\"diff\", \"vendors/flowERP/flowerp/sales.py\", \".runtime/course/L08-candidate/flowerp/sales.py\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-10-01T06:34:10.738328+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-08-submission/04-diff/20261001T063410738328Z-c8145566/output.txt",
+  "sha256": "c371ff34708ef6320db8acbc614f1594c5d9a4f7814ea4fe950aa55e1982172b",
+  "provenance": "local_teaching_capture"
+}
