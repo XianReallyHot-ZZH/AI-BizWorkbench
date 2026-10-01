@@ -7,6 +7,7 @@ import workbench.bootstrap.JsonOut;
 import workbench.evals.l07.QualityGate;
 import workbench.evals.l08.CiEvidence;
 import workbench.execution.ExecutionCommands;
+import workbench.repair.RepairMapper;
 import workbench.spec.SpecCommands;
 
 /**
@@ -34,6 +35,10 @@ public final class Main {
         // L08：证据信封件经同一条缝注册（讲义 D3——workbenchIncrement「远程复验与证据信封」
         // 即工作台命令，L07 D2 先例；适配器在 workbench.evals.l08.CiEvidence，只加注册调用）。
         REGISTRY.register("ci-evidence", CiEvidence::execute);
+        // L09：严格修复映射器经同一条缝注册（讲义 D1——workbenchIncrement「报告到 Repair Task
+        // 的确定性映射」即工作台命令，L07 D2 / L08 D3 先例；适配器在 workbench.repair.RepairMapper，
+        // 只加注册调用。上游 agent/repair.py 的 agent 模块家族对应落点——L10 修复 Loop 前奏）。
+        REGISTRY.register("repair-map", RepairMapper::execute);
     }
 
     public static void main(String[] args) {

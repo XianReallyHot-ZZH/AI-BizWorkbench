@@ -49,19 +49,20 @@ class L09CancelChecksContractTest {
     static final String ANCHOR_LINE = "            if status == OrderStatus.RESERVED:";
     static final String INJECTED_LINE = "            if False:  # L09 teaching defect: skip release branch";
 
-    /** 假客户树最小 service.py 片段（含逐字锚点行）。 */
+    /** 假客户树最小 service.py 片段（含逐字锚点行——12 空格缩进 = 真实文件 with 块内层级）。 */
     private static void writeFakeServicePy(Path source) throws IOException {
         Path flowerp = Files.createDirectories(source.resolve("flowerp"));
         Files.writeString(flowerp.resolve("service.py"), """
                 class ERPService:
                     def cancel_order(self, order_id: str) -> dict:
-                        status = OrderStatus.RESERVED
-                        if status not in {OrderStatus.DRAFT, OrderStatus.RESERVED}:
-                            raise InvalidTransition(status)
-                        if status == OrderStatus.RESERVED:
-                            for line in self._lines(order_id):
-                                self._release(line)
-                        return {}
+                        with self.store.connect() as conn:
+                            status = OrderStatus.RESERVED
+                            if status not in {OrderStatus.DRAFT, OrderStatus.RESERVED}:
+                                raise InvalidTransition(status)
+                            if status == OrderStatus.RESERVED:
+                                for line in self._lines(order_id):
+                                    self._release(line)
+                            return {}
                 """, StandardCharsets.UTF_8);
         // L08 真实现缺陷教训：submodule 的 .git 是文件（gitdir 指针），拷贝必须排除
         Files.writeString(source.resolve(".git"), "gitdir: ../real.git\n", StandardCharsets.UTF_8);
@@ -95,6 +96,19 @@ class L09CancelChecksContractTest {
 
         assertThat(result.exitCode()).isEqualTo(2);
         assertThat(result.stderr() + result.stdout()).contains("flowerp");
+    }
+
+    @Test
+    void cancelChecksRejectsUnknownCase(@TempDir Path tmp) throws IOException {
+        // --case 选跑面（Repair Task reproduce 命令形态）：未知名拒绝且不触发探针
+        // （真树首跑抓到的空选集误拒 bug 的回归锚——全跑路径经真树验证 + 修复链）
+        Path target = Files.createDirectories(tmp.resolve("target"));
+        Files.createDirectories(target.resolve("flowerp"));
+        Cli.Result result = Cli.runMain("workbench.evals.l09.CancelChecks",
+                "--target", target.toString(), "--case", "l09_nonexistent");
+
+        assertThat(result.exitCode()).isEqualTo(2);
+        assertThat(result.stderr() + result.stdout()).contains("l09_nonexistent");
     }
 
     @Test
