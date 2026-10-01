@@ -111,7 +111,11 @@ public final class InjectDefect {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!file.getFileName().toString().endsWith(".pyc")) {
+                String name = file.getFileName().toString();
+                // .git 排除双面：目录（walkFileTree SKIP_SUBTREE）与**文件**（客户
+                // submodule 的 gitdir 指针——拷入即失效指针，后续 git 操作 fatal，
+                // 现场 128 复盘修正）
+                if (!name.endsWith(".pyc") && !".git".equals(name)) {
                     Path target = dest.resolve(source.relativize(file).toString());
                     Files.createDirectories(target.getParent());
                     Files.copy(file, target);

@@ -311,6 +311,10 @@ class L08RemoteEvidenceContractTest {
         Files.createDirectories(root.resolve("flowerp"));
         Path sales = root.resolve("flowerp/sales.py");
         Files.copy(Cli.repoRoot().resolve("vendors/flowERP/flowerp/sales.py"), sales);
+        // 客户 submodule 的版本簿记是 .git **文件**（gitdir 指针）——现场 128 复盘补
+        // （拷贝树带入失效指针会让后续 git 操作 fatal；测试首版假树缺此文件未抓住）
+        Files.writeString(root.resolve(".git"), "gitdir: ../../.git/modules/vendors/flowERP\n",
+                StandardCharsets.UTF_8);
         for (int i = 0; i < extraAnchor; i++) {
             Files.writeString(sales, "\n" + ANCHOR_LINE,
                     StandardCharsets.UTF_8, java.nio.file.StandardOpenOption.APPEND);
