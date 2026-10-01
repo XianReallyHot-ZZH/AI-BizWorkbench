@@ -1,0 +1,10 @@
+{
+  "commit_sha": "c6dd4ca5794e5275702b22fdc9d496b9f85270ae",
+  "run_id": "36826133489",
+  "workflow": "L08 Eval Gate",
+  "runner_os": "Linux",
+  "java": "21.0.12.1+1-LTS",
+  "suite": "all",
+  "report_sha256": "8049d9b51ec2e08e9c680d7f0d584b058f8dab4d4a0480032fe292323c4ce2c5",
+  "report_decision": "block"
+}
