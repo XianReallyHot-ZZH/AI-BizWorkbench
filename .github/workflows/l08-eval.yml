@@ -39,7 +39,6 @@ jobs:
       # （resolveInterpreter 按 cwd 绝对化不查 PATH）。报告 x 模式独占写，
       # run_id-attempt 目录隔离，绝不覆盖旧证据。
       - name: Unified blocking gate (SalesChecks, clean submodule tree)
-        if: false   # L08 isolation run: gate skipped — no report this attempt (demo only)
         run: >
           java -cp "target/classes:$(cat target/child-classpath.txt)"
           workbench.evals.l08.SalesChecks
