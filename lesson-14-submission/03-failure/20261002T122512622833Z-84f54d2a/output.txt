@@ -1,0 +1,134 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 118 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.delivery.L14WebPanelContractTest
+[ERROR] Tests run: 6, Failures: 6, Errors: 0, Skipped: 0, Time elapsed: 3.421 s <<< FAILURE! -- in workbench.delivery.L14WebPanelContractTest
+[ERROR] workbench.delivery.L14WebPanelContractTest.l14ChecksDefaultGateGreen -- Time elapsed: 0.570 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[默认门应全绿：] 
+expected: 0
+ but was: 1
+	at workbench.delivery.L14WebPanelContractTest.l14ChecksDefaultGateGreen(L14WebPanelContractTest.java:264)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.delivery.L14WebPanelContractTest.viewsProjectionFullFace(Path) -- Time elapsed: 0.973 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[GET / 应 200：{"error":"not_found"}] 
+expected: 200
+ but was: 404
+	at workbench.delivery.L14WebPanelContractTest.viewsProjectionFullFace(L14WebPanelContractTest.java:162)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.delivery.L14WebPanelContractTest.panelStaticsFace -- Time elapsed: 0.011 s <<< FAILURE!
+java.lang.AssertionError: 
+[workbench_web/index.html 应在场] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/workbench_web/index.html
+to exist (symbolic links were followed).
+	at workbench.delivery.L14WebPanelContractTest.panelStaticsFace(L14WebPanelContractTest.java:71)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.delivery.L14WebPanelContractTest.l14ChecksRejectsUnknownCase -- Time elapsed: 0.158 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.delivery.L14WebPanelContractTest.l14ChecksRejectsUnknownCase(L14WebPanelContractTest.java:255)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.delivery.L14WebPanelContractTest.deliveryServeStaticAndViewsFace(Path) -- Time elapsed: 1.132 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[GET / 应 200：{"error":"not_found"}] 
+expected: 200
+ but was: 404
+	at workbench.delivery.L14WebPanelContractTest.deliveryServeStaticAndViewsFace(L14WebPanelContractTest.java:116)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.delivery.L14WebPanelContractTest.l14ChecksMainUsageFace -- Time elapsed: 0.139 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.delivery.L14WebPanelContractTest.l14ChecksMainUsageFace(L14WebPanelContractTest.java:246)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L14WebPanelContractTest.deliveryServeStaticAndViewsFace:116 [GET / 应 200：{"error":"not_found"}] 
+expected: 200
+ but was: 404
+[ERROR]   L14WebPanelContractTest.l14ChecksDefaultGateGreen:264 [默认门应全绿：] 
+expected: 0
+ but was: 1
+[ERROR]   L14WebPanelContractTest.l14ChecksMainUsageFace:246 
+expected: 2
+ but was: 1
+[ERROR]   L14WebPanelContractTest.l14ChecksRejectsUnknownCase:255 
+expected: 2
+ but was: 1
+[ERROR]   L14WebPanelContractTest.panelStaticsFace:71 [workbench_web/index.html 应在场] 
+Expecting path:
+  /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/workbench_web/index.html
+to exist (symbolic links were followed).
+[ERROR]   L14WebPanelContractTest.viewsProjectionFullFace:162 [GET / 应 200：{"error":"not_found"}] 
+expected: 200
+ but was: 404
+[INFO] 
+[ERROR] Tests run: 6, Failures: 6, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.108 s
+[INFO] Finished at: 2026-10-02T20:25:22+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
