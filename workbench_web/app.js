@@ -1,7 +1,7 @@
 /* 个人研发工作台——交付面板（L14）。
- * 取数面五条且仅五条：/api/v1/delivery/capabilities、/api/v1/delivery/views（列表）、
- * /api/v1/delivery/views/{id}（详情）、/api/v1/delivery/requests（提交）、
- * /api/v1/tasks/{id}/verify 与 /api/v1/tasks/{id}/review（动作）。
+ * 取数面六面且仅六面（五个路径前缀——闭集经 WebPanelChecks 机检，新增数据源必须过合同）：
+ * /api/v1/delivery/capabilities、/api/v1/delivery/requests（提交）、
+ * /api/v1/delivery/views（列表与详情）、/api/v1/tasks/{id}/verify 与 /review（动作）。
  * 页面数据来自 API 而非静态假数据；动态文本统一经 esc()；无凭据、无 CDN。 */
 "use strict";
 

@@ -273,17 +273,8 @@ public final class HttpApi {
         if ("/api/v1/tasks".equals(path) || "/api/tasks".equals(path)) {
             Map<String, Object> query = exchange.getRequestURI().getRawQuery() == null ? Map.of()
                     : parseQuery(exchange.getRequestURI().getRawQuery());
-            int limit = 30;
-            Object requested = query.get("limit");
-            if (requested instanceof String value && !value.isEmpty()) {
-                try {
-                    limit = Integer.parseInt(value);
-                } catch (NumberFormatException error) {
-                    limit = 30;
-                }
-            }
             Map<String, Object> listing = new LinkedHashMap<>();
-            listing.put("items", tasks.list(limit));
+            listing.put("items", tasks.list(parseLimit(query, 30)));
             json(exchange, 200, listing);
             return;
         }
@@ -295,16 +286,7 @@ public final class HttpApi {
         if ("/api/v1/delivery/views".equals(path)) {
             Map<String, Object> query = exchange.getRequestURI().getRawQuery() == null ? Map.of()
                     : parseQuery(exchange.getRequestURI().getRawQuery());
-            int limit = 20;
-            Object requested = query.get("limit");
-            if (requested instanceof String value && !value.isEmpty()) {
-                try {
-                    limit = Integer.parseInt(value);
-                } catch (NumberFormatException error) {
-                    limit = 20;
-                }
-            }
-            json(exchange, 200, viewsList(limit));
+            json(exchange, 200, viewsList(parseLimit(query, 20)));
             return;
         }
         if (path.startsWith("/api/v1/delivery/views/")) {
@@ -364,6 +346,18 @@ public final class HttpApi {
         try (OutputStream out = exchange.getResponseBody()) {
             out.write(payload);
         }
+    }
+
+    /** limit 解析（两路由同形）：非法或缺席回缺省（tasks 30 / views 20，上游各自默认同形）。 */
+    private static int parseLimit(Map<String, Object> query, int defaultValue) {
+        if (query.get("limit") instanceof String value && !value.isEmpty()) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException error) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
     }
 
     private static Map<String, Object> parseQuery(String rawQuery) {

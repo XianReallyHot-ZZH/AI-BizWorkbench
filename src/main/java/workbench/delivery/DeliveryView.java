@@ -243,9 +243,12 @@ public final class DeliveryView {
         Map<String, Object> status = new LinkedHashMap<>();
         status.put("code", code.isEmpty() ? "unknown" : code);
         status.put("known", known);
-        // D4：known 态的 pipeline 来源 label 为 null（上游 label/title/summary/stage_id
-        // 来自 delivery_pipeline——不在断言面不建）；dead_letter 与 unknown 词面保留
+        // D4：known 态的 pipeline 来源 label/title/summary 为 null（上游来自
+        // delivery_pipeline——不在断言面不建）；dead_letter label 与 unknown 的
+        // label/title/summary 是上游内联硬词面（非 pipeline），逐字保留
         status.put("label", "dead_letter".equals(code) ? "已停止，待核对" : known ? null : "未知状态");
+        status.put("title", known ? null : "未知交付状态：" + (code.isEmpty() ? "空值" : code));
+        status.put("summary", known ? null : "状态不在交付合同中，禁止显示为成功。");
         status.put("owner", owner);
         status.put("next_action", control[2]);
         status.put("terminal", TERMINAL_STATUSES.contains(code));
@@ -350,6 +353,24 @@ public final class DeliveryView {
         return execution;
     }
 
+    /** 事件投影：全序，每事件带 to_status 的状态视图（下钻面）。 */
+    private static List<Map<String, Object>> eventViews(Map<String, Object> task) {
+        List<Map<String, Object>> projected = new ArrayList<>();
+        if (task.get("events") instanceof List<?> events) {
+            for (Object item : events) {
+                if (item instanceof Map<?, ?> event) {
+                    Map<String, Object> row = new LinkedHashMap<>(cast(event));
+                    // LinkedHashMap 承 null（Map.of 不承——L10 教训：合成事件缺 to_status 不炸）
+                    Map<String, Object> wrap = new LinkedHashMap<>();
+                    wrap.put("status", event.get("to_status"));
+                    row.put("status", statusView(wrap));
+                    projected.add(row);
+                }
+            }
+        }
+        return projected;
+    }
+
     /** 审核块：required = 当前 review 态 + 具名决定四件。 */
     private static Map<String, Object> reviewBlock(Map<String, Object> task) {
         Map<String, Object> review = new LinkedHashMap<>();
@@ -383,21 +404,6 @@ public final class DeliveryView {
         block.put("rejected", rejected);
         block.put("items", includeDetail ? feedback : List.of());
         return block;
-    }
-
-    /** 事件投影：全序，每事件带 to_status 的状态视图（下钻面）。 */
-    private static List<Map<String, Object>> eventViews(Map<String, Object> task) {
-        List<Map<String, Object>> projected = new ArrayList<>();
-        if (task.get("events") instanceof List<?> events) {
-            for (Object item : events) {
-                if (item instanceof Map<?, ?> event) {
-                    Map<String, Object> row = new LinkedHashMap<>(cast(event));
-                    row.put("status", statusView(Map.of("status", event.get("to_status"))));
-                    projected.add(row);
-                }
-            }
-        }
-        return projected;
     }
 
     /** 允许动作（上游 _allowed_actions 同形；export_candidate 条件 REQ-COURSE-L 前缀）。 */
@@ -456,7 +462,7 @@ public final class DeliveryView {
                 if (item instanceof Map<?, ?> event && event.get("evidence") instanceof Map<?, ?> evidence
                         && evidence.get("validation") instanceof Map<?, ?> validation) {
                     validations.add(cast(validation));
-                    if (text(cast(validation).get("command")).isEmpty() == false) {
+                    if (!text(cast(validation).get("command")).isEmpty()) {
                         hasValidationCommand = true;
                     }
                 }

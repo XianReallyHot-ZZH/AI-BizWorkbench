@@ -201,8 +201,9 @@ public final class WebPanelChecks {
         expect(String.valueOf(evaluation.get("report_path")).startsWith("reports/"), "report_path 应 reports/ 前缀");
         expect(String.valueOf(evaluation.get("report_sha256")).length() == 64, "report_sha256 应 64 位");
         List<?> cases = (List<?>) evaluation.get("cases");
-        expect(cases.size() == 1 && "l14_panel_projection".equals(field(cast(cases.get(0)), null, "name"))
-                && Boolean.TRUE.equals(field(cast(cases.get(0)), null, "passed")),
+        Map<String, Object> onlyCase = cases.size() == 1 ? cast(cases.get(0)) : Map.of();
+        expect(cases.size() == 1 && "l14_panel_projection".equals(onlyCase.get("name"))
+                && Boolean.TRUE.equals(onlyCase.get("passed")),
                 "cases 应含绿用例摘要：" + cases);
         expect(((List<?>) view.get("allowed_actions")).contains("approve"), "review 应允许 approve");
         Map<String, Object> integrity = cast(view.get("integrity"));
@@ -239,6 +240,11 @@ public final class WebPanelChecks {
                 "issues 应含 unknown_status");
         expect(!Boolean.TRUE.equals(cast(view.get("integrity")).get("truthful")), "unknown 应不 truthful");
         expect("mystery".equals(cast(view.get("status")).get("code")), "原码应在 code 保留（仅空码归一 unknown）");
+        // 复查轮 T-1：unknown 态内联硬词面（上游 delivery_view.py:78-79——非 pipeline 裁掉块）
+        expect("未知交付状态：mystery".equals(cast(view.get("status")).get("title")),
+                "unknown title 词面不符");
+        expect("状态不在交付合同中，禁止显示为成功。".equals(cast(view.get("status")).get("summary")),
+                "unknown summary 词面不符");
 
         // freshness 边界：stale-sensitive 超 300s 才 stale（301 红 / 300 绿）
         expect(Boolean.TRUE.equals(freshnessOf("executing", 301, base).get("stale")),
@@ -288,6 +294,17 @@ public final class WebPanelChecks {
         expect(Integer.valueOf(1).equals(feedbackBlock.get("total")), "feedback 关联 total 应 1");
         expect(Integer.valueOf(1).equals(feedbackBlock.get("pending_review")), "待审反馈应 1");
 
+        // 复查轮 T-3：C2 同源复核——同一 taskId 经投影与经 SQL（TaskStore 原始行）逐字段一致
+        Map<String, Object> raw = store.get(taskId);
+        Map<String, Object> taskProjection = cast(joined.get("task"));
+        for (String key : List.of("id", "status", "requirement_id", "version", "reviewed_by",
+                "automation_mode", "execution_mode", "execution_timeout_seconds")) {
+            expect(java.util.Objects.equals(raw.get(key), taskProjection.get(key)),
+                    "投影与库同源不符：" + key + "（库=" + raw.get(key) + " 投影=" + taskProjection.get(key) + "）");
+        }
+        expect(raw.get("business_refs").equals(taskProjection.get("business_refs")),
+                "投影与库同源不符：business_refs");
+
         Map<String, Object> listing = DeliveryView.list(store, feedback, 20);
         expect("workbench.delivery-view-list/v1".equals(listing.get("schema")), "列表 schema 不符");
         Map<String, Object> summary = cast(listing.get("summary"));
@@ -328,7 +345,7 @@ public final class WebPanelChecks {
 
             Map<String, Object> listing = readJson(httpGet(port, "/api/v1/delivery/views"), 200);
             expect("workbench.delivery-view-list/v1".equals(listing.get("schema")), "列表 schema 不符");
-            expect(Integer.valueOf(1).equals(field(cast(listing.get("summary")), null, "total")),
+            expect(Integer.valueOf(1).equals(cast(listing.get("summary")).get("total")),
                     "列表汇总 total 应 1");
             expect(((List<?>) readJson(httpGet(port, "/api/v1/delivery/views?limit=1"), 200)
                     .get("items")).size() == 1, "limit=1 应只回 1 条");
@@ -336,7 +353,7 @@ public final class WebPanelChecks {
                     httpGet(port, "/api/v1/delivery/views/" + taskId), 200);
             expect("workbench.delivery-view/v1".equals(detail.get("schema")), "详情 schema 不符");
             expect(("/api/v1/delivery/views/" + taskId)
-                    .equals(field(cast(detail.get("links")), null, "self")), "links.self 应指回自身");
+                    .equals(cast(detail.get("links")).get("self")), "links.self 应指回自身");
 
             HttpResponse<String> index = httpGet(port, "/");
             expect(index.statusCode() == 200, "GET / 应 200");
@@ -367,7 +384,7 @@ public final class WebPanelChecks {
                     httpPost(port, "/api/v1/tasks/" + manualId + "/verify",
                             Map.of("actor", "panel-reviewer"), null), 200);
             expect("workbench.delivery-view/v1".equals(verified.get("schema"))
-                            && "review".equals(field(cast(verified.get("status")), null, "code")),
+                            && "review".equals(cast(verified.get("status")).get("code")),
                     "复验响应应为完整投影且停在 review");
         } finally {
             api.stop();
@@ -400,7 +417,21 @@ public final class WebPanelChecks {
                         && !(html + script).contains("PURCHASE:COURSE-DEMO"),
                 "面板不得硬编码演示业务数据（静态假数据红旗）");
         expect(css.contains("task-card"), "styles.css 应有任务卡样式");
-        return "面板静态断言：身份/三态/取数面五条 + esc + 无凭据 + 无 CDN + 无假数据";
+        // 复查轮 T-6：取数面闭集（C1「新数据源必须过合同」的机检面）——六面 =
+        // capabilities / requests 提交 / views 列表 / views 详情 / verify / review
+        // （五个路径前缀：views 列表与详情同前缀异形、verify/review 共 tasks/ 前缀）
+        java.util.Set<String> faces = new java.util.TreeSet<>();
+        java.util.regex.Matcher calls = java.util.regex.Pattern
+                .compile("api\\(\"([^\"]*)\"").matcher(script);
+        while (calls.find()) {
+            String path = calls.group(1);
+            int query = path.indexOf('?');
+            faces.add(query >= 0 ? path.substring(0, query) : path);
+        }
+        expect(faces.equals(Set.of("/api/v1/delivery/capabilities", "/api/v1/delivery/views",
+                        "/api/v1/delivery/views/", "/api/v1/delivery/requests", "/api/v1/tasks/")),
+                "取数面闭集不符（新增数据源必须过合同）：" + faces);
+        return "面板静态断言：身份/三态/取数面六面闭集 + esc + 无凭据 + 无 CDN + 无假数据";
     }
 
     /**
