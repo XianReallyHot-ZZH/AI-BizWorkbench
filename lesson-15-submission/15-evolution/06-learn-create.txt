@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "asset": {
+    "source": {
+      "sha256": "6e878165a31515bd55a06a787a5a0affb71642319d7a9d2b2b27b903e65c57aa",
+      "task_id": "TASK-R1SRC0001"
+    },
+    "version": 1,
+    "family": "FAM-R1-RECEIVING",
+    "asset_id": "ASSET-d6e27bb0",
+    "state": "candidate",
+    "supersedes": ""
+  }
+}

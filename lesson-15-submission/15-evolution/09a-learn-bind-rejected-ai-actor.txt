@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "human_actor_required: 操作人必须具名人工：'Claude'",
+  "flowerp_connected": false
+}

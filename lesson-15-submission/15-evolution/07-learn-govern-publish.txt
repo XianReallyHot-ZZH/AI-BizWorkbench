@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "asset": {
+    "version": 1,
+    "state": "active",
+    "asset_id": "ASSET-d6e27bb0",
+    "family": "FAM-R1-RECEIVING"
+  }
+}

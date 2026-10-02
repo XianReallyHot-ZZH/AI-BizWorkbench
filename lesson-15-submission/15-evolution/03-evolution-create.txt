@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "evolution": {
+    "id": "EVO-476AF0626E",
+    "feedback_id": "FB-7A7473F6",
+    "source_task_id": "TASK-R1SRC0001",
+    "candidate_task_id": null,
+    "business_refs": [
+      "SKU:R1-UPGRADE-01"
+    ],
+    "failure_signature": "receiving-two-phase-transaction-partial-commit",
+    "classification": "erp_rule",
+    "status": "proposed",
+    "asset_changes": [],
+    "decision_by": null,
+    "decision_at": null,
+    "decision_note": null,
+    "blocking_report": null,
+    "human_acceptance": null,
+    "verified_by": null,
+    "verified_at": null,
+    "created_at": "2026-10-02 15:43:42",
+    "updated_at": "2026-10-02 15:43:42",
+    "events": [
+      {
+        "id": 1,
+        "evolution_id": "EVO-476AF0626E",
+        "from_status": null,
+        "to_status": "proposed",
+        "detail": "已从具名接受的反馈建立进化候选",
+        "actor": "Claude",
+        "evidence": {
+          "source_task_id": "TASK-R1SRC0001",
+          "business_refs": [
+            "SKU:R1-UPGRADE-01"
+          ],
+          "feedback_id": "FB-7A7473F6"
+        },
+        "created_at": "2026-10-02 15:43:42"
+      }
+    ]
+  }
+}

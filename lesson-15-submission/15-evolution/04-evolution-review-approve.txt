@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "evolution": {
+    "id": "EVO-476AF0626E",
+    "feedback_id": "FB-7A7473F6",
+    "source_task_id": "TASK-R1SRC0001",
+    "candidate_task_id": null,
+    "business_refs": [
+      "SKU:R1-UPGRADE-01"
+    ],
+    "failure_signature": "receiving-two-phase-transaction-partial-commit",
+    "classification": "erp_rule",
+    "status": "approved",
+    "asset_changes": [],
+    "decision_by": "XianReallyHot-ZZH",
+    "decision_at": "2026-10-02T15:43:44Z",
+    "decision_note": "R1 属实，批准改进立项",
+    "blocking_report": null,
+    "human_acceptance": null,
+    "verified_by": null,
+    "verified_at": null,
+    "created_at": "2026-10-02 15:43:42",
+    "updated_at": "2026-10-02 15:43:44",
+    "events": [
+      {
+        "id": 1,
+        "evolution_id": "EVO-476AF0626E",
+        "from_status": null,
+        "to_status": "proposed",
+        "detail": "已从具名接受的反馈建立进化候选",
+        "actor": "Claude",
+        "evidence": {
+          "source_task_id": "TASK-R1SRC0001",
+          "business_refs": [
+            "SKU:R1-UPGRADE-01"
+          ],
+          "feedback_id": "FB-7A7473F6"
+        },
+        "created_at": "2026-10-02 15:43:42"
+      },
+      {
+        "id": 2,
+        "evolution_id": "EVO-476AF0626E",
+        "from_status": "proposed",
+        "to_status": "approved",
+        "detail": "具名进化审核：approve；R1 属实，批准改进立项",
+        "actor": "XianReallyHot-ZZH",
+        "evidence": {
+          "note": "R1 属实，批准改进立项",
+          "decision": "approve"
+        },
+        "created_at": "2026-10-02 15:43:44"
+      }
+    ]
+  }
+}

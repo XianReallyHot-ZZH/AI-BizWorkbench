@@ -1,0 +1,29 @@
+--- lesson-15-submission/15-evolution/r1-upgrade/service.py.before	2026-10-02 23:45:33
++++ /tmp/l15-r1-tree-L7QI/flowerp/service.py	2026-10-02 23:45:36
+@@ -396,10 +396,25 @@
+             raise InvalidTransition(f"采购 {request_id} 已完成入库")
+         if item["status"] != PurchaseStatus.APPROVED:
+             raise ApprovalRequired(f"采购 {request_id} 未审批，不允许入库")
+-        result = self.receive_stock(item["sku"], item["quantity"], event_key, reference=request_id)
+         with self.store.connect() as conn:
++            replayed = conn.execute(
++                "SELECT 1 FROM inventory_events WHERE event_key=?", (event_key,)
++            ).fetchone()
++            if replayed:
++                raise InvalidTransition(f"采购 {request_id} 已完成入库")
+             conn.execute(
++                "INSERT INTO inventory_events(event_key,sku,quantity,reserved_delta,event_type,reference) VALUES(?,?,?,?,?,?)",
++                (event_key, item["sku"], item["quantity"], 0, "receive", request_id),
++            )
++            conn.execute(
++                "UPDATE stock SET on_hand=on_hand+? WHERE sku=?",
++                (item["quantity"], item["sku"]),
++            )
++            conn.execute(
+                 "UPDATE purchase_requests SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                 (PurchaseStatus.RECEIVED, request_id),
+             )
++        result = self.product(item["sku"])
++        result["idempotent_replay"] = False
++        self._publish_authority(item["sku"])
+         return {"purchase": self.purchase(request_id), "stock": result}
