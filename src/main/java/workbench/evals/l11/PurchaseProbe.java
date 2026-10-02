@@ -81,7 +81,13 @@ final class PurchaseProbe {
             service.receive_stock("A", 10, "l11-open-A")
             service.create_order("L11 其他客户", [OrderLine("A", 2, 100)], "OTHER")
             service.reserve_order("OTHER")
-            service.propose_purchase("A", 3, "另一项需求", "PR-OTHER")
+            # PR-OTHER 固定夹具：SQL 直插（integration_lab 同形）——不经 propose_purchase。
+            # 净树上与 propose 建行等价；注入树上避免夹具触发教学注入行（上游 17/2/15 口径：
+            # 受控实验首跑曾按 purchase_request_lab 形态经 propose 建夹具，红点 20/2/18
+            # 即夹具分歧实录，报告留盘不删——lesson-11-submission 02-complete-v1）。
+            with store.connect() as conn:
+                conn.execute("INSERT INTO purchase_requests(id,sku,quantity,status,reason) VALUES(?,?,?,?,?)",
+                             ("PR-OTHER", "A", 3, "proposed", "另一项需求"))
             if mode == "duplicate-id":
                 service.propose_purchase("A", 7, "低于补货点", "PR-TARGET")
             product_before = quantities(service.product("A"))
