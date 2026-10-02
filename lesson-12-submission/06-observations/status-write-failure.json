@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l12_status_write_failure"
+  ],
+  "generated_at": "2026-10-02T07:53:06.785199Z",
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "blocking_failed": 1,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l12_status_write_failure",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 572,
+      "evidence": "理想不变量失败（客户原样行为，R1 两段事务窗口实证）：注入状态写入故障后部分提交——on_hand=17（应 10）、单据 status=approved、+7 流水已落——原子性不成立，失败如实保留（同键恢复路径见 l12_approval_recovery_same_key）",
+      "error": {
+        "type": "AssertionError",
+        "message": "理想不变量失败（客户原样行为，R1 两段事务窗口实证）：注入状态写入故障后部分提交——on_hand=17（应 10）、单据 status=approved、+7 流水已落——原子性不成立，失败如实保留（同键恢复路径见 l12_approval_recovery_same_key）"
+      }
+    }
+  ]
+}

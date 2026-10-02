@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l12_approval_approved",
+    "l12_approval_unapproved",
+    "l12_approval_rejected",
+    "l12_approval_blank_reviewer",
+    "l12_approval_replay",
+    "l12_approval_different_key",
+    "l12_approval_recovery_same_key",
+    "purchase_requires_approval",
+    "receiving_is_idempotent",
+    "l12_frozen_checks"
+  ],
+  "generated_at": "2026-10-02T07:51:40.731183Z",
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "blocking_failed": 0,
+    "observing_failed": 0,
+    "decision": "pass"
+  },
+  "results": [
+    {
+      "name": "l12_approval_approved",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 599,
+      "evidence": "审批后入库：received、approved_by 具名；17/2/15；恰一条 +7 流水（receipt:target）；OTHER 与 PR-OTHER 保留——教学 reviewer 输入不构成身份认证",
+      "error": null
+    },
+    {
+      "name": "l12_approval_unapproved",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 477,
+      "evidence": "未审批请求入库被拒：ApprovalRequired，五表不变（未经具名审批不得改变库存）",
+      "error": null
+    },
+    {
+      "name": "l12_approval_rejected",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 490,
+      "evidence": "已拒绝采购请求入库被拒：ApprovalRequired，五表不变",
+      "error": null
+    },
+    {
+      "name": "l12_approval_blank_reviewer",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 608,
+      "evidence": "空白审批人拒绝：ValueError，五表不变（具名不是装饰）",
+      "error": null
+    },
+    {
+      "name": "l12_approval_replay",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 686,
+      "evidence": "同键重放：五表不变、idempotent_replay=true——一次幂等入库",
+      "error": null
+    },
+    {
+      "name": "l12_approval_different_key",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 752,
+      "evidence": "已入库后换键必拒：InvalidTransition，五表不变",
+      "error": null
+    },
+    {
+      "name": "l12_approval_recovery_same_key",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 1051,
+      "evidence": "同键恢复：故障后部分提交实录（on_hand=17、单据 approved）→ 移除触发器原键重试补齐 received、不重复加库存；恢复成功不证明第一次操作原子性成立",
+      "error": null
+    },
+    {
+      "name": "purchase_requires_approval",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 508,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "receiving_is_idempotent",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 405,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "l12_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 13,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e, flowerp/service.py=6c372dcd105c",
+      "error": null
+    }
+  ]
+}
