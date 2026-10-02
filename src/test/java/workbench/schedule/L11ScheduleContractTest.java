@@ -105,8 +105,10 @@ class L11ScheduleContractTest {
         List<Schedule.Subtask> undeclared = List.of(
                 new Schedule.Subtask("implementation", List.of("flowerp/service.py")),
                 new Schedule.Subtask("tests", List.of("tests/test_l11_purchase.py")));
-        // 声明层面 allowed（漏报读取）——上游 judgment "False independence" 的前置事实
+        // 声明层面 allowed（漏报读取）——上游 judgment "False independence" 的机检承载：
+        // conflictPairs 空 + assertParallelSafe 通过（假安全正是「检查器看不到遗漏依赖」）
         assertThat(Schedule.conflictPairs(undeclared)).isEmpty();
+        assertThat(Schedule.assertParallelSafe(undeclared)).containsEntry("parallel", true);
         // 补报真实读取（上游 SUBMISSION 修订同形）→ 读写依赖拒绝：
         // 「声明通过 ≠ 执行安全」，判断在整合层
         assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
@@ -156,6 +158,24 @@ class L11ScheduleContractTest {
                 new Schedule.Subtask("risk", List.of(), List.of("flowerp/service.py"))));
         assertThat(conflicts).hasSize(1);
         assertThat(conflicts.get(0).shared()).containsExactly("flowerp/service.py");
+    }
+
+    @Test
+    void rootScopeDeclarationConflictsWithEverything() {
+        // 上游 PurePosixPath(".").as_posix() == "."：根声明规范化为 "."（非空串），
+        // _overlap 根分支全匹配——写根 = 写全仓库（复查轮 S-1 真缺陷回归锚：
+        // 段过滤曾把 "." 折叠成 ""，根分支成死代码）
+        assertThat(Schedule.scope(".")).isEqualTo(".");
+        assertThat(Schedule.scope("./")).isEqualTo(".");
+        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
+                new Schedule.Subtask("w", List.of(".")),
+                new Schedule.Subtask("r", List.of(), List.of("flowerp/service.py")))))
+                .hasMessageContaining("w×r→flowerp/service.py");
+        // 读根同样与写一切冲突（W乙∩R甲 方向）
+        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
+                new Schedule.Subtask("impl", List.of("src/x.py")),
+                new Schedule.Subtask("auditor", List.of(), List.of(".")))))
+                .hasMessageContaining("impl×auditor→src/x.py");
     }
 
     @Test

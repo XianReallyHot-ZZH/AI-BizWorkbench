@@ -66,7 +66,9 @@ public final class Schedule {
     /**
      * 路径规范化（上游 {@code _scope} 逐句）：反斜杠→斜杠、拒绝越界与通配符、
      * {@code .} 段折叠、尾斜杠剥除、大小写保守折叠（Locale.ROOT——教学场景 ASCII
-     * 为主，与 Python casefold 在此面等价）。
+     * 为主，与 Python casefold 在此面等价）。根声明（"."/「./」）折叠后为空串时
+     * 返回 "."——上游 {@code PurePosixPath(".").as_posix() == "."}，根与一切路径
+     * 重叠（复查轮 S-1 真缺陷回归锚在测试面）。
      */
     static String scope(String value) {
         String replaced = value.replace("\\", "/");
@@ -81,7 +83,8 @@ public final class Schedule {
                 parts.add(part);
             }
         }
-        return String.join("/", parts).toLowerCase(Locale.ROOT);
+        String joined = String.join("/", parts);
+        return (joined.isEmpty() ? "." : joined).toLowerCase(Locale.ROOT);
     }
 
     private static boolean hasWildcard(String value) {
@@ -113,6 +116,9 @@ public final class Schedule {
         return normalized;
     }
 
+    /** 一项任务的规范化读写集（上游 scopes dict 的元组值对应物）。 */
+    private record Scope(List<String> write, List<String> read) {}
+
     /**
      * 全部冲突对（上游 {@code conflict_pairs} 逐句）：名称非空唯一校验 → 写×写与
      * 写×读双向逐对比较（读×读不算冲突）→ resource_set 交集单列。顺序按输入序配对、
@@ -124,12 +130,12 @@ public final class Schedule {
         if (names.stream().anyMatch(String::isEmpty) || new HashSet<>(names).size() != names.size()) {
             throw new ScheduleViolation("子任务名称必须非空且唯一");
         }
-        Map<String, List<String>[]> scopes = new LinkedHashMap<>();
+        Map<String, Scope> scopes = new LinkedHashMap<>();
         Map<String, List<String>> resources = new LinkedHashMap<>();
         for (Subtask task : items) {
-            scopes.put(task.name(), new List[]{
+            scopes.put(task.name(), new Scope(
                     task.writeSet().stream().map(Schedule::scope).toList(),
-                    task.readSet().stream().map(Schedule::scope).toList()});
+                    task.readSet().stream().map(Schedule::scope).toList()));
             resources.put(task.name(), task.resourceSet().stream().map(Schedule::resource).toList());
         }
         List<Conflict> conflicts = new ArrayList<>();
@@ -137,29 +143,13 @@ public final class Schedule {
             for (int right = index + 1; right < items.size(); right++) {
                 Subtask left = items.get(index);
                 Subtask other = items.get(right);
-                List<String> leftWrites = scopes.get(left.name())[0];
-                List<String> leftReads = scopes.get(left.name())[1];
-                List<String> rightWrites = scopes.get(other.name())[0];
-                List<String> rightReads = scopes.get(other.name())[1];
+                Scope leftScope = scopes.get(left.name());
+                Scope rightScope = scopes.get(other.name());
                 Set<String> shared = new LinkedHashSet<>();
                 // 写×（写+读）双向（上游 ((left_writes, right_writes+right_reads),
-                // (right_writes, left_reads)) 同形）
-                for (List<String> writes : List.of(leftWrites)) {
-                    for (String a : writes) {
-                        for (String b : concat(rightWrites, rightReads)) {
-                            if (overlap(a, b)) {
-                                shared.add(deeper(a, b));
-                            }
-                        }
-                    }
-                }
-                for (String a : rightWrites) {
-                    for (String b : leftReads) {
-                        if (overlap(a, b)) {
-                            shared.add(deeper(a, b));
-                        }
-                    }
-                }
+                // (right_writes, left_reads)) 两个对的统一形）
+                collectOverlaps(leftScope.write(), concat(rightScope.write(), rightScope.read()), shared);
+                collectOverlaps(rightScope.write(), leftScope.read(), shared);
                 if (!shared.isEmpty()) {
                     conflicts.add(new Conflict(left.name(), other.name(),
                             shared.stream().sorted().toList()));
@@ -173,6 +163,17 @@ public final class Schedule {
             }
         }
         return List.copyOf(conflicts);
+    }
+
+    /** writes × others 逐对判重叠，共享项（更深路径）计入 shared。 */
+    private static void collectOverlaps(List<String> writes, List<String> others, Set<String> shared) {
+        for (String a : writes) {
+            for (String b : others) {
+                if (overlap(a, b)) {
+                    shared.add(deeper(a, b));
+                }
+            }
+        }
     }
 
     private static List<String> concat(List<String> left, List<String> right) {
