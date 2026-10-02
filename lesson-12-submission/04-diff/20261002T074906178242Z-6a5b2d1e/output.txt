@@ -1,0 +1,1070 @@
+diff --git a/src/main/java/workbench/cli/Main.java b/src/main/java/workbench/cli/Main.java
+index 379e0a5..654f950 100644
+--- a/src/main/java/workbench/cli/Main.java
++++ b/src/main/java/workbench/cli/Main.java
+@@ -7,6 +7,7 @@ import workbench.bootstrap.JsonOut;
+ import workbench.evals.l07.QualityGate;
+ import workbench.evals.l08.CiEvidence;
+ import workbench.execution.ExecutionCommands;
++import workbench.graph.GraphRunner;
+ import workbench.loop.LoopRunner;
+ import workbench.repair.RepairMapper;
+ import workbench.spec.SpecCommands;
+@@ -45,6 +46,12 @@ public final class Main {
+         // 只加注册调用。上游 agent/loop.py 的 agent 家族第二件——上游验收命令
+         // python -m agent.loop --max-rounds 3 的本仓对应面）。
+         REGISTRY.register("loop-run", LoopRunner::execute);
++        // L12：显式状态图控制器经同一条缝注册（讲义 D1——workbenchIncrement「显式状态图、
++        // 回退边和具名人审」即工作台命令，L07 D2 / L08 D3 / L09 D1 / L10 D1 先例；适配器在
++        // workbench.graph.GraphRunner。上游 agent/ 家族第四件（repair→loop→schedule→graph
++        // 四件收齐）——上游验收命令 python -X utf8 -m agent.graph --max-rounds 3 的本仓对应面，
++        // 退出码 0 completed / 3 awaiting_human_review（正常等待不是失败）/ 2 其余）。
++        REGISTRY.register("graph-run", GraphRunner::execute);
+     }
+ 
+     public static void main(String[] args) {
+diff --git a/src/main/java/workbench/evals/l12/ApprovalChecks.java b/src/main/java/workbench/evals/l12/ApprovalChecks.java
+new file mode 100644
+index 0000000..a32ed29
+--- /dev/null
++++ b/src/main/java/workbench/evals/l12/ApprovalChecks.java
+@@ -0,0 +1,393 @@
++package workbench.evals.l12;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++import workbench.evals.EvalHarness;
++
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * L12 统一入口收口（新讲机制——本讲无 Python 先例，映射源 = 讲义 §2 登记项构成 +
++ * 上游 {@code purchase_approval_lab.py} 九模式与合同绑定两 eval）。本地与显式复验
++ * 调用同一本入口——「同一 Eval 身份」（{@link EvalHarness} schema 1.0，L06 已对齐
++ * 客户）。
++ *
++ * <p>默认门十登记项（全 blocking，讲义 D2）：
++ * <ul>
++ * <li>{@code l12_approval_approved} 正常入库：received + approved_by 具名 + 17/2/15 +
++ *     恰一条 +7 流水（receipt:target）+ OTHER/PR-OTHER 保留（合同 acceptance[1]；
++ *     预期由 Java 字面算出，不抄探针返回；三量走 product() 计算列）
++ * <li>{@code l12_approval_unapproved} / {@code _rejected} / {@code _blank_reviewer}
++ *     三拒绝拍：预期异常类型 + 前后<b>五表快照相等</b>（合同 acceptance[0]
++ *     「未审批采购入库被阻断且库存不变」——部分写入风险面）
++ * <li>{@code l12_approval_replay}（同键重试五表不变 + idempotent_replay）/
++ *     {@code l12_approval_different_key}（已入库换键 InvalidTransition 且五表不变）
++ *     ——幂等键的两面
++ * <li>{@code l12_approval_recovery_same_key} 同键恢复：触发器故障后部分提交实录
++ *     （on_hand=17、单据 approved）→ 移除触发器原键重试补齐 received、不重复加库存；
++ *     <b>恢复成功不证明第一次操作原子性成立</b>（上游明示口径）
++ * <li>{@code purchase_requires_approval} + {@code receiving_is_idempotent} 客户绑定
++ *     eval 子进程照跑（登记项名 = 客户名原样，业务权威——ADR-0005；断言面差距 =
++ *     receive_stock 键维度幂等 vs 单据维度防重，如实入账证据账 C7）
++ * <li>{@code l12_frozen_checks} 客户 eval 双树 + 采购面源件（service.py）指纹复核
++ *     （讲义 C8；l07–l10 frozenChecks 族形一致——Java 源件指纹走证据账层面，
++ *     L10/L11 勘误先例直承）
++ * </ul>
++ *
++ * <p>两必红选跑项（blocking，<b>不进默认门</b>——讲义 D4/D5）：{@code
++ * l12_status_write_failure} 断言<b>理想不变量</b>（故障后五表不变）——客户原样行为
++ * 违反之（R1 两段事务窗口：库存已 +7、单据仍 approved），预期红留证；{@code
++ * l12_key_collision} 断言 received ⇒ 必有 +7 流水——客户已消费键静默吞违反之
++ * （R4：received 但库存 10、无流水，失败显示成成功），预期红留证。<b>失败不是本仓
++ * 缺陷</b>（客户真理原样，上游明示「本次未修复产品代码」）——不修绿不删报告；
++ * {@code --case} 选跑承载（L11 premature-stock / L09 leak / L10 refuse-all 先例）。
++ *
++ * <p>argv 面（l08–l11 Checks 同形）：{@code --target} 必填（客户树根，须含
++ * flowerp/）；{@code --case}（可多，选跑子集——含两必红选跑项）；{@code --python}
++ * （缺省 .venv/bin/python，按进程 cwd 绝对化不查 PATH）、{@code --no-report}、
++ * {@code --report-path}。stdout 打印全量报告；退出码 = blocking 失败决定。
++ */
++public final class ApprovalChecks {
++
++    /** 冻结面（讲义 C8）：客户 eval 双树 + 采购面源件（触发器实验的只读对照件）。 */
++    private static final String[] FROZEN_FILES = {
++            "eval/harness.py", "eval/cases.py", "flowerp/service.py"};
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    private ApprovalChecks() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--target", "--python", "--report-path"), Set.of("--no-report"),
++                    List.of(), Set.of("--case"));
++            Path target = Path.of(args.require("--target")).toAbsolutePath().normalize();
++            if (!Files.isDirectory(target.resolve("flowerp"))) {
++                throw new Args.UsageException("--target 下没有 flowerp/：" + target);
++            }
++            Path interpreter = ApprovalProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            Path reportPath = (args.flag("--no-report") || !args.has("--report-path"))
++                    ? null : Path.of(args.require("--report-path"));
++            List<String> selected = args.repeatingList("--case");
++            List<EvalHarness.Entry> all = entries(target, interpreter);
++            List<EvalHarness.Entry> run = selected.isEmpty() ? defaultEntries(all) : all.stream()
++                    .filter(entry -> selected.contains(entry.name())).toList();
++            if (!selected.isEmpty() && run.size() != selected.size()) {
++                List<String> known = run.stream().map(EvalHarness.Entry::name).toList();
++                List<String> unknown = selected.stream().filter(name -> !known.contains(name)).toList();
++                if (!unknown.isEmpty()) {
++                    throw new Args.UsageException("未知登记项 --case：" + unknown);
++                }
++                List<String> duplicated = selected.stream().distinct()
++                        .filter(name -> selected.stream().filter(name::equals).count() > 1).toList();
++                throw new Args.UsageException("重复登记项 --case：" + duplicated);
++            }
++            EvalHarness.Outcome outcome = EvalHarness.run(run, "all", null, reportPath);
++            System.out.println(PyJson.dumps(outcome.report()));
++            if (outcome.exitCode() != 0) {
++                System.exit(outcome.exitCode());
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (ApprovalProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    /** 默认门 = 十件（两必红选跑项排除——预期红项不进默认门）。 */
++    private static List<EvalHarness.Entry> defaultEntries(List<EvalHarness.Entry> all) {
++        return all.stream()
++                .filter(entry -> !"l12_status_write_failure".equals(entry.name())
++                        && !"l12_key_collision".equals(entry.name())).toList();
++    }
++
++    static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
++        return List.of(
++                new EvalHarness.Entry("l12_approval_approved", "blocking",
++                        () -> scenario(interpreter, target, "approved")),
++                new EvalHarness.Entry("l12_approval_unapproved", "blocking",
++                        () -> scenario(interpreter, target, "unapproved")),
++                new EvalHarness.Entry("l12_approval_rejected", "blocking",
++                        () -> scenario(interpreter, target, "rejected")),
++                new EvalHarness.Entry("l12_approval_blank_reviewer", "blocking",
++                        () -> scenario(interpreter, target, "blank-reviewer")),
++                new EvalHarness.Entry("l12_approval_replay", "blocking",
++                        () -> scenario(interpreter, target, "replay")),
++                new EvalHarness.Entry("l12_approval_different_key", "blocking",
++                        () -> scenario(interpreter, target, "different-key")),
++                new EvalHarness.Entry("l12_approval_recovery_same_key", "blocking",
++                        () -> scenario(interpreter, target, "recovery-same-key")),
++                new EvalHarness.Entry("purchase_requires_approval", "blocking",
++                        () -> customerCase(interpreter, target, "purchase_requires_approval")),
++                new EvalHarness.Entry("receiving_is_idempotent", "blocking",
++                        () -> customerCase(interpreter, target, "receiving_is_idempotent")),
++                new EvalHarness.Entry("l12_status_write_failure", "blocking",
++                        () -> scenario(interpreter, target, "status-write-failure")),
++                new EvalHarness.Entry("l12_key_collision", "blocking",
++                        () -> scenario(interpreter, target, "key-collision")),
++                new EvalHarness.Entry("l12_frozen_checks", "blocking",
++                        () -> frozenChecks(target)));
++    }
++
++    // ---- 场景断言（独立预期，全部留 Java） ------------------------------------------
++
++    /**
++     * 审批入库场景：探针回报原始观察值，独立预期与全部判断在本方法完成（不抄子进程
++     * 返回）。两必红模式断言<b>理想不变量</b>，客户原样行为违反之 → 预期红留证
++     * （R1/R4 运行实证——讲义 D5：客户原样不写成复刻缺陷）。
++     */
++    private static String scenario(Path interpreter, Path target, String mode) {
++        try (ApprovalProbe.TempDb tempDb = ApprovalProbe.tempDb("l12-approval-")) {
++            JsonNode observed = ApprovalProbe.approval(interpreter, target, tempDb.db, mode);
++            switch (mode) {
++                case "approved" -> {
++                    JsonNode purchase = observed.path("receive_result").path("purchase");
++                    assertEquals("purchase.status", purchase.path("status").asText(), "received");
++                    assertEquals("approved_by", purchase.path("approved_by").asText(),
++                            "TEACHING business reviewer");
++                    assertQuantities(observed.path("product"), 17, 2, 15);
++                    assertSingleReceipt(observed, "receipt:target", 7);
++                    assertOthersPreserved(observed);
++                    return "审批后入库：received、approved_by 具名；17/2/15；恰一条 +7 流水"
++                            + "（receipt:target）；OTHER 与 PR-OTHER 保留——教学 reviewer 输入不构成身份认证";
++                }
++                case "unapproved", "rejected" -> {
++                    assertRejectedWith(observed, "ApprovalRequired", mode);
++                    return mode.equals("unapproved")
++                            ? "未审批请求入库被拒：ApprovalRequired，五表不变（未经具名审批不得改变库存）"
++                            : "已拒绝采购请求入库被拒：ApprovalRequired，五表不变";
++                }
++                case "blank-reviewer" -> {
++                    JsonNode error = observed.path("error");
++                    if (!error.isObject() || !"ValueError".equals(error.path("type").asText())) {
++                        throw new AssertionError("mode=blank-reviewer expected ValueError 实际：" + error);
++                    }
++                    if (!observed.path("before_approval").equals(observed.path("after"))) {
++                        throw new AssertionError("mode=blank-reviewer 批准被拒后五表状态发生变化");
++                    }
++                    return "空白审批人拒绝：ValueError，五表不变（具名不是装饰）";
++                }
++                case "replay" -> {
++                    if (!observed.path("after_first").equals(observed.path("after"))) {
++                        throw new AssertionError("mode=replay 同键重试改变了五表状态");
++                    }
++                    if (!observed.path("replay_result").path("stock")
++                            .path("idempotent_replay").asBoolean(false)) {
++                        throw new AssertionError("mode=replay 重试未返回 idempotent_replay=true："
++                                + observed.path("replay_result").path("stock"));
++                    }
++                    assertQuantities(observed.path("product"), 17, 2, 15);
++                    assertSingleReceipt(observed, "receipt:target", 7);
++                    return "同键重放：五表不变、idempotent_replay=true——一次幂等入库";
++                }
++                case "different-key" -> {
++                    JsonNode error2 = observed.path("error2");
++                    if (!error2.isObject() || !"InvalidTransition".equals(error2.path("type").asText())) {
++                        throw new AssertionError("mode=different-key expected InvalidTransition 实际：" + error2);
++                    }
++                    if (!observed.path("after_first").equals(observed.path("after"))) {
++                        throw new AssertionError("mode=different-key 换键请求改变了五表状态");
++                    }
++                    assertSingleReceipt(observed, "receipt:target", 7);
++                    return "已入库后换键必拒：InvalidTransition，五表不变";
++                }
++                case "recovery-same-key" -> {
++                    JsonNode error1 = observed.path("error1");
++                    if (!error1.isObject() || !"IntegrityError".equals(error1.path("type").asText())) {
++                        throw new AssertionError("mode=recovery-same-key expected IntegrityError 实际：" + error1);
++                    }
++                    // 部分提交实录（教学事实，不是缺陷断言）：库存已 +7、单据仍 approved
++                    if (observed.path("product_partial").path("on_hand").asInt(-1) != 17
++                            || !"approved".equals(observed.path("purchase_partial")
++                            .path("status").asText())) {
++                        throw new AssertionError("部分提交实录形态与上游不符：on_hand="
++                                + observed.path("product_partial").path("on_hand").asInt()
++                                + " status=" + observed.path("purchase_partial").path("status").asText());
++                    }
++                    assertEquals("恢复后 purchase.status",
++                            observed.path("receive_result").path("purchase").path("status").asText(),
++                            "received");
++                    assertQuantities(observed.path("product"), 17, 2, 15);
++                    assertSingleReceipt(observed, "receipt:target", 7);
++                    return "同键恢复：故障后部分提交实录（on_hand=17、单据 approved）→ 移除触发器"
++                            + "原键重试补齐 received、不重复加库存；恢复成功不证明第一次操作原子性成立";
++                }
++                case "status-write-failure" -> {
++                    // 必红项（预期红留证）：断言理想不变量——客户原样行为（R1 两段事务
++                    // 窗口）违反之。若客户行为某天变为原子，本登记项转绿——按当期客户
++                    // 真理重新对账（对照账 C7），不修绿不删报告。
++                    JsonNode error1 = observed.path("error1");
++                    if (!error1.isObject() || !"IntegrityError".equals(error1.path("type").asText())) {
++                        throw new AssertionError("mode=status-write-failure expected IntegrityError 实际："
++                                + error1);
++                    }
++                    if (!observed.path("before_receive").equals(observed.path("after"))) {
++                        throw new AssertionError("理想不变量失败（客户原样行为，R1 两段事务窗口实证）："
++                                + "注入状态写入故障后部分提交——on_hand="
++                                + observed.path("product_partial").path("on_hand").asInt()
++                                + "（应 10）、单据 status="
++                                + observed.path("purchase_partial").path("status").asText()
++                                + "、+7 流水已落——原子性不成立，失败如实保留"
++                                + "（同键恢复路径见 l12_approval_recovery_same_key）");
++                    }
++                    return "原子性成立：故障后五表不变";
++                }
++                case "key-collision" -> {
++                    // 必红项（预期红留证）：断言 received ⇒ 必有 +7 流水——客户原样行为
++                    // （R4 已消费键静默吞）违反之。
++                    JsonNode purchase = observed.path("receive_result").path("purchase");
++                    if (!"received".equals(purchase.path("status").asText())) {
++                        throw new AssertionError("mode=key-collision 单据未 received，实验形态与上游不符："
++                                + purchase.path("status").asText());
++                    }
++                    JsonNode events = observed.path("events");
++                    if (events.size() != 1
++                            || observed.path("product").path("on_hand").asInt(-1) != 17) {
++                        throw new AssertionError("理想不变量失败（客户原样行为，R4 已消费键静默吞实证）："
++                                + "单据 received 但 on_hand="
++                                + observed.path("product").path("on_hand").asInt()
++                                + "（应 17）、PR-TARGET 收货事件 " + events.size()
++                                + " 条（应 1）——失败显示成成功（业务边界 5 活教材），如实保留");
++                    }
++                    return "键冲突下收货与库存严格对应";
++                }
++                default -> throw new AssertionError("未知模式：" + mode);
++            }
++        }
++    }
++
++    /** 拒绝拍共通：预期异常类型 + before_receive 前后五表快照相等（部分写入面）。 */
++    private static void assertRejectedWith(JsonNode observed, String expectedType, String mode) {
++        JsonNode error = observed.path("error");
++        if (!error.isObject() || !expectedType.equals(error.path("type").asText())) {
++            throw new AssertionError("mode=" + mode + " expected " + expectedType + " 实际：" + error);
++        }
++        if (!observed.path("before_receive").equals(observed.path("after"))) {
++            throw new AssertionError("mode=" + mode + " 拒绝后五表状态发生变化（不应有半成品）");
++        }
++    }
++
++    private static void assertEquals(String field, String actual, String expected) {
++        if (!expected.equals(actual)) {
++            throw new AssertionError("expected " + field + "=" + expected + " actual=" + actual);
++        }
++    }
++
++    /** 三量断言（product() 计算列：available = on_hand - reserved 不在 stock 表）。 */
++    private static void assertQuantities(JsonNode product, int onHand, int reserved, int available) {
++        if (product.path("on_hand").asInt(-1) != onHand
++                || product.path("reserved").asInt(-1) != reserved
++                || product.path("available").asInt(-1) != available) {
++            throw new AssertionError("expected (" + onHand + "," + reserved + "," + available
++                    + ") actual=(" + product.path("on_hand").asInt(-1) + ","
++                    + product.path("reserved").asInt(-1) + "," + product.path("available").asInt(-1) + ")");
++        }
++    }
++
++    /** PR-TARGET 收货事件恰一条：键与数量逐一对应（数量断言独立算，不抄流水行）。 */
++    private static void assertSingleReceipt(JsonNode observed, String eventKey, int quantity) {
++        JsonNode events = observed.path("events");
++        if (events.size() != 1) {
++            throw new AssertionError("expected 恰一条 PR-TARGET 收货事件 实际 " + events.size());
++        }
++        assertEquals("events[0].event_key", events.path(0).path("event_key").asText(), eventKey);
++        if (events.path(0).path("quantity").asInt(-1) != quantity) {
++            throw new AssertionError("expected quantity=" + quantity + " actual="
++                    + events.path(0).path("quantity").asInt(-1));
++        }
++    }
++
++    /** 既有业务保护：sales 两表 before/after 全等 + PR-OTHER 行全等（17/2/15 中预占 2 恒在）。 */
++    private static void assertOthersPreserved(JsonNode observed) {
++        JsonNode before = observed.path("before_approval");
++        JsonNode after = observed.path("after");
++        for (String table : new String[]{"sales_orders", "sales_order_lines"}) {
++            if (!before.path(table).equals(after.path(table))) {
++                throw new AssertionError("入库改变了 " + table + "（OTHER 保护失效）");
++            }
++        }
++        if (!rowById(before.path("purchase_requests"), "PR-OTHER")
++                .equals(observed.path("pr_other"))) {
++            throw new AssertionError("PR-OTHER 保护失效：" + observed.path("pr_other"));
++        }
++    }
++
++    private static JsonNode rowById(JsonNode rows, String id) {
++        for (JsonNode row : rows) {
++            if (id.equals(row.path("id").asText())) {
++                return row;
++            }
++        }
++        throw new AssertionError("找不到行 id=" + id);
++    }
++
++    // ---- 客户 eval 与冻结指纹（l08–l11 同形） ------------------------------------
++
++    /** 客户 blocking eval 子进程照跑（l08 SalesChecks.customerCase 可见性开放复用）。 */
++    private static String customerCase(Path interpreter, Path target, String caseName) {
++        return workbench.evals.l08.SalesChecks.customerCase(interpreter, target, caseName);
++    }
++
++    /** 客户 eval 双树 + 采购面源件指纹复核（l07–l11 frozenChecks 同形）。 */
++    private static String frozenChecks(Path target) {
++        Map<String, Object> mismatched = new LinkedHashMap<>();
++        for (String rel : FROZEN_FILES) {
++            String targetHash = sha256(target.resolve(rel));
++            String sourceHash = sha256(repoRoot().resolve("vendors").resolve("flowERP").resolve(rel));
++            if (!targetHash.equals(sourceHash)) {
++                mismatched.put(rel, Map.of(
++                        "target", targetHash.substring(0, 12),
++                        "vendors", sourceHash.substring(0, 12)));
++            }
++        }
++        if (!mismatched.isEmpty()) {
++            throw new AssertionError("冻结检查被改动: " + PyJson.dumpsCompact(mismatched));
++        }
++        StringBuilder evidence = new StringBuilder("冻结检查指纹一致: ");
++        for (int i = 0; i < FROZEN_FILES.length; i++) {
++            if (i > 0) {
++                evidence.append(", ");
++            }
++            evidence.append(FROZEN_FILES[i]).append('=')
++                    .append(sha256(target.resolve(FROZEN_FILES[i])).substring(0, 12));
++        }
++        return evidence.toString();
++    }
++
++    private static String sha256(Path file) {
++        try {
++            return sha256(java.nio.file.Files.readAllBytes(file));
++        } catch (java.io.IOException error) {
++            throw new ApprovalProbe.ToolFailure("冻结检查文件读取失败：" + file, error);
++        }
++    }
++
++    private static String sha256(byte[] bytes) {
++        try {
++            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
++        } catch (NoSuchAlgorithmException error) {
++            throw new ApprovalProbe.ToolFailure("SHA-256 不可用", error);
++        }
++    }
++
++    /** l06–l11 Checks.repoRoot 同形：锚定本类装载位置（target/classes → 仓库根），不随 cwd 漂移。 */
++    private static Path repoRoot() {
++        try {
++            return Path.of(ApprovalChecks.class.getProtectionDomain()
++                    .getCodeSource().getLocation().toURI()).toAbsolutePath().getParent().getParent();
++        } catch (java.net.URISyntaxException error) {
++            throw new ApprovalProbe.ToolFailure("仓库根定位失败（class 装载位置）", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l12/ApprovalProbe.java b/src/main/java/workbench/evals/l12/ApprovalProbe.java
+new file mode 100644
+index 0000000..88105a1
+--- /dev/null
++++ b/src/main/java/workbench/evals/l12/ApprovalProbe.java
+@@ -0,0 +1,237 @@
++package workbench.evals.l12;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * 客户实现驱动缝（L12 审批后入库面；l07 OrderProbe / l08 AtomicProbe / l09 CancelProbe /
++ * l10 ShipProbe / l11 PurchaseProbe 同款先例）。子进程 python 一次跑完一个模式、回报
++ * 原始观察值 JSON；<b>判断与预期计算一律留在调用方</b>（上游
++ * {@code purchase_approval_lab.py} 的 assert 面在 Java 侧独立复现，不抄子进程返回）。
++ *
++ * <p>九模式（映射源 {@code vendors/CodexFDE/docs/courses/L12/examples/
++ * purchase_approval_lab.py}，只读对照；夹具逐字段对齐上游：A 商品 + 入库 10
++ * {@code "opening"} + OTHER 预占 2 + PR-OTHER（A×3「另一项需求」）+ PR-TARGET（A×7
++ * 「补货」）——期初键 {@code opening} 被 key-collision 模式复用，词面不动）：approved /
++ * unapproved / blank-reviewer / rejected / replay / different-key / status-write-failure
++ * （教学触发器阻断状态翻转——上游 {@code :66-67} 逐字源，<b>内联注入</b>：运行时
++ * 数据库行为非源码改动，不建注入装置件、不建常驻拷贝树，讲义 D4）/ recovery-same-key
++ * （移除触发器后原键重试）/ key-collision（已消费 {@code opening} 键）。五表阶段快照
++ * （before_approval / before_receive / after_status_write_failure / after_receive /
++ * final）随 phases 原始回报；三量走 {@code service.product()} 计算列（L10 教训④ 承袭）。
++ *
++ * <p>子进程超时 300s（l06–l11 同值）。
++ */
++final class ApprovalProbe {
++
++    /** 工具以 rc 1 收场的失败（l07–l11 同形；词面入 stderr）。 */
++    static final class ToolFailure extends RuntimeException {
++        ToolFailure(String message) {
++            super(message);
++        }
++
++        ToolFailure(String message, Throwable cause) {
++            super(message, cause);
++        }
++    }
++
++    private static final long TIMEOUT_SECONDS = 300;
++
++    /**
++     * 审批入库面片段：argv = [db, 客户树, mode]；stdout 出单行 JSON 原始观察值
++     * （阶段快照 + 模式关键结果 + 异常 type/message 不吞）。异常一律回报不判对错
++     * （expected_error 面由调用方断言——与上游 except 形态等义）。CJK 经 -X utf8
++     * 子进程传递（L04/L05 先例）。触发器 SQL 与业务调用词面 = 上游逐字。
++     */
++    private static final String SNIPPET = """
++            import json, sys
++            from pathlib import Path
++            sys.path.insert(0, sys.argv[2])
++            from flowerp.service import ERPService
++            from flowerp.store import ERPStore
++            from flowerp.models import ApprovalRequired, InvalidTransition, OrderLine
++
++            mode = sys.argv[3]
++            TABLES = ("purchase_requests", "stock", "inventory_events", "sales_orders", "sales_order_lines")
++
++            def out(obj):
++                print(json.dumps(obj, ensure_ascii=False))
++
++            def snapshot():
++                return {t: store.rows("SELECT * FROM %s ORDER BY 1" % t) for t in TABLES}
++
++            def quantities(product):
++                return {"on_hand": product["on_hand"], "reserved": product["reserved"],
++                        "available": product["available"]}
++
++            def record(phase):
++                phases.append({"phase": phase, "tables": snapshot()})
++
++            store = ERPStore(Path(sys.argv[1]))
++            service = ERPService(store)
++            service.add_product("A", "商品 A", 100)
++            service.receive_stock("A", 10, "opening")
++            service.create_order("其他客户", [OrderLine("A", 2, 100)], "OTHER")
++            service.reserve_order("OTHER")
++            service.propose_purchase("A", 3, "另一项需求", "PR-OTHER")
++            service.propose_purchase("A", 7, "补货", "PR-TARGET")
++
++            phases = []
++            payload = {"mode": mode, "boundary": "Real service with temporary database; teaching reviewer and injected trigger; no authenticated approval."}
++            record("before_approval")
++            payload["before_approval"] = phases[-1]["tables"]
++            if mode == "blank-reviewer":
++                try:
++                    service.approve_purchase("PR-TARGET", "  ")
++                except Exception as exc:
++                    payload["error"] = {"type": type(exc).__name__, "message": str(exc)}
++                payload["after"] = snapshot()
++                payload["phases"] = phases
++                out(payload)
++                raise SystemExit(0)
++            if mode == "rejected":
++                service.reject_purchase("PR-TARGET", "TEACHING business reviewer")
++            elif mode != "unapproved":
++                service.approve_purchase("PR-TARGET", "TEACHING business reviewer")
++            record("before_receive")
++            payload["before_receive"] = phases[-1]["tables"]
++            if mode in ("unapproved", "rejected"):
++                try:
++                    service.receive_purchase("PR-TARGET", "receipt:target")
++                except Exception as exc:
++                    payload["error"] = {"type": type(exc).__name__, "message": str(exc)}
++                payload["after"] = snapshot()
++                payload["phases"] = phases
++                out(payload)
++                raise SystemExit(0)
++            if mode in ("status-write-failure", "recovery-same-key"):
++                with store.connect() as conn:
++                    conn.execute("CREATE TRIGGER fail_target_status BEFORE UPDATE OF status ON purchase_requests WHEN NEW.id='PR-TARGET' AND NEW.status='received' BEGIN SELECT RAISE(ABORT,'TEACHING receipt status failure'); END")
++                try:
++                    service.receive_purchase("PR-TARGET", "receipt:target")
++                except Exception as exc:
++                    payload["error1"] = {"type": type(exc).__name__, "message": str(exc)}
++                record("after_status_write_failure")
++                payload["product_partial"] = quantities(service.product("A"))
++                payload["purchase_partial"] = service.purchase("PR-TARGET")
++                if mode == "status-write-failure":
++                    payload["after"] = snapshot()
++                    payload["phases"] = phases
++                    out(payload)
++                    raise SystemExit(0)
++                with store.connect() as conn:
++                    conn.execute("DROP TRIGGER fail_target_status")
++                payload["receive_result"] = service.receive_purchase("PR-TARGET", "receipt:target")
++            key = "opening" if mode == "key-collision" else "receipt:target"
++            if mode != "recovery-same-key":
++                payload["receive_result"] = service.receive_purchase("PR-TARGET", key)
++            record("after_receive")
++            if mode == "replay":
++                payload["after_first"] = snapshot()
++                payload["replay_result"] = service.receive_purchase("PR-TARGET", key)
++            if mode == "different-key":
++                payload["after_first"] = snapshot()
++                try:
++                    service.receive_purchase("PR-TARGET", "receipt:another")
++                except Exception as exc:
++                    payload["error2"] = {"type": type(exc).__name__, "message": str(exc)}
++            payload["product"] = quantities(service.product("A"))
++            payload["purchase"] = service.purchase("PR-TARGET")
++            payload["events"] = store.rows("SELECT * FROM inventory_events WHERE reference='PR-TARGET' AND event_type='receive'")
++            payload["pr_other"] = service.purchase("PR-OTHER")
++            payload["after"] = snapshot()
++            payload["phases"] = phases
++            out(payload)
++            """;
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private ApprovalProbe() {}
++
++    /** 相对解释器路径按进程 cwd 绝对化（l06–l11 同款；不做 PATH 查找——CI 须传绝对路径）。 */
++    static Path resolveInterpreter(String python) {
++        return Path.of(python).toAbsolutePath().normalize();
++    }
++
++    /** 跑一次审批入库模式（九模式），解析 stdout 单行 JSON 为观察值。 */
++    static JsonNode approval(Path interpreter, Path target, Path db, String mode) {
++        List<String> argv = new ArrayList<>(List.of(
++                interpreter.toString(), "-X", "utf8", "-c", SNIPPET,
++                db.toString(), target.toString(), mode));
++        Process process;
++        try {
++            process = new ProcessBuilder(argv).start();
++        } catch (IOException error) {
++            throw new ToolFailure("python 启动失败（" + interpreter + "）", error);
++        }
++        String stdout;
++        String stderr;
++        int code;
++        try {
++            stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
++            stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
++                process.destroyForcibly();
++                throw new ToolFailure("python 子进程超时（" + TIMEOUT_SECONDS + "s）：" + interpreter);
++            }
++            code = process.exitValue();
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出读取失败", error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new ToolFailure("python 等待被中断");
++        }
++        if (code != 0) {
++            throw new ToolFailure("python 子进程失败 rc=" + code + "：" + stderr.strip());
++        }
++        try {
++            return MAPPER.readTree(stdout);
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出不可解析：" + stdout.strip()
++                    + "；stderr：" + stderr.strip(), error);
++        }
++    }
++
++    /** 临时库（自建库、天然干净数据开始；close 递归清理——l06–l11 TempDb 同形）。 */
++    static final class TempDb implements AutoCloseable {
++        private final Path dir;
++        final Path db;
++
++        private TempDb(Path dir) {
++            this.dir = dir;
++            this.db = dir.resolve("scenario.db");
++        }
++
++        @Override
++        public void close() {
++            try (var stream = Files.walk(dir)) {
++                stream.sorted(Comparator.reverseOrder()).forEach(p -> {
++                    try {
++                        Files.delete(p);
++                    } catch (IOException error) {
++                        throw new java.io.UncheckedIOException(error);
++                    }
++                });
++            } catch (IOException error) {
++                throw new java.io.UncheckedIOException(error);
++            }
++        }
++    }
++
++    static TempDb tempDb(String prefix) {
++        try {
++            return new TempDb(Files.createTempDirectory(prefix));
++        } catch (IOException error) {
++            throw new ToolFailure("临时目录创建失败（" + prefix + "）", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/graph/GraphRunner.java b/src/main/java/workbench/graph/GraphRunner.java
+new file mode 100644
+index 0000000..2a3b091
+--- /dev/null
++++ b/src/main/java/workbench/graph/GraphRunner.java
+@@ -0,0 +1,397 @@
++package workbench.graph;
++
++import com.fasterxml.jackson.databind.ObjectMapper;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++import workbench.evals.l12.ApprovalChecks;
++import workbench.execution.ProcessRunner;
++import workbench.execution.Shlex;
++import workbench.repair.RepairMapper;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.time.OffsetDateTime;
++import java.time.ZoneOffset;
++import java.time.temporal.ChronoUnit;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * 显式状态图控制器（L12 合同 workbenchIncrement「显式状态图、回退边和具名人审」；
++ * 上游 {@code vendors/CodexFDE/agent/graph.py} {@code run_graph} 的 Java 对应物，只读
++ * 对照——讲义 §1.4 宿主映射：agent 家族第四件落 {@code workbench/graph/} 新子包，
++ * {@code repair/}/{@code loop/}/{@code schedule/} 先例同族，上游 {@code agent/} 四件收齐）。
++ *
++ * <p><b>状态机</b>（逐句对齐上游）：develop（轮数 +1，超限 stopped）→ test（统一检查，
++ * 阻断失败 → rework 携修复任务，零阻断 → human_review）→ human_review（reject_once
++ * 演示打回 / {@code --require-human-review} 或有状态文件 → awaiting_human_review 等待
++ * 具名审核人 / 否则本地演示策略自动 completed）；rework 未到限回 develop；异常显式
++ * failed 留 error 不静默吞。等待点决定在主循环前处理（approve → completed / reject →
++ * develop 回退重查），具名 reviewer + 决定 + 时间落状态；终态（completed/failed/stopped/
++ * awaiting_human_review）重读不重执行。
++ *
++ * <p><b>与上游的已裁决形态差异</b>（讲义 D2，逐条如实记录）：①上游进程内直调
++ * {@code run_suite}/{@code build_repair_task} → 本仓 {@code --suite-command} 子进程缝
++ * （stdout = schema 1.0 报告，rc 0 绿 / 1 红——LoopRunner 同款）+ 修复任务复用
++ * {@link RepairMapper} 严格版（修复上下文参数按需装配：仅阻断失败需要生成修复任务时
++ * 校验，缺参 → failed 显式，不静默跳过——上游 {@code build_repair_task} 无上下文）；
++ * ②上游 ValueError 裸抛 → 参数校验走 UsageException rc 2（L10 LoopRunner 口径承袭）；
++ * ③上游裸栈 rc 1 → malformed-state / save-error 落 Main 顶层异常边界（JSON 错误契约
++ * rc 1，退出码面一致、输出形态按本仓 L01 合同）。
++ *
++ * <p><b>上游缺口如实暴露面</b>（讲义 §1.3 第 6 条，不粉饰——治理层留后续讲次）：
++ * {@code move} 只记转移不验边（unchecked-move 直调跳步可复现）；空报告零阻断也进入
++ * 等待（消费者校验缺口，empty-report 接口反例）；批准未绑定候选身份（stale-approval）；
++ * 传入姓名不认证身份（教学 reviewer 字符串）。
++ *
++ * <p>CLI 面（REGISTRY {@code graph-run}，repair-map / loop-run 先例）：{@code --max-rounds}
++ * （默认 3，1..10）{@code --reject-once}（教学打回演示）{@code --require-human-review}
++ * {@code --state-file}（持久化与恢复面；有状态文件即等待，上游 {@code persistence}
++ * 同语义）{@code --review-decision approve|reject} + {@code --reviewer}（等待点决定，
++ * 决定必须具名）{@code --suite-command}（检查注入缝，必填）；修复上下文（阻断失败时
++ * 按需校验）：{@code --source-task} {@code --source-version} {@code --allowed-file}
++ * （可多）{@code --case}（可多）{@code --candidate} {@code --python} {@code --objective}
++ * （缺省同 loop-run 词面）{@code --suite}（缺省 all）{@code --repair-task-path}（缺省
++ * 状态文件同目录 graph-repair-task.json；上游 {@code .runtime/graph-repair-task.json}
++ * 同名）。退出码（对齐上游 main）：completed 0、awaiting_human_review 3（<b>正常等待
++ * 不是失败</b>）、其余 2；用法错误 2；状态 IO 故障 1（顶层边界）。
++ */
++public final class GraphRunner {
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    /** 检查子进程超时（l06–l10 探针 / LoopRunner 同值先例）。 */
++    private static final int SUITE_TIMEOUT_SECONDS = 300;
++
++    /** 循环停止态 = 终态 + 等待（上游 while 条件同集）。 */
++    private static final Set<String> STOP_STATES =
++            Set.of("completed", "failed", "stopped", "awaiting_human_review");
++
++    private static final String DEFAULT_OBJECTIVE = "仅修复阻断级 Eval，保持现有公共接口和业务不变量";
++
++    private GraphRunner() {}
++
++    /** REGISTRY 命令面（Main 静态注册：{@code REGISTRY.register("graph-run", GraphRunner::execute)}）。 */
++    public static int execute(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--max-rounds", "--state-file", "--review-decision", "--reviewer",
++                            "--suite-command", "--repair-task-path", "--python", "--candidate",
++                            "--source-task", "--source-version", "--objective", "--suite"),
++                    Set.of("--reject-once", "--require-human-review"),
++                    List.of(), Set.of("--allowed-file", "--case"));
++            int maxRounds = parseInt(args.optional("--max-rounds", "3"), "max_rounds");
++            if (maxRounds < 1 || maxRounds > 10) {
++                throw new Args.UsageException("max_rounds 必须在 1..10");
++            }
++            String reviewDecision = args.has("--review-decision") ? args.require("--review-decision") : null;
++            if (reviewDecision != null && !Set.of("approve", "reject").contains(reviewDecision)) {
++                throw new Args.UsageException("review_decision 必须为 approve 或 reject");
++            }
++            String reviewer = args.optional("--reviewer", "");
++            if (reviewDecision != null && reviewer.isBlank()) {
++                throw new Args.UsageException("提交人工审核决定时必须记录审核人");
++            }
++            String suiteCommand = args.require("--suite-command");
++            Path stateFile = args.has("--state-file")
++                    ? Path.of(args.require("--state-file")).toAbsolutePath().normalize() : null;
++            RepairConfig repair = new RepairConfig(
++                    args.optional("--source-task", ""), args.optional("--source-version", ""),
++                    args.optional("--objective", DEFAULT_OBJECTIVE),
++                    args.repeatingList("--allowed-file"), args.repeatingList("--case"),
++                    args.has("--candidate")
++                            ? Path.of(args.require("--candidate")).toAbsolutePath().normalize() : null,
++                    args.has("--python")
++                            ? Path.of(args.require("--python")).toAbsolutePath().normalize() : null,
++                    args.has("--repair-task-path")
++                            ? Path.of(args.require("--repair-task-path")).toAbsolutePath().normalize() : null,
++                    args.optional("--suite", "all"));
++            Map<String, Object> result = runGraph(maxRounds, args.flag("--reject-once"),
++                    args.flag("--require-human-review"), stateFile, reviewDecision, reviewer,
++                    suiteCommand, repair);
++            System.out.println(PyJson.dumps(result));
++            String status = String.valueOf(result.get("status"));
++            return "completed".equals(status) ? 0 : "awaiting_human_review".equals(status) ? 3 : 2;
++        } catch (Args.UsageException error) {
++            System.err.println("error: " + error.getMessage());
++            System.err.println("usage: workbench graph-run [--options]");
++            return 2;
++        }
++    }
++
++    /** 修复上下文（阻断失败时按需装配与校验——上游 build_repair_task 无上下文）。 */
++    private record RepairConfig(String sourceTask, String sourceVersion, String objective,
++                                List<String> allowedFiles, List<String> cases, Path candidate,
++                                Path python, Path repairTaskPath, String suite) {}
++
++    /**
++     * 状态机主体（逐句对齐上游 run_graph）：状态加载（损坏 JSON 逃逸到顶层边界）→
++     * 等待点决定（主循环前）→ 主循环（检查异常 → failed 显式）→ 保存（父路径被文件
++     * 占用等 IO 故障逃逸到顶层边界——不吞不伪装）。
++     */
++    static Map<String, Object> runGraph(int maxRounds, boolean rejectOnce, boolean requireHumanReview,
++            Path stateFile, String reviewDecision, String reviewer, String suiteCommand,
++            RepairConfig repair) {
++        DeliveryState state = stateFile != null && Files.isRegularFile(stateFile)
++                ? loadState(stateFile) : new DeliveryState();
++        if ("awaiting_human_review".equals(state.state) && reviewDecision != null) {
++            state.reviewer = reviewer.strip();
++            state.reviewDecision = reviewDecision;
++            state.reviewedAt = OffsetDateTime.now(ZoneOffset.UTC)
++                    .truncatedTo(ChronoUnit.SECONDS).toString();
++            if ("approve".equals(reviewDecision)) {
++                state.move("completed", "审核人 " + state.reviewer + " 批准交付");
++            } else {
++                state.move("develop", "审核人 " + state.reviewer + " 打回交付");
++            }
++        }
++        try {
++            while (!STOP_STATES.contains(state.state)) {
++                switch (state.state) {
++                    case "develop" -> {
++                        state.roundNo += 1;
++                        if (state.roundNo > maxRounds) {
++                            state.move("stopped", "达到最大轮数，保留剩余失败");
++                        } else {
++                            state.move("test", "本轮最小变更完成，交给统一 Harness");
++                        }
++                    }
++                    case "test" -> {
++                        SuiteResult suite = runSuite(suiteCommand);
++                        state.report = suite.report();
++                        if (suite.blockingFailed()) {
++                            state.repairTask = buildRepairTask(state, repair, suite.reportText(),
++                                    suite.exitCode());
++                            state.move("rework", "阻断级 Eval 失败");
++                        } else {
++                            state.move("human_review", "阻断项为零，进入人工决策点");
++                        }
++                    }
++                    case "rework" -> {
++                        if (state.roundNo >= maxRounds) {
++                            state.move("stopped", "未收敛，禁止宣称成功");
++                        } else {
++                            state.move("develop", "仅携带失败证据和禁止变更进入下一轮");
++                        }
++                    }
++                    case "human_review" -> {
++                        if (rejectOnce) {
++                            rejectOnce = false;
++                            state.move("develop", "演示：人工打回一次，验证回退路径");
++                        } else if (requireHumanReview || stateFile != null) {
++                            state.move("awaiting_human_review", "阻断项为零，等待具名审核人批准或打回");
++                        } else {
++                            state.move("completed", "本地演示审批策略自动通过");
++                        }
++                    }
++                    default -> state.move("failed", "未知状态：" + state.state);
++                }
++            }
++        } catch (Exception exc) {
++            state.error = exc.getClass().getSimpleName()
++                    + (exc.getMessage() == null ? "" : ": " + exc.getMessage());
++            state.move("failed", "异常显式进入失败态");
++        }
++        if (stateFile != null) {
++            // 上游 path.parent.mkdir(parents=True, exist_ok=True)：父路径被文件占用 →
++            // 逃逸到顶层异常边界（保存失败不吞——状态文件未写入即未宣称进度已可靠记录；
++            // 上游 FileExistsError 裸抛的同义面）
++            try {
++                Files.createDirectories(stateFile.getParent());
++                Files.writeString(stateFile, PyJson.dumps(result(state)), StandardCharsets.UTF_8);
++            } catch (IOException error) {
++                throw new java.io.UncheckedIOException("状态保存失败（不吞不伪装）：" + stateFile, error);
++            }
++        }
++        return result(state);
++    }
++
++    // ---- 检查节点（--suite-command 子进程缝） ------------------------------------------
++
++    private record SuiteResult(Object report, String reportText, boolean blockingFailed, int exitCode) {}
++
++    /**
++     * 检查子进程：超时 / 退出码越界（预期 0|1）→ 异常（主循环捕获 → failed 显式）；
++     * stdout 解析为报告对象，blocking_failed 缺失 → 异常（不臆断——空结果 + 有效
++     * summary 的 empty-report 形态照放行，上游消费者校验缺口如实保留）。
++     */
++    private static SuiteResult runSuite(String suiteCommand) throws Exception {
++        ProcessRunner.Outcome check = ProcessRunner.run(Shlex.split(suiteCommand),
++                Path.of("").toAbsolutePath(), SUITE_TIMEOUT_SECONDS, null);
++        if (check.timedOut()) {
++            throw new IllegalStateException("检查子进程超时（" + SUITE_TIMEOUT_SECONDS + "s）——本轮检查未完成");
++        }
++        if (check.returncode() == null || (check.returncode() != 0 && check.returncode() != 1)) {
++            throw new IllegalStateException("检查退出码越界（预期 0|1，实际 " + check.returncode() + "）");
++        }
++        String reportText = check.stdoutText().strip();
++        Object report = MAPPER.readValue(reportText, Object.class);
++        Object blocking = report instanceof Map<?, ?> map
++                && map.get("summary") instanceof Map<?, ?> summary
++                ? summary.get("blocking_failed") : null;
++        if (blocking == null) {
++            throw new IllegalStateException(
++                    "报告缺 summary.blocking_failed——不臆断不静默（上游 KeyError 同义面）");
++        }
++        boolean failed = blocking instanceof Number number
++                ? number.intValue() > 0 : Boolean.TRUE.equals(blocking);
++        return new SuiteResult(report, reportText, failed, check.returncode());
++    }
++
++    // ---- 修复任务（RepairMapper 严格版复用，上下文按需装配） --------------------------
++
++    private static Map<String, Object> buildRepairTask(DeliveryState state, RepairConfig cfg,
++            String reportText, int exitCode) throws Exception {
++        List<String> missing = new ArrayList<>();
++        if (cfg.sourceTask().isBlank()) {
++            missing.add("--source-task");
++        }
++        if (cfg.sourceVersion().isBlank()) {
++            missing.add("--source-version");
++        }
++        if (cfg.allowedFiles().isEmpty()) {
++            missing.add("--allowed-file");
++        }
++        if (cfg.cases().isEmpty()) {
++            missing.add("--case");
++        }
++        if (cfg.candidate() == null) {
++            missing.add("--candidate");
++        }
++        if (cfg.python() == null) {
++            missing.add("--python");
++        }
++        if (!missing.isEmpty()) {
++            throw new IllegalStateException("阻断失败需生成修复任务，修复上下文缺参：" + missing
++                    + "——缺参显式失败，不静默跳过（上游 build_repair_task 无上下文，"
++                    + "本仓 L09 严格映射器按需装配）");
++        }
++        Path taskPath = cfg.repairTaskPath() != null ? cfg.repairTaskPath()
++                : Path.of(".runtime/graph-repair-task.json").toAbsolutePath().normalize();
++        Files.createDirectories(taskPath.getParent());
++        Path reportPath = taskPath.resolveSibling("graph-suite-report.json");
++        Files.writeString(reportPath, reportText, StandardCharsets.UTF_8);
++        Map<String, Object> mapped = RepairMapper.map(
++                reportText.getBytes(StandardCharsets.UTF_8),
++                new RepairMapper.Context(cfg.sourceTask(), cfg.sourceVersion(), cfg.candidate(),
++                        cfg.objective(), cfg.allowedFiles(), cfg.cases(), exitCode, cfg.python(),
++                        reportPath, cfg.suite(), ApprovalChecks.class.getName()));
++        if (!"repair_required".equals(mapped.get("status"))) {
++            throw new IllegalStateException("映射器拒绝本报告（" + mapped.get("status")
++                    + "）：" + mapped.get("errors"));
++        }
++        @SuppressWarnings("unchecked")
++        Map<String, Object> task = (Map<String, Object>) mapped.get("task");
++        Files.writeString(taskPath, PyJson.dumps(task), StandardCharsets.UTF_8);
++        return task;
++    }
++
++    // ---- 状态（上游 DeliveryState / _load_state / _result 同形） ----------------------
++
++    /** 上游 DeliveryState 十字段的 Java 对应物；move 只记转移不验边（如实暴露 unchecked-move）。 */
++    private static final class DeliveryState {
++        String state = "develop";
++        int roundNo;
++        Object report;
++        Map<String, Object> repairTask;
++        List<Map<String, Object>> trace = new ArrayList<>();
++        String error;
++        String reviewer;
++        String reviewDecision;
++        String reviewedAt;
++
++        void move(String target, String reason) {
++            Map<String, Object> entry = new LinkedHashMap<>();
++            entry.put("from", state);
++            entry.put("to", target);
++            entry.put("reason", reason);
++            entry.put("round", roundNo);
++            trace.add(entry);
++            state = target;
++        }
++    }
++
++    @SuppressWarnings("unchecked")
++    private static DeliveryState loadState(Path path) {
++        Map<String, Object> data;
++        try {
++            data = MAPPER.readValue(path.toFile(), Map.class);
++        } catch (IOException error) {
++            // 读取阶段损坏 JSON / IO 故障：逃逸到顶层异常边界（上游 JSONDecodeError
++            // 裸抛的同义面——不吞、不伪装成新状态）
++            throw new java.io.UncheckedIOException("状态文件读取/解析失败（不吞不伪装）：" + path, error);
++        }
++        DeliveryState state = new DeliveryState();
++        state.state = strOr(data, "status", strOr(data, "state", "develop"));
++        state.roundNo = intOr(data, "rounds", intOr(data, "round_no", 0));
++        if (data.get("trace") instanceof List<?> list) {
++            for (Object item : list) {
++                if (item instanceof Map) {
++                    state.trace.add((Map<String, Object>) item);
++                }
++            }
++        }
++        state.report = data.get("report");
++        Object repairTask = data.get("repair_task");
++        state.repairTask = repairTask instanceof Map ? (Map<String, Object>) repairTask : null;
++        state.error = strOrNull(data.get("error"));
++        state.reviewer = strOrNull(data.get("reviewer"));
++        state.reviewDecision = strOrNull(data.get("review_decision"));
++        state.reviewedAt = strOrNull(data.get("reviewed_at"));
++        return state;
++    }
++
++    /** 上游 _result 十字段投影（字段名与顺序同形，状态文件与 stdout 同源）。 */
++    private static Map<String, Object> result(DeliveryState state) {
++        Map<String, Object> out = new LinkedHashMap<>();
++        out.put("status", state.state);
++        out.put("rounds", state.roundNo);
++        out.put("trace", state.trace);
++        out.put("report_summary",
++                state.report instanceof Map<?, ?> map ? map.get("summary") : null);
++        out.put("report", state.report);
++        out.put("repair_task", state.repairTask);
++        out.put("error", state.error);
++        out.put("reviewer", state.reviewer);
++        out.put("review_decision", state.reviewDecision);
++        out.put("reviewed_at", state.reviewedAt);
++        return out;
++    }
++
++    private static String strOr(Map<String, Object> data, String key, String fallback) {
++        Object value = data.get(key);
++        return value == null ? fallback : String.valueOf(value);
++    }
++
++    private static String strOrNull(Object value) {
++        return value == null ? null : String.valueOf(value);
++    }
++
++    private static int intOr(Map<String, Object> data, String key, int fallback) {
++        Object value = data.get(key);
++        if (value instanceof Number number) {
++            return number.intValue();
++        }
++        if (value instanceof String text) {
++            try {
++                return Integer.parseInt(text.strip());
++            } catch (NumberFormatException ignored) {
++                // 非整数回落缺省（上游 int() 会抛；此处状态加载容错，主循环兜到未知状态面）
++            }
++        }
++        return fallback;
++    }
++
++    private static int parseInt(String raw, String label) {
++        try {
++            return Integer.parseInt(raw.strip());
++        } catch (NumberFormatException error) {
++            throw new Args.UsageException(label + " 须为整数：" + raw);
++        }
++    }
++}

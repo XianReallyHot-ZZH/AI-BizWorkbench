@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l12_key_collision"
+  ],
+  "generated_at": "2026-10-02T07:53:14.23287Z",
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "blocking_failed": 1,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l12_key_collision",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 497,
+      "evidence": "理想不变量失败（客户原样行为，R4 已消费键静默吞实证）：单据 received 但 on_hand=10（应 17）、PR-TARGET 收货事件 0 条（应 1）——失败显示成成功（业务边界 5 活教材），如实保留",
+      "error": {
+        "type": "AssertionError",
+        "message": "理想不变量失败（客户原样行为，R4 已消费键静默吞实证）：单据 received 但 on_hand=10（应 17）、PR-TARGET 收货事件 0 条（应 1）——失败显示成成功（业务边界 5 活教材），如实保留"
+      }
+    }
+  ]
+}
