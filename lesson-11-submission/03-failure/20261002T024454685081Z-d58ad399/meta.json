@@ -1,0 +1,15 @@
+{
+  "phase": "red",
+  "argv": [
+    "mvn",
+    "test",
+    "-Dtest=L11PurchaseChecksContractTest"
+  ],
+  "command": "[\"mvn\", \"test\", \"-Dtest=L11PurchaseChecksContractTest\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-10-02T02:44:54.685081+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-11-submission/03-failure/20261002T024454685081Z-d58ad399/output.txt",
+  "sha256": "1d5ce378d3c4dfdb6db9ead85a5252e978bbcd044f4715167825251f07187c1a",
+  "provenance": "local_teaching_capture"
+}
