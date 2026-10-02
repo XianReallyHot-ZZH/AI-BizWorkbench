@@ -1,0 +1,2 @@
+error: the following arguments are required: --workspace
+usage: workbench <command> [--options]

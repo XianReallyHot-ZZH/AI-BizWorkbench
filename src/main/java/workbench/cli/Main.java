@@ -4,6 +4,7 @@ import workbench.bootstrap.Args;
 import workbench.bootstrap.BootstrapCommands;
 import workbench.bootstrap.Command;
 import workbench.bootstrap.JsonOut;
+import workbench.delivery.DeliveryServe;
 import workbench.evals.l07.QualityGate;
 import workbench.evals.l08.CiEvidence;
 import workbench.execution.ExecutionCommands;
@@ -52,6 +53,12 @@ public final class Main {
         // 四件收齐）——上游验收命令 python -X utf8 -m agent.graph --max-rounds 3 的本仓对应面，
         // 退出码 0 completed / 3 awaiting_human_review（正常等待不是失败）/ 2 其余）。
         REGISTRY.register("graph-run", GraphRunner::execute);
+        // L13：交付任务 API 常驻服务经同一条缝注册（讲义 D2——workbenchIncrement
+        // 「可追溯 Task API 与异步状态」即工作台命令，L07 D2 起五连先例；适配器在
+        // workbench.delivery.DeliveryServe——上游 workbench/workbench_server.py serve()
+        // 的对应面。operate 阶段首讲：执行链路封装为 202 + Task ID 的可提交、可查询
+        // 资源，全绿停在 review 等具名人审）。
+        REGISTRY.register("delivery-serve", DeliveryServe::execute);
     }
 
     public static void main(String[] args) {

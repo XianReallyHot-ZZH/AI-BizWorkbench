@@ -35,6 +35,14 @@ public final class Cli {
 
     /** 子进程 classpath：主 classes + 依赖 jar（exec:build-classpath 在测试前落盘）。 */
     private static String childClasspath() {
+        return childClasspathForSubprocess();
+    }
+
+    /**
+     * 同 {@link #childClasspath}，包可见共享（l13 起 Server 支撑件起常驻服务子进程
+     * 需同一 classpath 面——不复制逻辑防漂移；既有调用点行为零变化）。
+     */
+    static String childClasspathForSubprocess() {
         Path cpFile = repoRoot().resolve("target/child-classpath.txt");
         if (!Files.isRegularFile(cpFile)) {
             throw new IllegalStateException(
