@@ -1,0 +1,1265 @@
+diff --git a/src/main/java/workbench/evals/l11/InjectPurchaseDefect.java b/src/main/java/workbench/evals/l11/InjectPurchaseDefect.java
+new file mode 100644
+index 0000000..3059055
+--- /dev/null
++++ b/src/main/java/workbench/evals/l11/InjectPurchaseDefect.java
+@@ -0,0 +1,199 @@
++package workbench.evals.l11;
++
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.FileVisitResult;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.nio.file.SimpleFileVisitor;
++import java.nio.file.attribute.BasicFileAttributes;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * L11 教学缺陷注入装置（讲义 D5；{@code workbench.evals.l09.InjectCancelDefect} /
++ * {@code l10.InjectShipDefect} 同款护栏结构——每讲自含纪律）。对客户树拷贝做
++ * <b>插入式</b>一行手术：入门服务 {@code flowerp/service.py} {@code propose_purchase}
++ * 方法段内的 marker 行（{@code return self.purchase(pid)}，段内恰一次——讲前现查
++ * 全文亦唯一，:329）<b>前</b>插入提前入库行（{@code self.receive_stock(sku, quantity,
++ * "teaching-premature-" + pid)}）——申请保存后立即收货，上游 {@code integration_lab.py}
++ * 的教学缺陷<b>逐字</b>（两行均 :87-88 逐字源）。红点构成 = 过度副作用：字段拍绿、
++ * 库存拍 {@code l11_purchase_normal} 红（17/2/15 + 入库流水）——「同版不同覆盖」
++ * 教学点（与 L10 过度拒绝形态相反）。<b>教学注入，不伪称客户事故</b>（客户实现在场
++ * 且正确，讲义 §1.3）。只写 {@code --dest} 拷贝树，<b>永不写回 vendors</b>（铁律 1）。
++ *
++ * <p>注入形态上游逐字源在场（与 L09 自拟不同）：上游 examples/integration_lab.py
++ * marker/injection 两行逐字即本讲对账件；{@code --restore} 恢复 = 同一装置删注入行
++ * （marker 回原位，diff 互逆可对账——上游 {@code service.write_text(original)} 恢复
++ * 的装置化对应）。
++ *
++ * <p>护栏（缺一即拒，rc 1）：注入面——源树已含注入行（幂等）；marker 行在
++ * propose 段内出现次数 ≠ 1（唯一性校验——上游 {@code original[pos:stop].count(marker)}
++ * 同形，pos/stop = {@code def propose_purchase(} 段到 {@code def purchase(} 段边界）；
++ * dest 已存在（旧证据不可抹）。恢复面——注入行在 dest 出现次数 ≠ 1（0 = 净树幂等
++ * 拒绝；&gt;1 = 拒绝乱删）。拷贝排除 {@code .git}/（目录与文件双面）/ {@code __pycache__}/
++ * 与 {@code .pyc}。成功 rc 0，stdout 出位置 JSON（injected_line = marker 原行号：
++ * 插入其前不位移 marker 的「原位置」语义）。
++ */
++public final class InjectPurchaseDefect {
++
++    /**
++     * 独立预期源（逐字；与合同测试各持一份副本）。上游逐字源在场：
++     * vendors/CodexFDE/docs/courses/L11/examples/integration_lab.py:87-88。
++     */
++    static final String MARKER_LINE = "        return self.purchase(pid)";
++    static final String INJECTED_LINE = "        self.receive_stock(sku, quantity, \"teaching-premature-\" + pid)";
++    private static final String PROPOSE_DEF = "    def propose_purchase(";
++    private static final String PURCHASE_DEF = "    def purchase(";
++
++    private InjectPurchaseDefect() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv, Set.of("--source", "--dest"), Set.of("--restore"));
++            if (args.flag("--restore")) {
++                restore(args);
++                return;
++            }
++            Path source = Path.of(args.require("--source")).toAbsolutePath().normalize();
++            Path dest = Path.of(args.require("--dest")).toAbsolutePath().normalize();
++            Path servicePy = source.resolve("flowerp").resolve("service.py");
++            if (!Files.isRegularFile(servicePy)) {
++                throw new Args.UsageException("--source 下没有 flowerp/service.py：" + source);
++            }
++            if (Files.exists(dest)) {
++                System.err.println("dest 已存在，拒绝覆盖（旧证据不可抹）：" + dest);
++                System.exit(1);
++            }
++            String content = Files.readString(servicePy, StandardCharsets.UTF_8);
++            if (content.contains(INJECTED_LINE)) {
++                System.err.println("已注入：源树 service.py 含 L11 教学注入行，拒绝重复注入");
++                System.exit(1);
++            }
++            int[] section = proposeSection(content);
++            int anchors = countOccurrences(content.substring(section[0], section[1]), MARKER_LINE);
++            if (anchors != 1) {
++                System.err.println("锚点不唯一：propose_purchase 段内 marker 行出现 " + anchors
++                        + " 次（预期恰 1），拒绝注入");
++                System.exit(1);
++            }
++            copyTree(source, dest);
++            Path destService = dest.resolve("flowerp").resolve("service.py");
++            // 上游同形：段内 replace(marker, injection + marker)——插入非替换，marker 保留
++            String broken = content.substring(0, section[0])
++                    + content.substring(section[0], section[1])
++                            .replace(MARKER_LINE, INJECTED_LINE + "\n" + MARKER_LINE)
++                    + content.substring(section[1]);
++            Files.writeString(destService, broken, StandardCharsets.UTF_8);
++
++            List<String> lines = Files.readAllLines(destService, StandardCharsets.UTF_8);
++            int injectedLine = lines.indexOf(INJECTED_LINE) + 1;
++            Map<String, Object> report = new LinkedHashMap<>();
++            report.put("injected", true);
++            report.put("source", source.toString());
++            report.put("dest", dest.toString());
++            report.put("marker_line", injectedLine + 1);
++            report.put("injected_line", injectedLine);
++            report.put("verbatim_source",
++                    "vendors/CodexFDE/docs/courses/L11/examples/integration_lab.py:87-88 (upstream verbatim)");
++            report.put("note", "L11 teaching defect (upstream verbatim premature receive; recovery = "
++                    + "--restore removes this line); copy only, vendors untouched");
++            System.out.println(PyJson.dumpsCompact(report));
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (IOException error) {
++            System.err.println("注入失败：" + error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    private static void restore(Args args) throws IOException {
++        if (args.has("--source")) {
++            throw new Args.UsageException("--restore 不接受 --source（恢复只动 dest 树）");
++        }
++        Path dest = Path.of(args.require("--dest")).toAbsolutePath().normalize();
++        Path destService = dest.resolve("flowerp").resolve("service.py");
++        if (!Files.isRegularFile(destService)) {
++            throw new Args.UsageException("--dest 下没有 flowerp/service.py：" + dest);
++        }
++        String content = Files.readString(destService, StandardCharsets.UTF_8);
++        int count = countOccurrences(content, INJECTED_LINE);
++        if (count != 1) {
++            System.err.println("恢复护栏：dest service.py 中注入行出现 " + count
++                    + " 次（预期恰 1；0 = 净树无注入），拒绝恢复");
++            System.exit(1);
++        }
++        List<String> lines = new ArrayList<>(Files.readAllLines(destService, StandardCharsets.UTF_8));
++        int removedLine = lines.indexOf(INJECTED_LINE) + 1;
++        lines.remove(INJECTED_LINE);
++        Files.writeString(destService, String.join("\n", lines) + "\n", StandardCharsets.UTF_8);
++        Map<String, Object> report = new LinkedHashMap<>();
++        report.put("restored", true);
++        report.put("dest", dest.toString());
++        report.put("removed_line", removedLine);
++        report.put("note", "reverse of L11 teaching injection; diff 互逆可对账");
++        System.out.println(PyJson.dumpsCompact(report));
++    }
++
++    /** propose_purchase 方法段边界 [start, stop)——上游 pos/stop 定位同形。 */
++    private static int[] proposeSection(String content) {
++        int start = content.indexOf(PROPOSE_DEF);
++        if (start < 0) {
++            System.err.println("锚点缺失：service.py 无 " + PROPOSE_DEF);
++            System.exit(1);
++        }
++        int stop = content.indexOf(PURCHASE_DEF, start);
++        if (stop < 0) {
++            System.err.println("锚点缺失：service.py propose_purchase 段后无 " + PURCHASE_DEF);
++            System.exit(1);
++        }
++        return new int[]{start, stop};
++    }
++
++    private static int countOccurrences(String content, String needle) {
++        int count = 0;
++        int at = content.indexOf(needle);
++        while (at >= 0) {
++            count++;
++            at = content.indexOf(needle, at + needle.length());
++        }
++        return count;
++    }
++
++    /** 拷贝整树，排除 .git/（目录与文件）、__pycache__/ 与 .pyc（l08–l10 copyTree 同形）。 */
++    private static void copyTree(Path source, Path dest) throws IOException {
++        List<Path> dirs = new ArrayList<>();
++        Files.walkFileTree(source, new SimpleFileVisitor<>() {
++            @Override
++            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
++                String name = dir.getFileName().toString();
++                if (".git".equals(name) || "__pycache__".equals(name)) {
++                    return FileVisitResult.SKIP_SUBTREE;
++                }
++                dirs.add(dest.resolve(source.relativize(dir).toString()));
++                return FileVisitResult.CONTINUE;
++            }
++
++            @Override
++            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
++                String name = file.getFileName().toString();
++                if (!name.endsWith(".pyc") && !".git".equals(name)) {
++                    Path target = dest.resolve(source.relativize(file).toString());
++                    Files.createDirectories(target.getParent());
++                    Files.copy(file, target);
++                }
++                return FileVisitResult.CONTINUE;
++            }
++        });
++        for (Path dir : dirs) {
++            Files.createDirectories(dir);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l11/PurchaseChecks.java b/src/main/java/workbench/evals/l11/PurchaseChecks.java
+new file mode 100644
+index 0000000..994e5cf
+--- /dev/null
++++ b/src/main/java/workbench/evals/l11/PurchaseChecks.java
+@@ -0,0 +1,361 @@
++package workbench.evals.l11;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++import workbench.evals.EvalHarness;
++import workbench.schedule.Schedule;
++
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * L11 统一入口收口（新讲机制——本讲无 Python 先例，映射源 = 讲义 §2 登记项构成 +
++ * 上游 {@code purchase_request_lab.py} 七模式与合同绑定两 eval）。本地与显式复验
++ * 调用同一本入口——「同一 Eval 身份」（{@link EvalHarness} schema 1.0，L06 已对齐
++ * 客户）。
++ *
++ * <p>默认门九登记项（全 blocking，讲义 D2）：
++ * <ul>
++ * <li>{@code l11_purchase_normal} 正常申请：五字段（PR-TARGET / 规范化 A / 7 / 去空白
++ *     理由 / proposed）+ approved_by 空 + 可再查 + 库存三量 10/2/8 + 除
++ *     purchase_requests 恰 +1（PR-OTHER 不变）外四表不变（合同 acceptance[0]；
++ *     预期由 Java 字面算出，不抄探针返回；注入树红点——过度副作用使库存拍失败）
++ * <li>{@code l11_purchase_zero} / {@code _negative} / {@code _blank_reason} /
++ *     {@code _unknown_sku} / {@code _duplicate_id} 五拒绝拍：预期异常类型 + 前后
++ *     <b>五表快照相等</b>（合同 acceptance[2]「非法数量不产生采购申请」——部分写入
++ *     风险面；duplicate-id 语义如实 = IntegrityError ≠ 幂等成功，上游钉死；注入树
++ *     绿——提前入库副作用不破坏拒绝拍，隔离护栏与注入形态互证）
++ * <li>{@code purchase_request_preserves_reason} 客户绑定 eval 子进程照跑（登记项名 =
++ *     客户名原样，业务权威——ADR-0005；注入树绿——字段面不受库存副作用影响恰是
++ *     「同版不同覆盖」教学点，红点构成如实入账）
++ * <li>{@code write_sets_reject_conflict} 直测本讲 {@link Schedule} 核（登记项名对齐
++ *     上游 eval 名；四组断言逐项对齐上游 {@code eval/cases.py:141}——冲突对内容 /
++ *     共享写集拒绝 / 只读允许 / 目录覆盖与路径别名拒绝。合同 acceptance[1]「写集
++ *     冲突的子任务不得并行」的工作台面默认门承载）
++ * <li>{@code l11_frozen_checks} 客户 eval 双树 + 采购面源件（service.py）指纹复核
++ *     （讲义 C8；注入树红点之二——注入行的指纹观察面）
++ * </ul>
++ *
++ * <p>选跑项 {@code l11_purchase_premature_stock}（blocking，<b>不进默认门</b>——必红
++ * 项：探针模式内人为提前入库，「申请字段绿 + 库存不变红」即上游 premature-stock
++ * 教学失败报告的同款重现；L09 leak / L10 refuse-all 先例：检查发现注入缺陷是护栏
++ * 不是把门卡死的污染）。
++ *
++ * <p>注入树红点构成（两项一因，讲义 §3 步骤 4）：normal + frozen_checks——同一注入
++ * 行（marker 前插提前入库）的两个观察面；五拒绝拍与客户 eval 不受影响（隔离护栏）。
++ *
++ * <p>argv 面（l08–l10 Checks 同形）：{@code --target} 必填（客户树根，须含
++ * flowerp/）；{@code --case}（可多，选跑子集——含选跑项）；{@code --python}
++ * （缺省 .venv/bin/python，按进程 cwd 绝对化不查 PATH）、{@code --no-report}、
++ * {@code --report-path}。stdout 打印全量报告；退出码 = blocking 失败决定。
++ */
++public final class PurchaseChecks {
++
++    /** 冻结面（讲义 C8）：客户 eval 双树 + 采购面源件（注入 diff 即对账件）。 */
++    private static final String[] FROZEN_FILES = {
++            "eval/harness.py", "eval/cases.py", "flowerp/service.py"};
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    private PurchaseChecks() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--target", "--python", "--report-path"), Set.of("--no-report"),
++                    List.of(), Set.of("--case"));
++            Path target = Path.of(args.require("--target")).toAbsolutePath().normalize();
++            if (!Files.isDirectory(target.resolve("flowerp"))) {
++                throw new Args.UsageException("--target 下没有 flowerp/：" + target);
++            }
++            Path interpreter = PurchaseProbe.resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            Path reportPath = (args.flag("--no-report") || !args.has("--report-path"))
++                    ? null : Path.of(args.require("--report-path"));
++            List<String> selected = args.repeatingList("--case");
++            List<EvalHarness.Entry> all = entries(target, interpreter);
++            List<EvalHarness.Entry> run = selected.isEmpty() ? defaultEntries(all) : all.stream()
++                    .filter(entry -> selected.contains(entry.name())).toList();
++            if (!selected.isEmpty() && run.size() != selected.size()) {
++                List<String> known = run.stream().map(EvalHarness.Entry::name).toList();
++                List<String> unknown = selected.stream().filter(name -> !known.contains(name)).toList();
++                if (!unknown.isEmpty()) {
++                    throw new Args.UsageException("未知登记项 --case：" + unknown);
++                }
++                List<String> duplicated = selected.stream().distinct()
++                        .filter(name -> selected.stream().filter(name::equals).count() > 1).toList();
++                throw new Args.UsageException("重复登记项 --case：" + duplicated);
++            }
++            EvalHarness.Outcome outcome = EvalHarness.run(run, "all", null, reportPath);
++            System.out.println(PyJson.dumps(outcome.report()));
++            if (outcome.exitCode() != 0) {
++                System.exit(outcome.exitCode());
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (PurchaseProbe.ToolFailure error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    /** 默认门 = 九件（premature-stock 选跑项排除——必红项不进默认门）。 */
++    private static List<EvalHarness.Entry> defaultEntries(List<EvalHarness.Entry> all) {
++        return all.stream()
++                .filter(entry -> !"l11_purchase_premature_stock".equals(entry.name())).toList();
++    }
++
++    static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
++        return List.of(
++                new EvalHarness.Entry("l11_purchase_normal", "blocking",
++                        () -> purchaseScenario(interpreter, target, "normal")),
++                new EvalHarness.Entry("l11_purchase_zero", "blocking",
++                        () -> purchaseScenario(interpreter, target, "zero")),
++                new EvalHarness.Entry("l11_purchase_negative", "blocking",
++                        () -> purchaseScenario(interpreter, target, "negative")),
++                new EvalHarness.Entry("l11_purchase_blank_reason", "blocking",
++                        () -> purchaseScenario(interpreter, target, "blank-reason")),
++                new EvalHarness.Entry("l11_purchase_unknown_sku", "blocking",
++                        () -> purchaseScenario(interpreter, target, "unknown-sku")),
++                new EvalHarness.Entry("l11_purchase_duplicate_id", "blocking",
++                        () -> purchaseScenario(interpreter, target, "duplicate-id")),
++                new EvalHarness.Entry("purchase_request_preserves_reason", "blocking",
++                        () -> customerCase(interpreter, target, "purchase_request_preserves_reason")),
++                new EvalHarness.Entry("write_sets_reject_conflict", "blocking",
++                        () -> writeSetsRejectConflict()),
++                new EvalHarness.Entry("l11_purchase_premature_stock", "blocking",
++                        () -> purchaseScenario(interpreter, target, "premature-stock")),
++                new EvalHarness.Entry("l11_frozen_checks", "blocking",
++                        () -> frozenChecks(target)));
++    }
++
++    // ---- 场景断言（独立预期，全部留 Java） ------------------------------------------
++
++    /**
++     * 采购面场景：探针回报原始观察值，独立预期与全部判断在本方法完成（不抄子进程
++     * 返回）。五表相等性、PR-OTHER 保护同样 Java 断言。premature-stock 模式断言
++     * 「库存不变」——净树上探针自足提前入库使其必然失败（必红项语义 = 上游教学
++     * 失败报告的同款重现；注入树同红——两径一义，红点构成如实入账）。
++     */
++    private static String purchaseScenario(Path interpreter, Path target, String mode) {
++        try (PurchaseProbe.TempDb tempDb = PurchaseProbe.tempDb("l11-purchase-")) {
++            JsonNode observed = PurchaseProbe.purchase(interpreter, target, tempDb.db, mode);
++            JsonNode error = observed.path("error");
++            JsonNode result = observed.path("result");
++            switch (mode) {
++                case "normal", "premature-stock" -> {
++                    if (!error.isMissingNode() && !error.isNull()) {
++                        throw new AssertionError("预期申请成功，实际被拒：" + error);
++                    }
++                    // 五字段独立预期（合同 acceptance[0]）：稳定身份 / 规范化 SKU /
++                    // 数量 / 去空白理由 / proposed；无审批人
++                    for (String[] field : new String[][]{
++                            {"id", "PR-TARGET"}, {"sku", "A"}, {"reason", "低于补货点"},
++                            {"status", "proposed"}}) {
++                        if (!field[1].equals(result.path(field[0]).asText())) {
++                            throw new AssertionError("expected " + field[0] + "=" + field[1]
++                                    + " actual=" + result.path(field[0]).asText());
++                        }
++                    }
++                    if (result.path("quantity").asInt(-1) != 7) {
++                        throw new AssertionError("expected quantity=7 actual="
++                                + result.path("quantity").asInt(-1));
++                    }
++                    if (!result.path("approved_by").isNull()
++                            && !result.path("approved_by").isMissingNode()) {
++                        throw new AssertionError("expected approved_by 空 actual="
++                                + result.path("approved_by"));
++                    }
++                    if (!observed.path("repurchase").equals(result)) {
++                        throw new AssertionError("稳定身份失效：purchase() 再查应等于原返回："
++                                + observed.path("repurchase"));
++                    }
++                    // 独立预期：申请 ≠ 收货——三量仍 10/2/8（走 product() 计算列）
++                    assertQuantities(observed.path("product_after"), 10, 2, 8);
++                    // 五表：除 purchase_requests 恰 +1（且非 PR-TARGET 行 == before，
++                    // PR-OTHER 保护）外全部不变
++                    assertUnchangedExceptRequests(observed, "PR-TARGET");
++                    return mode.equals("normal")
++                            ? "正常申请：五字段保存、可再查、10/2/8 不变、PR-OTHER 保护、五表只多一行"
++                            : "提前入库教学失败报告：字段绿、库存不变红（必红项——上游同款重现）";
++                }
++                case "zero", "negative", "blank-reason" -> {
++                    assertRejected(error, "ValueError", mode, observed);
++                    return "数量/原因非法拒绝：ValueError、五表不变";
++                }
++                case "unknown-sku" -> {
++                    assertRejected(error, "NotFound", mode, observed);
++                    return "未知 SKU 拒绝：NotFound、五表不变";
++                }
++                case "duplicate-id" -> {
++                    // 语义如实（上游钉死）：唯一性冲突 = IntegrityError，不是幂等返回原成功
++                    assertRejected(error, "IntegrityError", mode, observed);
++                    return "重复编号拒绝：IntegrityError（非幂等成功）、五表不变";
++                }
++                default -> throw new AssertionError("未知模式：" + mode);
++            }
++        }
++    }
++
++    /** 拒绝拍共通：预期异常类型 + 前后五表快照相等（部分写入面）。 */
++    private static void assertRejected(JsonNode error, String expectedType,
++                                       String mode, JsonNode observed) {
++        if (!error.isObject() || !expectedType.equals(error.path("type").asText())) {
++            throw new AssertionError("mode=" + mode + " expected " + expectedType
++                    + " 实际：" + error);
++        }
++        if (!observed.path("before").equals(observed.path("after"))) {
++            throw new AssertionError("mode=" + mode + " 拒绝后五表状态发生变化（不应有半成品）");
++        }
++    }
++
++    /** 三量断言（product() 计算列：available = on_hand - reserved 不在 stock 表）。 */
++    private static void assertQuantities(JsonNode product, int onHand, int reserved, int available) {
++        if (product.path("on_hand").asInt(-1) != onHand
++                || product.path("reserved").asInt(-1) != reserved
++                || product.path("available").asInt(-1) != available) {
++            throw new AssertionError("expected (" + onHand + "," + reserved + "," + available
++                    + ") actual=(" + product.path("on_hand").asInt(-1) + ","
++                    + product.path("reserved").asInt(-1) + "," + product.path("available").asInt(-1) + ")");
++        }
++    }
++
++    /** 五表对照：除 purchase_requests 恰 +1 且非目标行不变外，四表完全相等。 */
++    private static void assertUnchangedExceptRequests(JsonNode observed, String targetId) {
++        for (String table : new String[]{"stock", "inventory_events", "sales_orders",
++                "sales_order_lines"}) {
++            if (!observed.path("before").path(table).equals(observed.path("after").path(table))) {
++                throw new AssertionError("申请改变了 " + table + "（申请 ≠ 收货，库存不得动）");
++            }
++        }
++        JsonNode beforeRequests = observed.path("before").path("purchase_requests");
++        JsonNode afterRequests = observed.path("after").path("purchase_requests");
++        if (afterRequests.size() != beforeRequests.size() + 1) {
++            throw new AssertionError("expected purchase_requests 恰 +1：before="
++                    + beforeRequests.size() + " after=" + afterRequests.size());
++        }
++        int nonTarget = 0;
++        for (JsonNode row : afterRequests) {
++            if (!targetId.equals(row.path("id").asText())) {
++                nonTarget++;
++            }
++        }
++        if (nonTarget != beforeRequests.size()) {
++            throw new AssertionError("非目标申请行发生变化（PR-OTHER 保护失效）");
++        }
++    }
++
++    // ---- write_sets_reject_conflict（工作台面，直测本核） ------------------------
++
++    /**
++     * 绑定 eval（上游 CodexFDE {@code eval/cases.py:141} 四组断言逐项对齐）：
++     * 冲突对内容 / 共享写集拒绝 / 只读允许 / 目录覆盖与路径别名拒绝。返回词面上游
++     * 逐字。纯核直调（schedule 无 CLI——讲义 D1；本登记项即其公开调用面）。
++     */
++    private static String writeSetsRejectConflict() {
++        List<Schedule.Conflict> conflicts = Schedule.conflictPairs(List.of(
++                new Schedule.Subtask("impl", List.of("flowerp/purchasing.py")),
++                new Schedule.Subtask("tests",
++                        List.of("flowerp/purchasing.py", "tests/test_flowerp.py"))));
++        if (conflicts.size() != 1
++                || !"impl".equals(conflicts.get(0).left()) || !"tests".equals(conflicts.get(0).right())
++                || !conflicts.get(0).shared().equals(List.of("flowerp/purchasing.py"))) {
++            throw new AssertionError("冲突对内容不符：" + conflicts);
++        }
++        expectScheduleViolation(() -> Schedule.assertParallelSafe(List.of(
++                        new Schedule.Subtask("impl", List.of("flowerp/service.py")),
++                        new Schedule.Subtask("eval", List.of("flowerp/service.py")))),
++                "共享写集仍被判为可并行");
++        Map<String, Object> ok = Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("spec", List.of(), List.of("FDE_SPEC.md")),
++                new Schedule.Subtask("risk", List.of(), List.of("AGENTS.md"))));
++        if (!Boolean.TRUE.equals(ok.get("parallel"))) {
++            throw new AssertionError("只读子任务应可并行：" + ok);
++        }
++        // 目录覆盖 + 路径别名（上游 for 循环两组同形）
++        for (List<Schedule.Subtask> tasks : List.of(
++                List.of(new Schedule.Subtask("impl", List.of("flowerp/")),
++                        new Schedule.Subtask("review", List.of(), List.of("flowerp/service.py"))),
++                List.of(new Schedule.Subtask("impl", List.of("flowerp\\service.py")),
++                        new Schedule.Subtask("other", List.of("./flowerp/service.py"))))) {
++            expectScheduleViolation(() -> Schedule.assertParallelSafe(tasks),
++                    "目录写集、路径别名或读写依赖被错误判为独立");
++        }
++        return "共享写集、目录覆盖与读写依赖不得并行；只读子任务可以并行";
++    }
++
++    private static void expectScheduleViolation(Runnable probe, String message) {
++        try {
++            probe.run();
++        } catch (Schedule.ScheduleViolation expected) {
++            return;
++        }
++        throw new AssertionError(message);
++    }
++
++    // ---- 客户 eval 与冻结指纹（l08–l10 同形） ------------------------------------
++
++    /** 客户 blocking eval 子进程照跑（l08 SalesChecks.customerCase 可见性开放复用）。 */
++    private static String customerCase(Path interpreter, Path target, String caseName) {
++        return workbench.evals.l08.SalesChecks.customerCase(interpreter, target, caseName);
++    }
++
++    /** 客户 eval 双树 + 采购面源件指纹复核（l07–l10 frozenChecks 扩面：采购面源件）。 */
++    private static String frozenChecks(Path target) {
++        Map<String, Object> mismatched = new LinkedHashMap<>();
++        for (String rel : FROZEN_FILES) {
++            String targetHash = sha256(target.resolve(rel));
++            String sourceHash = sha256(repoRoot().resolve("vendors").resolve("flowERP").resolve(rel));
++            if (!targetHash.equals(sourceHash)) {
++                mismatched.put(rel, Map.of(
++                        "target", targetHash.substring(0, 12),
++                        "vendors", sourceHash.substring(0, 12)));
++            }
++        }
++        if (!mismatched.isEmpty()) {
++            throw new AssertionError("冻结检查被改动: " + PyJson.dumpsCompact(mismatched));
++        }
++        StringBuilder evidence = new StringBuilder("冻结检查指纹一致: ");
++        for (int i = 0; i < FROZEN_FILES.length; i++) {
++            if (i > 0) {
++                evidence.append(", ");
++            }
++            evidence.append(FROZEN_FILES[i]).append('=')
++                    .append(sha256(target.resolve(FROZEN_FILES[i])).substring(0, 12));
++        }
++        return evidence.toString();
++    }
++
++    private static String sha256(Path file) {
++        try {
++            return sha256(java.nio.file.Files.readAllBytes(file));
++        } catch (java.io.IOException error) {
++            throw new PurchaseProbe.ToolFailure("冻结检查文件读取失败：" + file, error);
++        }
++    }
++
++    private static String sha256(byte[] bytes) {
++        try {
++            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
++        } catch (NoSuchAlgorithmException error) {
++            throw new PurchaseProbe.ToolFailure("SHA-256 不可用", error);
++        }
++    }
++
++    /** l06–l10 Checks.repoRoot 同形：锚定本类装载位置（target/classes → 仓库根），不随 cwd 漂移。 */
++    private static Path repoRoot() {
++        try {
++            return Path.of(PurchaseChecks.class.getProtectionDomain()
++                    .getCodeSource().getLocation().toURI()).toAbsolutePath().getParent().getParent();
++        } catch (java.net.URISyntaxException error) {
++            throw new PurchaseProbe.ToolFailure("仓库根定位失败（class 装载位置）", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l11/PurchaseProbe.java b/src/main/java/workbench/evals/l11/PurchaseProbe.java
+new file mode 100644
+index 0000000..98e3097
+--- /dev/null
++++ b/src/main/java/workbench/evals/l11/PurchaseProbe.java
+@@ -0,0 +1,201 @@
++package workbench.evals.l11;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * 客户实现驱动缝（L11 采购申请 propose 面；l07 OrderProbe / l08 AtomicProbe / l09
++ * CancelProbe / l10 ShipProbe 同款先例）。子进程 python 一次跑完一个模式、回报原始
++ * 观察值 JSON；<b>判断与预期计算一律留在调用方</b>（独立预期：normal 拍五字段 +
++ * 10/2/8 由 Java 字面断言，不抄子进程返回——上游 {@code purchase_request_lab.py}
++ * 「先手算后运行」同义）。
++ *
++ * <p>七模式（映射源 {@code vendors/CodexFDE/docs/courses/L11/examples/
++ * purchase_request_lab.py}，只读对照）：夹具 = A 在库 10 + OTHER 预占 2 + 既有申请
++ * PR-OTHER（五表快照含之）；normal（propose("a", 7, "  低于补货点  ", "PR-TARGET")
++ * ——小写 SKU 测规范化、带空白理由测去空白）；zero / negative / blank-reason /
++ * unknown-sku / duplicate-id（五拒绝：夹具先建 PR-TARGET 再重复提交——IntegrityError
++ * ≠ 幂等成功，上游钉死）；premature-stock（申请后人为 receive_stock——教学缺陷
++ * 反证面：「字段检查绿、库存检查红」的同版不同覆盖演示，<b>不进默认门</b>——
++ * 必红项，讲义 D2）。五表快照（purchase_requests / stock / inventory_events /
++ * sales_orders / sales_order_lines）before/after 原始回报，相等性与字段断言由
++ * Java 完成。三量走 {@code service.product()} 计算列（available 不在 stock 表——
++ * L10 教训④ 承袭）。
++ *
++ * <p>子进程超时 300s（l06–l10 同值）。
++ */
++final class PurchaseProbe {
++
++    /** 工具以 rc 1 收场的失败（l07–l10 同形；词面入 stderr）。 */
++    static final class ToolFailure extends RuntimeException {
++        ToolFailure(String message) {
++            super(message);
++        }
++
++        ToolFailure(String message, Throwable cause) {
++            super(message, cause);
++        }
++    }
++
++    private static final long TIMEOUT_SECONDS = 300;
++
++    /**
++     * 采购面片段：argv = [db, 客户树, mode]；stdout 出单行 JSON 原始观察值
++     * （mode/result/error/repurchase/product 前后三量/before/after）。异常一律回报
++     * type+message 不吞（expected_error 面由调用方断言——与上游 except 形态等义，
++     * 探针不判对错）。CJK 经 -X utf8 子进程传递（L04/L05 先例）。
++     */
++    private static final String SNIPPET = """
++            import json, sys
++            from pathlib import Path
++            sys.path.insert(0, sys.argv[2])
++            from flowerp.models import NotFound, OrderLine
++            from flowerp.service import ERPService
++            from flowerp.store import ERPStore
++
++            mode = sys.argv[3]
++            TABLES = ("purchase_requests", "stock", "inventory_events", "sales_orders", "sales_order_lines")
++
++            def out(obj):
++                print(json.dumps(obj, ensure_ascii=False))
++
++            def snapshot():
++                return {t: store.rows("SELECT * FROM %s ORDER BY rowid" % t) for t in TABLES}
++
++            def quantities(product):
++                return {"on_hand": product["on_hand"], "reserved": product["reserved"],
++                        "available": product["available"]}
++
++            store = ERPStore(Path(sys.argv[1]))
++            service = ERPService(store)
++            service.add_product("A", "L11 商品 A", 100)
++            service.receive_stock("A", 10, "l11-open-A")
++            service.create_order("L11 其他客户", [OrderLine("A", 2, 100)], "OTHER")
++            service.reserve_order("OTHER")
++            service.propose_purchase("A", 3, "另一项需求", "PR-OTHER")
++            if mode == "duplicate-id":
++                service.propose_purchase("A", 7, "低于补货点", "PR-TARGET")
++            product_before = quantities(service.product("A"))
++            before = snapshot()
++            quantity = {"zero": 0, "negative": -1}.get(mode, 7)
++            reason = "   " if mode == "blank-reason" else "  低于补货点  "
++            sku = "UNKNOWN" if mode == "unknown-sku" else "a"
++            error = None
++            result = None
++            try:
++                result = service.propose_purchase(sku, quantity, reason, "PR-TARGET")
++            except Exception as exc:
++                error = {"type": type(exc).__name__, "message": str(exc)}
++            if mode == "premature-stock" and result is not None:
++                # 教学缺陷（purchase_request_lab premature-stock 同形）：申请后提前入库。
++                # 字段仍正确、库存变 17/2/15——「字段绿库存红」由调用方断言。
++                service.receive_stock("A", 7, "teaching-premature-receipt")
++            after = snapshot()
++            repurchase = None
++            product_after = None
++            if result is not None:
++                repurchase = service.purchase("PR-TARGET")
++                product_after = quantities(service.product("A"))
++            out({
++                "mode": mode,
++                "result": result,
++                "error": error,
++                "repurchase": repurchase,
++                "product_before": product_before,
++                "product_after": product_after,
++                "before": before,
++                "after": after,
++            })
++            """;
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private PurchaseProbe() {}
++
++    /** 相对解释器路径按进程 cwd 绝对化（l06–l10 同款；不做 PATH 查找——CI 须传绝对路径）。 */
++    static Path resolveInterpreter(String python) {
++        return Path.of(python).toAbsolutePath().normalize();
++    }
++
++    /** 跑一次采购模式（七模式），解析 stdout 单行 JSON 为观察值。 */
++    static JsonNode purchase(Path interpreter, Path target, Path db, String mode) {
++        List<String> argv = new ArrayList<>(List.of(
++                interpreter.toString(), "-X", "utf8", "-c", SNIPPET,
++                db.toString(), target.toString(), mode));
++        Process process;
++        try {
++            process = new ProcessBuilder(argv).start();
++        } catch (IOException error) {
++            throw new ToolFailure("python 启动失败（" + interpreter + "）", error);
++        }
++        String stdout;
++        String stderr;
++        int code;
++        try {
++            stdout = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
++            stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
++            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
++                process.destroyForcibly();
++                throw new ToolFailure("python 子进程超时（" + TIMEOUT_SECONDS + "s）：" + interpreter);
++            }
++            code = process.exitValue();
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出读取失败", error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new ToolFailure("python 等待被中断");
++        }
++        if (code != 0) {
++            throw new ToolFailure("python 子进程失败 rc=" + code + "：" + stderr.strip());
++        }
++        try {
++            return MAPPER.readTree(stdout);
++        } catch (IOException error) {
++            throw new ToolFailure("python 输出不可解析：" + stdout.strip()
++                    + "；stderr：" + stderr.strip(), error);
++        }
++    }
++
++    /** 临时库（自建库、天然干净数据开始；close 递归清理——l06–l10 TempDb 同形）。 */
++    static final class TempDb implements AutoCloseable {
++        private final Path dir;
++        final Path db;
++
++        private TempDb(Path dir) {
++            this.dir = dir;
++            this.db = dir.resolve("scenario.db");
++        }
++
++        @Override
++        public void close() {
++            try (var stream = Files.walk(dir)) {
++                stream.sorted(Comparator.reverseOrder()).forEach(p -> {
++                    try {
++                        Files.delete(p);
++                    } catch (IOException error) {
++                        throw new java.io.UncheckedIOException(error);
++                    }
++                });
++            } catch (IOException error) {
++                throw new java.io.UncheckedIOException(error);
++            }
++        }
++    }
++
++    static TempDb tempDb(String prefix) {
++        try {
++            return new TempDb(Files.createTempDirectory(prefix));
++        } catch (IOException error) {
++            throw new ToolFailure("临时目录创建失败（" + prefix + "）", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/schedule/Schedule.java b/src/main/java/workbench/schedule/Schedule.java
+new file mode 100644
+index 0000000..c7d94c9
+--- /dev/null
++++ b/src/main/java/workbench/schedule/Schedule.java
+@@ -0,0 +1,233 @@
++package workbench.schedule;
++
++import java.util.ArrayList;
++import java.util.HashSet;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++import java.util.Set;
++
++/**
++ * 声明检查器纯核（L11；上游 {@code vendors/CodexFDE/agent/schedule.py} 对应物，逐句
++ * 对照——agent 家族第三件，{@code repair/}、{@code loop/} 先例）。<b>无 CLI 面</b>：
++ * 上游 schedule.py 即纯库件（loop.py / graph.py 均有 main，唯它没有），调用面全在
++ * eval 登记项（{@code write_sets_reject_conflict}）与合同测试（讲义 D1 如实不造）。
++ *
++ * <p>语义（上游钉死，教学点全承接）：
++ * <ul>
++ * <li>独立性 = 三个交集都空：{@code W甲∩W乙}（不互相覆盖）、{@code W甲∩R乙}、
++ *     {@code W乙∩R甲}（互不改变对方依据）；<b>读读共享允许</b>。
++ * <li>路径规范化：反斜杠转斜杠、大小写不敏感保守折叠（课堂 Windows/macOS 跨平台，
++ *     不同大小写路径不算独立）、尾斜杠剥除、拒绝绝对路径 / {@code ..} 跳转 /
++ *     通配符 {@code :*?[]}——声明只接受明确的仓库相对文件或目录。
++ * <li>目录覆盖：写 {@code flowerp/} 即与读 {@code flowerp/service.py} 冲突
++ *     （前缀包含 + 根 {@code .} 全匹配）。
++ * <li>共享资源：resource_set 交集报 {@code resource:} 前缀冲突（数据库/端口/报告
++ *     路径等文件外共享）。
++ * <li>共享项取更深路径（parts 更多者——上游 {@code max(key=len(parts))} 同形）。
++ * <li>input_version 不统一拒绝——两份结论不得各基于不同共同输入。
++ * <li><b>边界</b>（上游明示，教学反例 undeclared-read）：只查申报路径，不扫描真实
++ *     工具行为、不锁文件、不沙箱——「声明通过 ≠ 执行安全」由调用方判断面承载。
++ * </ul>
++ *
++ * <p>冲突拒绝词面（上游逐字）：「子任务名称必须非空且唯一」「读写集必须是明确的仓库
++ * 相对文件或目录」「共享资源名称必须是非空且不含空白的标识」「并行子任务必须使用同
++ * 一个固定输入版本」「共享写集或读写依赖不得并行：a×b→files」。
++ */
++public final class Schedule {
++
++    /** 子任务声明（上游 {@code Subtask} dataclass frozen 对应物；list 不可变约定）。 */
++    public record Subtask(String name, List<String> writeSet, List<String> readSet,
++                          List<String> resourceSet, String inputVersion) {
++
++        public Subtask {
++            writeSet = List.copyOf(writeSet);
++            readSet = List.copyOf(readSet);
++            resourceSet = List.copyOf(resourceSet);
++            inputVersion = inputVersion == null ? "" : inputVersion;
++        }
++
++        public Subtask(String name, List<String> writeSet) {
++            this(name, writeSet, List.of(), List.of(), "");
++        }
++
++        public Subtask(String name, List<String> writeSet, List<String> readSet) {
++            this(name, writeSet, readSet, List.of(), "");
++        }
++    }
++
++    /** 一对冲突（上游 {@code (left, right, [files...])} 三元组对应物）。 */
++    public record Conflict(String left, String right, List<String> shared) {}
++
++    private Schedule() {}
++
++    /**
++     * 路径规范化（上游 {@code _scope} 逐句）：反斜杠→斜杠、拒绝越界与通配符、
++     * {@code .} 段折叠、尾斜杠剥除、大小写保守折叠（Locale.ROOT——教学场景 ASCII
++     * 为主，与 Python casefold 在此面等价）。
++     */
++    static String scope(String value) {
++        String replaced = value.replace("\\", "/");
++        if (replaced.isBlank() || replaced.startsWith("/")
++                || hasWildcard(replaced) || hasParentHop(replaced)) {
++            throw new ScheduleViolation("读写集必须是明确的仓库相对文件或目录");
++        }
++        List<String> parts = new ArrayList<>();
++        for (String part : replaced.split("/")) {
++            // PurePosixPath 语义：空段与 "." 段折叠掉，".." 保留（已在上面拒绝）
++            if (!part.isEmpty() && !".".equals(part)) {
++                parts.add(part);
++            }
++        }
++        return String.join("/", parts).toLowerCase(Locale.ROOT);
++    }
++
++    private static boolean hasWildcard(String value) {
++        return value.indexOf(':') >= 0 || value.indexOf('*') >= 0
++                || value.indexOf('?') >= 0 || value.indexOf('[') >= 0 || value.indexOf(']') >= 0;
++    }
++
++    private static boolean hasParentHop(String value) {
++        for (String part : value.split("/")) {
++            if ("..".equals(part)) {
++                return true;
++            }
++        }
++        return false;
++    }
++
++    /** 重叠判定（上游 {@code _overlap} 逐句）：相等 / 根全匹配 / 前缀包含。 */
++    static boolean overlap(String left, String right) {
++        return left.equals(right) || ".".equals(left) || ".".equals(right)
++                || left.startsWith(right + "/") || right.startsWith(left + "/");
++    }
++
++    /** 资源名规范化（上游 {@code _resource} 逐句）：非空、无空白、小写折叠。 */
++    static String resource(String value) {
++        String normalized = value.strip().toLowerCase(Locale.ROOT);
++        if (normalized.isEmpty() || normalized.chars().anyMatch(Character::isWhitespace)) {
++            throw new ScheduleViolation("共享资源名称必须是非空且不含空白的标识");
++        }
++        return normalized;
++    }
++
++    /**
++     * 全部冲突对（上游 {@code conflict_pairs} 逐句）：名称非空唯一校验 → 写×写与
++     * 写×读双向逐对比较（读×读不算冲突）→ resource_set 交集单列。顺序按输入序配对、
++     * 每对内共享文件字典序（上游 sorted 同义）。
++     */
++    public static List<Conflict> conflictPairs(List<Subtask> tasks) {
++        List<Subtask> items = List.copyOf(tasks);
++        List<String> names = items.stream().map(task -> task.name().strip()).toList();
++        if (names.stream().anyMatch(String::isEmpty) || new HashSet<>(names).size() != names.size()) {
++            throw new ScheduleViolation("子任务名称必须非空且唯一");
++        }
++        Map<String, List<String>[]> scopes = new LinkedHashMap<>();
++        Map<String, List<String>> resources = new LinkedHashMap<>();
++        for (Subtask task : items) {
++            scopes.put(task.name(), new List[]{
++                    task.writeSet().stream().map(Schedule::scope).toList(),
++                    task.readSet().stream().map(Schedule::scope).toList()});
++            resources.put(task.name(), task.resourceSet().stream().map(Schedule::resource).toList());
++        }
++        List<Conflict> conflicts = new ArrayList<>();
++        for (int index = 0; index < items.size(); index++) {
++            for (int right = index + 1; right < items.size(); right++) {
++                Subtask left = items.get(index);
++                Subtask other = items.get(right);
++                List<String> leftWrites = scopes.get(left.name())[0];
++                List<String> leftReads = scopes.get(left.name())[1];
++                List<String> rightWrites = scopes.get(other.name())[0];
++                List<String> rightReads = scopes.get(other.name())[1];
++                Set<String> shared = new LinkedHashSet<>();
++                // 写×（写+读）双向（上游 ((left_writes, right_writes+right_reads),
++                // (right_writes, left_reads)) 同形）
++                for (List<String> writes : List.of(leftWrites)) {
++                    for (String a : writes) {
++                        for (String b : concat(rightWrites, rightReads)) {
++                            if (overlap(a, b)) {
++                                shared.add(deeper(a, b));
++                            }
++                        }
++                    }
++                }
++                for (String a : rightWrites) {
++                    for (String b : leftReads) {
++                        if (overlap(a, b)) {
++                            shared.add(deeper(a, b));
++                        }
++                    }
++                }
++                if (!shared.isEmpty()) {
++                    conflicts.add(new Conflict(left.name(), other.name(),
++                            shared.stream().sorted().toList()));
++                }
++                List<String> sharedResources = resources.get(left.name()).stream()
++                        .filter(resources.get(other.name())::contains).distinct().sorted().toList();
++                if (!sharedResources.isEmpty()) {
++                    conflicts.add(new Conflict(left.name(), other.name(),
++                            sharedResources.stream().map(value -> "resource:" + value).toList()));
++                }
++            }
++        }
++        return List.copyOf(conflicts);
++    }
++
++    private static List<String> concat(List<String> left, List<String> right) {
++        List<String> all = new ArrayList<>(left);
++        all.addAll(right);
++        return all;
++    }
++
++    /** 更深路径（上游 {@code max((a,b), key=len(parts))}：parts 多者，并列取首个）。 */
++    private static String deeper(String a, String b) {
++        return partsCount(a) >= partsCount(b) ? a : b;
++    }
++
++    private static int partsCount(String scope) {
++        return scope.isEmpty() ? 0 : scope.split("/").length;
++    }
++
++    /**
++     * 并行安全断言（上游 {@code assert_parallel_safe} 逐句）：input_version 统一 →
++     * 冲突拒绝（词面上游逐字）→ 结果 dict（{@code parallel/tasks/conflicts/
++     * input_version}）。通过 ≠ 执行安全（undeclared-read 边界由调用方承载）。
++     */
++    public static Map<String, Object> assertParallelSafe(List<Subtask> tasks) {
++        List<Subtask> items = List.copyOf(tasks);
++        Set<String> versions = new LinkedHashSet<>();
++        for (Subtask task : items) {
++            String version = task.inputVersion().strip();
++            if (!version.isEmpty()) {
++                versions.add(version);
++            }
++        }
++        if (versions.size() > 1) {
++            throw new ScheduleViolation("并行子任务必须使用同一个固定输入版本");
++        }
++        List<Conflict> conflicts = conflictPairs(items);
++        if (!conflicts.isEmpty()) {
++            List<String> parts = new ArrayList<>();
++            for (Conflict conflict : conflicts) {
++                parts.add(conflict.left() + "×" + conflict.right() + "→"
++                        + String.join(",", conflict.shared()));
++            }
++            throw new ScheduleViolation("共享写集或读写依赖不得并行：" + String.join("; ", parts));
++        }
++        Map<String, Object> result = new LinkedHashMap<>();
++        result.put("parallel", true);
++        result.put("tasks", items.stream().map(Subtask::name).toList());
++        result.put("conflicts", List.of());
++        result.put("input_version", versions.isEmpty() ? "" : versions.iterator().next());
++        return result;
++    }
++
++    /** 声明违规（上游 {@code ValueError} 对应物；词面上游逐字）。 */
++    public static final class ScheduleViolation extends RuntimeException {
++        public ScheduleViolation(String message) {
++            super(message);
++        }
++    }
++}
+diff --git a/src/test/java/workbench/schedule/L11ScheduleContractTest.java b/src/test/java/workbench/schedule/L11ScheduleContractTest.java
+new file mode 100644
+index 0000000..dfc3633
+--- /dev/null
++++ b/src/test/java/workbench/schedule/L11ScheduleContractTest.java
+@@ -0,0 +1,241 @@
++package workbench.schedule;
++
++import org.junit.jupiter.api.Test;
++
++import java.util.List;
++import java.util.Map;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.assertj.core.api.Assertions.assertThatThrownBy;
++
++/**
++ * L11 声明检查器直调机检：讲义 docs/lessons/L11-独立写集并行调度.md §2 C3/C5
++ * （schedule 库核公开方法直调缝——spec 已具名确认的两个新高缝之一；schedule 无 CLI：
++ * 上游 agent/schedule.py 即纯库件，讲义 D1）。映射源 =
++ * vendors/CodexFDE/docs/courses/L11/examples/schedule_lab.py 十模式 + 上游
++ * {@code agent/schedule.py} 判定面，只读对照。
++ *
++ * <p>十模式 observed 对照上游 EXPECTED 表（仅 independent / read-only /
++ * undeclared-read 为 allowed）；三交集 / 规范化 / 资源 / 版本面逐项机检。
++ * <b>undeclared-read 教学点</b>（上游 schedule_lab judgment 同义）：声明层面 allowed
++ * 不是安全依据——补报真实读取后即 rejected（「声明通过 ≠ 执行安全」的机检承载）。
++ *
++ * <p>本类与实现同 commit（直调面编译依赖实现类；起始红由
++ * {@code L11PurchaseChecksContractTest} main 缝先行——L06-java「编译不绑实现类」
++ * 教训承袭，讲义 §3 步骤 2 头注在案）。
++ *
++ * <pre>
++ * 用例 → 合同映射：
++ * tenModesMatchUpstreamExpectedTable       C5 十模式 observed 逐项对照
++ * undeclaredReadAllowedIsNotSafe           C3/C9 声明通过 ≠ 执行安全（补报读取即拒）
++ * writeWriteReadWriteBothDirections        C3 三交集（写写 + 写读双向；读读共享允许）
++ * directoryCoverageReportsDeeperPath       C3 目录覆盖 + 共享项取更深路径
++ * pathAliasesCollapseToSameScope           C3 别名（反斜杠/大小写/./前缀）
++ * invalidPathsAreRejected                  C3 越界（绝对路径/../通配符/盘符/空白）
++ * duplicateAndBlankNamesRejected           C3 名称非空唯一
++ * sharedResourcesReportedWithPrefix        C3 resource: 前缀冲突
++ * inputVersionMustBeUniform                C3 版本统一 + 结果传递
++ * readOnlySharedAllowed                    C3 读读共享 parallel:true
++ * </pre>
++ */
++class L11ScheduleContractTest {
++
++    // ---- 十模式（上游 SCENARIOS/EXPECTED 表翻译） --------------------------------
++
++    @Test
++    void tenModesMatchUpstreamExpectedTable() {
++        // allowed 三模式（上游 EXPECTED：independent / read-only / undeclared-read）
++        assertThat(observed(List.of(
++                new Schedule.Subtask("tests", List.of("tests/test_l11_purchase.py"),
++                        List.of("flowerp/service.py")),
++                new Schedule.Subtask("risk", List.of(),
++                        List.of("flowerp/service.py", "flowerp/store.py")))))
++                .isEqualTo("allowed");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("coverage", List.of(), List.of("flowerp/service.py")),
++                new Schedule.Subtask("risk", List.of(), List.of("flowerp/service.py")))))
++                .isEqualTo("allowed");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("implementation", List.of("flowerp/service.py")),
++                new Schedule.Subtask("tests", List.of("tests/test_l11_purchase.py")))))
++                .isEqualTo("allowed");
++        // rejected 七模式
++        assertThat(observed(List.of(
++                new Schedule.Subtask("a", List.of("flowerp/service.py")),
++                new Schedule.Subtask("b", List.of("flowerp/service.py")))))
++                .isEqualTo("rejected");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("implementation", List.of("flowerp/service.py")),
++                new Schedule.Subtask("tests", List.of("tests/test_l11_purchase.py"),
++                        List.of("flowerp/service.py")))))
++                .isEqualTo("rejected");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("implementation", List.of("flowerp/")),
++                new Schedule.Subtask("risk", List.of(), List.of("flowerp/service.py")))))
++                .isEqualTo("rejected");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("a", List.of("./flowerp/service.py")),
++                new Schedule.Subtask("b", List.of("FLOWERP\\SERVICE.PY")))))
++                .isEqualTo("rejected");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("a", List.of("tests/test_a.py", ".runtime/eval.json")),
++                new Schedule.Subtask("b", List.of("tests/test_b.py", ".runtime/eval.json")))))
++                .isEqualTo("rejected");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("a", List.of("../outside.py")))))
++                .isEqualTo("rejected");
++        assertThat(observed(List.of(
++                new Schedule.Subtask("same", List.of()),
++                new Schedule.Subtask("same", List.of()))))
++                .isEqualTo("rejected");
++    }
++
++    /** observed 判定（上游 schedule_lab observe() 同义：安全 → allowed，违规 → rejected）。 */
++    private static String observed(List<Schedule.Subtask> tasks) {
++        try {
++            Schedule.assertParallelSafe(tasks);
++            return "allowed";
++        } catch (Schedule.ScheduleViolation expected) {
++            return "rejected";
++        }
++    }
++
++    @Test
++    void undeclaredReadAllowedIsNotSafe() {
++        List<Schedule.Subtask> undeclared = List.of(
++                new Schedule.Subtask("implementation", List.of("flowerp/service.py")),
++                new Schedule.Subtask("tests", List.of("tests/test_l11_purchase.py")));
++        // 声明层面 allowed（漏报读取）——上游 judgment "False independence" 的前置事实
++        assertThat(Schedule.conflictPairs(undeclared)).isEmpty();
++        // 补报真实读取（上游 SUBMISSION 修订同形）→ 读写依赖拒绝：
++        // 「声明通过 ≠ 执行安全」，判断在整合层
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("implementation", List.of("flowerp/service.py")),
++                new Schedule.Subtask("tests", List.of("tests/test_l11_purchase.py"),
++                        List.of("flowerp/service.py")))))
++                .isInstanceOf(Schedule.ScheduleViolation.class)
++                .hasMessageContaining("共享写集或读写依赖不得并行")
++                .hasMessageContaining("implementation×tests→flowerp/service.py");
++    }
++
++    // ---- 三交集与判定面机检 -------------------------------------------------------
++
++    @Test
++    void writeWriteReadWriteBothDirections() {
++        // 写写：W甲∩W乙
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("impl", List.of("flowerp/service.py")),
++                new Schedule.Subtask("eval", List.of("flowerp/service.py")))))
++                .hasMessageContaining("共享写集");
++        // 写读正向：W甲∩R乙（甲改接口，乙按接口写测试）
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("api-editor", List.of("flowerp/api.py")),
++                new Schedule.Subtask("tests", List.of("tests/test_api.py"),
++                        List.of("flowerp/api.py")))))
++                .hasMessageContaining("读写依赖不得并行");
++        // 写读反向：W乙∩R甲（乙改验收规则，甲按旧规则实现）
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("impl", List.of("src/thing.py"),
++                        List.of("docs/spec.md")),
++                new Schedule.Subtask("rule-editor", List.of("docs/spec.md")))))
++                .hasMessageContaining("读写依赖不得并行");
++        // 读读共享允许：R甲∩R乙 非空不构成冲突（independent 模式已证，此处定向复核）
++        Map<String, Object> ok = Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("coverage", List.of("cov-report.md"),
++                        List.of("flowerp/service.py")),
++                new Schedule.Subtask("risk", List.of("risk-report.md"),
++                        List.of("flowerp/service.py"))));
++        assertThat(ok.get("parallel")).isEqualTo(true);
++    }
++
++    @Test
++    void directoryCoverageReportsDeeperPath() {
++        // 写目录覆盖读文件 + 共享项取更深路径（上游 max(key=len(parts)) 同形）
++        List<Schedule.Conflict> conflicts = Schedule.conflictPairs(List.of(
++                new Schedule.Subtask("implementation", List.of("flowerp/")),
++                new Schedule.Subtask("risk", List.of(), List.of("flowerp/service.py"))));
++        assertThat(conflicts).hasSize(1);
++        assertThat(conflicts.get(0).shared()).containsExactly("flowerp/service.py");
++    }
++
++    @Test
++    void pathAliasesCollapseToSameScope() {
++        // 反斜杠 + 大小写折叠 + ./ 前缀 → 同一 scope（上游 _scope 逐句）
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("a", List.of("./flowerp/service.py")),
++                new Schedule.Subtask("b", List.of("FLOWERP\\SERVICE.PY")))))
++                .hasMessageContaining("a×b→flowerp/service.py");
++        // 尾斜杠目录 = 无尾斜杠目录
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("a", List.of("flowerp/")),
++                new Schedule.Subtask("b", List.of("FLOWERP")))))
++                .hasMessageContaining("a×b→flowerp");
++    }
++
++    @Test
++    void invalidPathsAreRejected() {
++        for (String bad : new String[]{"../outside.py", "/etc/passwd", "a*b.py", "a?b.py",
++                "a[b.py", "C:/repo/x.py", "   ", "flowerp/../outside.py"}) {
++            assertThatThrownBy(() -> Schedule.assertParallelSafe(
++                            List.of(new Schedule.Subtask("a", List.of(bad)))))
++                    .as("越界路径应拒绝：%s", bad)
++                    .hasMessageContaining("读写集必须是明确的仓库相对文件或目录");
++        }
++    }
++
++    @Test
++    void duplicateAndBlankNamesRejected() {
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("same", List.of("a.py")),
++                new Schedule.Subtask("same", List.of("b.py")))))
++                .hasMessageContaining("子任务名称必须非空且唯一");
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("  ", List.of("a.py")))))
++                .hasMessageContaining("子任务名称必须非空且唯一");
++    }
++
++    @Test
++    void sharedResourcesReportedWithPrefix() {
++        List<Schedule.Conflict> conflicts = Schedule.conflictPairs(List.of(
++                new Schedule.Subtask("a", List.of("tests/a.py"), List.of(),
++                        List.of("SQLITE-DB", "shared-cache"), ""),
++                new Schedule.Subtask("b", List.of("tests/b.py"), List.of(),
++                        List.of("sqlite-db", "port-8080", "SHARED-CACHE"), "")));
++        assertThat(conflicts).hasSize(1);
++        assertThat(conflicts.get(0).shared()).containsExactly("resource:shared-cache", "resource:sqlite-db");
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("a", List.of(), List.of(), List.of("DB"), ""),
++                new Schedule.Subtask("b", List.of(), List.of(), List.of("DB"), ""))))
++                .hasMessageContaining("resource:db");
++        // 资源名护栏：空白拒绝
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("a", List.of(), List.of(), List.of("bad name"), ""))))
++                .hasMessageContaining("共享资源名称必须是非空且不含空白的标识");
++    }
++
++    @Test
++    void inputVersionMustBeUniform() {
++        assertThatThrownBy(() -> Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("a", List.of("a.py"), List.of(), List.of(), "v1"),
++                new Schedule.Subtask("b", List.of("b.py"), List.of(), List.of(), "v2"))))
++                .hasMessageContaining("并行子任务必须使用同一个固定输入版本");
++        // 统一版本传递（空版本不参与——上游 strip 后过滤同形）
++        Map<String, Object> ok = Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("a", List.of("a.py"), List.of(), List.of(), "v1"),
++                new Schedule.Subtask("b", List.of("b.py"))));
++        assertThat(ok.get("input_version")).isEqualTo("v1");
++        Map<String, Object> none = Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("a", List.of("a.py"))));
++        assertThat(none.get("input_version")).isEqualTo("");
++    }
++
++    @Test
++    void readOnlySharedAllowed() {
++        Map<String, Object> ok = Schedule.assertParallelSafe(List.of(
++                new Schedule.Subtask("spec", List.of(), List.of("FDE_SPEC.md")),
++                new Schedule.Subtask("risk", List.of(), List.of("AGENTS.md"))));
++        assertThat(ok.get("parallel")).isEqualTo(true);
++        assertThat(ok.get("tasks")).isEqualTo(List.of("spec", "risk"));
++        assertThat(ok.get("conflicts")).isEqualTo(List.of());
++    }
++}
