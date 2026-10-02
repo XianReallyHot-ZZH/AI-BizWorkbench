@@ -7,6 +7,7 @@ import workbench.bootstrap.JsonOut;
 import workbench.evals.l07.QualityGate;
 import workbench.evals.l08.CiEvidence;
 import workbench.execution.ExecutionCommands;
+import workbench.loop.LoopRunner;
 import workbench.repair.RepairMapper;
 import workbench.spec.SpecCommands;
 
@@ -39,6 +40,11 @@ public final class Main {
         // 的确定性映射」即工作台命令，L07 D2 / L08 D3 先例；适配器在 workbench.repair.RepairMapper，
         // 只加注册调用。上游 agent/repair.py 的 agent 模块家族对应落点——L10 修复 Loop 前奏）。
         REGISTRY.register("repair-map", RepairMapper::execute);
+        // L10：修复 Loop 控制器经同一条缝注册（讲义 D1——workbenchIncrement「带预算与停止条件
+        // 的修复 Loop」即工作台命令，L07 D2 / L08 D3 / L09 D1 先例；适配器在 workbench.loop.LoopRunner，
+        // 只加注册调用。上游 agent/loop.py 的 agent 家族第二件——上游验收命令
+        // python -m agent.loop --max-rounds 3 的本仓对应面）。
+        REGISTRY.register("loop-run", LoopRunner::execute);
     }
 
     public static void main(String[] args) {

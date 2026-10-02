@@ -1,0 +1,17 @@
+{
+  "phase": "red",
+  "argv": [
+    "mvn",
+    "-q",
+    "test",
+    "-Dtest=L10LoopRunnerContractTest,L10ShipChecksContractTest",
+    "-DfailIfNoTests=false"
+  ],
+  "command": "[\"mvn\", \"-q\", \"test\", \"-Dtest=L10LoopRunnerContractTest,L10ShipChecksContractTest\", \"-DfailIfNoTests=false\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-10-01T16:46:29.120278+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-10-submission/03-failure/20261001T164629120278Z-67b03e23/output.txt",
+  "sha256": "dcee4c65dfc4418345987199d7072797678eac0fabad748c6c4b8463da412baf",
+  "provenance": "local_teaching_capture"
+}

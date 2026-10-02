@@ -253,7 +253,8 @@ public final class CancelChecks {
             RepairMapper.Context ctx = new RepairMapper.Context(
                     "SIMULATED-BOUNDARIES", "sim", candidate, "边界机检目标（SIMULATED）",
                     List.of("flowerp/service.py"), List.of("TEACHING_cancel"), 1,
-                    python, Path.of("/simulated/l09-boundaries/report.json"), "blocking");
+                    python, Path.of("/simulated/l09-boundaries/report.json"), "blocking",
+                    "workbench.evals.l09.CancelChecks");
 
             String failure = "\"name\": \"TEACHING_cancel\", \"level\": \"blocking\", \"passed\": false, "
                     + "\"evidence\": \"SIMULATED: expected available 8, observed 6\", \"duration_ms\": 5";
@@ -369,7 +370,7 @@ public final class CancelChecks {
     private static RepairMapper.Context withSuite(RepairMapper.Context ctx, String suite, int exit) {
         return new RepairMapper.Context(ctx.sourceTask(), ctx.sourceVersion(), ctx.candidate(),
                 ctx.objective(), ctx.allowedFiles(), ctx.requiredCases(), exit,
-                ctx.python(), ctx.sourceReport(), suite);
+                ctx.python(), ctx.sourceReport(), suite, ctx.checksMainClass());
     }
 
     private static void requireStatus(Map<String, Object> result, String expected, String label) {

@@ -1,0 +1,389 @@
+[ERROR] Tests run: 8, Failures: 8, Errors: 0, Skipped: 0, Time elapsed: 1.627 s <<< FAILURE! -- in workbench.evals.l10.L10ShipChecksContractTest
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.shipChecksRejectsUnknownCase(Path) -- Time elapsed: 0.293 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l10.L10ShipChecksContractTest.shipChecksRejectsUnknownCase(L10ShipChecksContractTest.java:111)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRejectsAlreadyInjected(Path) -- Time elapsed: 0.178 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l10.InjectShipDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l10.InjectShipDefect
+"
+to contain:
+  "已注入" 
+	at workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRejectsAlreadyInjected(L10ShipChecksContractTest.java:181)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRequiresSource -- Time elapsed: 0.158 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRequiresSource(L10ShipChecksContractTest.java:119)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.shipChecksRejectsTargetWithoutFlowerp(Path) -- Time elapsed: 0.153 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l10.L10ShipChecksContractTest.shipChecksRejectsTargetWithoutFlowerp(L10ShipChecksContractTest.java:99)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.shipChecksRequiresTarget -- Time elapsed: 0.140 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l10.L10ShipChecksContractTest.shipChecksRequiresTarget(L10ShipChecksContractTest.java:89)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectReplacesSingleLine(Path) -- Time elapsed: 0.136 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 1
+	at workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectReplacesSingleLine(L10ShipChecksContractTest.java:135)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRejectsAmbiguousAnchor(Path) -- Time elapsed: 0.154 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l10.InjectShipDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l10.InjectShipDefect
+"
+to contain:
+  "锚点" 
+	at workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRejectsAmbiguousAnchor(L10ShipChecksContractTest.java:164)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRejectsExistingDest(Path) -- Time elapsed: 0.156 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l10.InjectShipDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l10.InjectShipDefect
+"
+to contain:
+  "dest" 
+	at workbench.evals.l10.L10ShipChecksContractTest.injectShipDefectRejectsExistingDest(L10ShipChecksContractTest.java:197)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] Tests run: 18, Failures: 5, Errors: 13, Skipped: 0, Time elapsed: 3.180 s <<< FAILURE! -- in workbench.loop.L10LoopRunnerContractTest
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopRepeated(Path) -- Time elapsed: 0.182 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopRepeated(L10LoopRunnerContractTest.java:316)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopTokenBudget(Path) -- Time elapsed: 0.184 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopTokenBudget(L10LoopRunnerContractTest.java:398)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopTimeBudget(Path) -- Time elapsed: 0.187 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopTimeBudget(L10LoopRunnerContractTest.java:433)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopRunRequiresPatchCommandForPatch(Path) -- Time elapsed: 0.164 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "patch-command" 
+	at workbench.loop.L10LoopRunnerContractTest.loopRunRequiresPatchCommandForPatch(L10LoopRunnerContractTest.java:269)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopRunValidatesMaxRounds(Path) -- Time elapsed: 0.169 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "max_rounds" 
+	at workbench.loop.L10LoopRunnerContractTest.loopRunValidatesMaxRounds(L10LoopRunnerContractTest.java:199)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopExecutorErrorOnExitCode(Path) -- Time elapsed: 0.179 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopExecutorErrorOnExitCode(L10LoopRunnerContractTest.java:470)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopDryRun(Path) -- Time elapsed: 0.169 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopDryRun(L10LoopRunnerContractTest.java:498)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopLastRepair(Path) -- Time elapsed: 0.174 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopLastRepair(L10LoopRunnerContractTest.java:374)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopMissingUsage(Path) -- Time elapsed: 0.167 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopMissingUsage(L10LoopRunnerContractTest.java:418)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopRunRejectsExistingRuntimeDir(Path) -- Time elapsed: 0.165 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 1
+ but was: 2
+	at workbench.loop.L10LoopRunnerContractTest.loopRunRejectsExistingRuntimeDir(L10LoopRunnerContractTest.java:255)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopEmptyReport(Path) -- Time elapsed: 0.161 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopEmptyReport(L10LoopRunnerContractTest.java:484)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopAlreadyGreen(Path) -- Time elapsed: 0.178 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopAlreadyGreen(L10LoopRunnerContractTest.java:280)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopOscillating(Path) -- Time elapsed: 0.180 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopOscillating(L10LoopRunnerContractTest.java:356)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopRunValidatesBudgetAndTimeout(Path) -- Time elapsed: 0.185 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "token_budget" 
+	at workbench.loop.L10LoopRunnerContractTest.loopRunValidatesBudgetAndTimeout(L10LoopRunnerContractTest.java:213)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopChangedReason(Path) -- Time elapsed: 0.170 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopChangedReason(L10LoopRunnerContractTest.java:338)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopExecutorErrorOnTimeout(Path) -- Time elapsed: 0.169 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopExecutorErrorOnTimeout(L10LoopRunnerContractTest.java:453)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopConverge(Path) -- Time elapsed: 0.160 s <<< ERROR!
+java.lang.IllegalStateException: 没有 runtime 目录
+	at workbench.loop.L10LoopRunnerContractTest.lambda$latestRuntime$2(L10LoopRunnerContractTest.java:172)
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at workbench.loop.L10LoopRunnerContractTest.latestRuntime(L10LoopRunnerContractTest.java:172)
+	at workbench.loop.L10LoopRunnerContractTest.runtimeResult(L10LoopRunnerContractTest.java:165)
+	at workbench.loop.L10LoopRunnerContractTest.loopConverge(L10LoopRunnerContractTest.java:298)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.loop.L10LoopRunnerContractTest.loopRunRequiresSuiteCommand(Path) -- Time elapsed: 0.189 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "suite-command" 
+	at workbench.loop.L10LoopRunnerContractTest.loopRunRequiresSuiteCommand(L10LoopRunnerContractTest.java:235)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] Failures: 
+[ERROR]   L10ShipChecksContractTest.injectShipDefectRejectsAlreadyInjected:181 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l10.InjectShipDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l10.InjectShipDefect
+"
+to contain:
+  "已注入" 
+[ERROR]   L10ShipChecksContractTest.injectShipDefectRejectsAmbiguousAnchor:164 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l10.InjectShipDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l10.InjectShipDefect
+"
+to contain:
+  "锚点" 
+[ERROR]   L10ShipChecksContractTest.injectShipDefectRejectsExistingDest:197 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l10.InjectShipDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l10.InjectShipDefect
+"
+to contain:
+  "dest" 
+[ERROR]   L10ShipChecksContractTest.injectShipDefectReplacesSingleLine:135 
+expected: 0
+ but was: 1
+[ERROR]   L10ShipChecksContractTest.injectShipDefectRequiresSource:119 
+expected: 2
+ but was: 1
+[ERROR]   L10ShipChecksContractTest.shipChecksRejectsTargetWithoutFlowerp:99 
+expected: 2
+ but was: 1
+[ERROR]   L10ShipChecksContractTest.shipChecksRejectsUnknownCase:111 
+expected: 2
+ but was: 1
+[ERROR]   L10ShipChecksContractTest.shipChecksRequiresTarget:89 
+expected: 2
+ but was: 1
+[ERROR]   L10LoopRunnerContractTest.loopRunRejectsExistingRuntimeDir:255 
+expected: 1
+ but was: 2
+[ERROR]   L10LoopRunnerContractTest.loopRunRequiresPatchCommandForPatch:269 
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "patch-command" 
+[ERROR]   L10LoopRunnerContractTest.loopRunRequiresSuiteCommand:235 
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "suite-command" 
+[ERROR]   L10LoopRunnerContractTest.loopRunValidatesBudgetAndTimeout:213 
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "token_budget" 
+[ERROR]   L10LoopRunnerContractTest.loopRunValidatesMaxRounds:199 
+Expecting actual:
+  "invalid choice: "loop-run"
+"
+to contain:
+  "max_rounds" 
+[ERROR] Errors: 
+[ERROR]   L10LoopRunnerContractTest.loopAlreadyGreen:280->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopChangedReason:338->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopConverge:298->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopDryRun:498->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopEmptyReport:484->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopExecutorErrorOnExitCode:470->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopExecutorErrorOnTimeout:453->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopLastRepair:374->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopMissingUsage:418->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopOscillating:356->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopRepeated:316->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopTimeBudget:433->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR]   L10LoopRunnerContractTest.loopTokenBudget:398->runtimeResult:165->latestRuntime:172->lambda$latestRuntime$2:172 IllegalState 没有 runtime 目录
+[ERROR] Tests run: 26, Failures: 13, Errors: 13, Skipped: 0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
