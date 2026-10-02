@@ -1,0 +1,18 @@
+{
+  "phase": "diff",
+  "argv": [
+    "git",
+    "diff",
+    "7ba7090",
+    "415d7c8",
+    "--",
+    "src/"
+  ],
+  "command": "[\"git\", \"diff\", \"7ba7090\", \"415d7c8\", \"--\", \"src/\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-10-02T02:59:20.554422+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-11-submission/04-diff/20261002T025920554422Z-2ecbf3c3/output.txt",
+  "sha256": "0786aef82d45ec05e2a1508e8326b00d74ad9815b1c95781753db1980a674430",
+  "provenance": "local_teaching_capture"
+}

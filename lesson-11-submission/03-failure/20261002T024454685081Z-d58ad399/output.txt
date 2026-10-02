@@ -1,0 +1,212 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 118 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.evals.l11.L11PurchaseChecksContractTest
+[ERROR] Tests run: 10, Failures: 9, Errors: 1, Skipped: 0, Time elapsed: 2.374 s <<< FAILURE! -- in workbench.evals.l11.L11PurchaseChecksContractTest
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRejectsExistingDest(Path) -- Time elapsed: 0.513 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l11.InjectPurchaseDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l11.InjectPurchaseDefect
+"
+to contain:
+  "dest" 
+	at workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRejectsExistingDest(L11PurchaseChecksContractTest.java:215)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.purchaseChecksRejectsTargetWithoutFlowerp(Path) -- Time elapsed: 0.157 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l11.L11PurchaseChecksContractTest.purchaseChecksRejectsTargetWithoutFlowerp(L11PurchaseChecksContractTest.java:113)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRejectsAmbiguousAnchor(Path) -- Time elapsed: 0.148 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l11.InjectPurchaseDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l11.InjectPurchaseDefect
+"
+to contain:
+  "锚点" 
+	at workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRejectsAmbiguousAnchor(L11PurchaseChecksContractTest.java:182)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectInsertsBeforeMarker(Path) -- Time elapsed: 0.150 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 1
+	at workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectInsertsBeforeMarker(L11PurchaseChecksContractTest.java:149)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRequiresSource -- Time elapsed: 0.139 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRequiresSource(L11PurchaseChecksContractTest.java:133)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRestoreRejectsCleanTree(Path) -- Time elapsed: 0.286 s <<< ERROR!
+java.nio.file.NoSuchFileException: /var/folders/2g/fb_sr5nd153b94j48r3dxq9m0000gn/T/junit1823280027234737182/dest/flowerp/service.py
+	at java.base/sun.nio.fs.UnixException.translateToIOException(UnixException.java:94)
+	at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:108)
+	at java.base/sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:114)
+	at java.base/sun.nio.fs.UnixFileSystemProvider.newByteChannel(UnixFileSystemProvider.java:261)
+	at java.base/java.nio.file.Files.newByteChannel(Files.java:380)
+	at java.base/java.nio.file.Files.newByteChannel(Files.java:432)
+	at java.base/java.nio.file.Files.readAllBytes(Files.java:3281)
+	at java.base/java.nio.file.Files.readString(Files.java:3359)
+	at workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRestoreRejectsCleanTree(L11PurchaseChecksContractTest.java:254)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRejectsAlreadyInjected(Path) -- Time elapsed: 0.144 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l11.InjectPurchaseDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l11.InjectPurchaseDefect
+"
+to contain:
+  "已注入" 
+	at workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRejectsAlreadyInjected(L11PurchaseChecksContractTest.java:199)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.purchaseChecksRequiresTarget -- Time elapsed: 0.141 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l11.L11PurchaseChecksContractTest.purchaseChecksRequiresTarget(L11PurchaseChecksContractTest.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRestoreRemovesInjection(Path) -- Time elapsed: 0.293 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 1
+	at workbench.evals.l11.L11PurchaseChecksContractTest.injectPurchaseDefectRestoreRemovesInjection(L11PurchaseChecksContractTest.java:234)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.evals.l11.L11PurchaseChecksContractTest.purchaseChecksRejectsUnknownCase(Path) -- Time elapsed: 0.148 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 2
+ but was: 1
+	at workbench.evals.l11.L11PurchaseChecksContractTest.purchaseChecksRejectsUnknownCase(L11PurchaseChecksContractTest.java:125)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L11PurchaseChecksContractTest.injectPurchaseDefectInsertsBeforeMarker:149 
+expected: 0
+ but was: 1
+[ERROR]   L11PurchaseChecksContractTest.injectPurchaseDefectRejectsAlreadyInjected:199 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l11.InjectPurchaseDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l11.InjectPurchaseDefect
+"
+to contain:
+  "已注入" 
+[ERROR]   L11PurchaseChecksContractTest.injectPurchaseDefectRejectsAmbiguousAnchor:182 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l11.InjectPurchaseDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l11.InjectPurchaseDefect
+"
+to contain:
+  "锚点" 
+[ERROR]   L11PurchaseChecksContractTest.injectPurchaseDefectRejectsExistingDest:215 
+Expecting actual:
+  "错误: 找不到或无法加载主类 workbench.evals.l11.InjectPurchaseDefect
+原因: java.lang.ClassNotFoundException: workbench.evals.l11.InjectPurchaseDefect
+"
+to contain:
+  "dest" 
+[ERROR]   L11PurchaseChecksContractTest.injectPurchaseDefectRequiresSource:133 
+expected: 2
+ but was: 1
+[ERROR]   L11PurchaseChecksContractTest.injectPurchaseDefectRestoreRemovesInjection:234 
+expected: 0
+ but was: 1
+[ERROR]   L11PurchaseChecksContractTest.purchaseChecksRejectsTargetWithoutFlowerp:113 
+expected: 2
+ but was: 1
+[ERROR]   L11PurchaseChecksContractTest.purchaseChecksRejectsUnknownCase:125 
+expected: 2
+ but was: 1
+[ERROR]   L11PurchaseChecksContractTest.purchaseChecksRequiresTarget:103 
+expected: 2
+ but was: 1
+[ERROR] Errors: 
+[ERROR]   L11PurchaseChecksContractTest.injectPurchaseDefectRestoreRejectsCleanTree:254 » NoSuchFile /var/folders/2g/fb_sr5nd153b94j48r3dxq9m0000gn/T/junit1823280027234737182/dest/flowerp/service.py
+[INFO] 
+[ERROR] Tests run: 10, Failures: 9, Errors: 1, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.588 s
+[INFO] Finished at: 2026-10-02T10:45:02+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

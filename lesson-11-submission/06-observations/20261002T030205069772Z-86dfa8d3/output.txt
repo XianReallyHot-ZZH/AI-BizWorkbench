@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l11_purchase_normal",
+    "l11_purchase_zero",
+    "l11_purchase_negative",
+    "l11_purchase_blank_reason",
+    "l11_purchase_unknown_sku",
+    "l11_purchase_duplicate_id"
+  ],
+  "generated_at": "2026-10-02T03:02:08.051039Z",
+  "summary": {
+    "total": 6,
+    "passed": 5,
+    "blocking_failed": 1,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l11_purchase_normal",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 612,
+      "evidence": "expected (10,2,8) actual=(17,2,15)",
+      "error": {
+        "type": "AssertionError",
+        "message": "expected (10,2,8) actual=(17,2,15)"
+      }
+    },
+    {
+      "name": "l11_purchase_zero",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 365,
+      "evidence": "数量/原因非法拒绝：ValueError、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_negative",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 329,
+      "evidence": "数量/原因非法拒绝：ValueError、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_blank_reason",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 365,
+      "evidence": "数量/原因非法拒绝：ValueError、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_unknown_sku",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 375,
+      "evidence": "未知 SKU 拒绝：NotFound、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_duplicate_id",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 392,
+      "evidence": "重复编号拒绝：IntegrityError（非幂等成功）、五表不变",
+      "error": null
+    }
+  ]
+}
