@@ -28,7 +28,7 @@ L13 之后，我能通过 API 提交补货需求并拿到 Task ID，但「看见
 12. 作为具名验收人，我想看到 completed 但无具名批准的任务被标 `completed_without_named_approval`，以便「完成」两个字永远有具名人背书。
 13. 作为具名验收人，我想看到 review/completed 但 Eval 非绿的任务被标 `review_without_green_blocking_eval`，以便绿灯是审核的硬前置。
 14. 作为具名验收人，我想看到有越写集写入的任务被标 `out_of_scope_writes`，以便写集纪律在投影面可见。
-15. 作为安全审计者，我想让整个仓库被密钥扫描覆盖（markers `sk-proj-`/私钥头/`AKIA`；忽略 `.git/.tmp/.runtime/.cache/target`；后缀含 `.java/.js`），以便「页面不包含凭据」是机检结论不是口头承诺（合同 acceptance[2]）。
+15. 作为安全审计者，我想让整个仓库被密钥扫描覆盖（markers 三件语义 = 上游 cases.py:221 逐字，源件内运行时拼接构造防自匹配；忽略 `.git/.tmp/.runtime/.cache/target` 与 diff-phase 采集件；后缀含 `.java/.js`），以便「页面不包含凭据」是机检结论不是口头承诺（合同 acceptance[2]）。
 16. 作为安全审计者，我想让面板静态件断言无 apiKey/secret 字样、无外部 CDN 引用，以便前端本身不带凭据也不外联。
 17. 作为安全审计者，我想让静态 serve 带路径穿越守卫（resolve 后不在 WEB_ROOT 内一律 404），以便 `../` 类路径读不到面板目录之外的仓库文件。
 18. 作为 API 消费者，我想 `GET /api/v1/delivery/views?limit=20`（默认 20，上游同形）拿到列表投影与九计数汇总，以便一次请求画出看板。
@@ -53,7 +53,7 @@ L13 之后，我能通过 API 提交补货需求并拿到 Task ID，但「看见
 - **HttpApi 增量**（讲义 D5/D6）：`GET /api/v1/delivery/views`（?limit= 默认 20，非法 limit 沿用 L13 容错口径）；`GET /api/v1/delivery/views/{id}` 与 verify/review POST 响应共用升级后的完整投影；**静态 serve 内建**：非 API 路径 → WEB_ROOT = 本仓 `workbench_web/`；`/` → index.html，其余取相对路径；`Path.resolve()` 后 **不在 WEB_ROOT 内 → 404**（穿越守卫同形）+ is_file 守卫 404；Content-Type 按后缀表（html/js/css/json 对照 mimetypes.guess_type 语义）；`Cache-Control: no-cache`；API 路由优先于静态回退；**无新 REGISTRY 命令**（上游同一 workbench_server 承载 serve 面）。
 - **面板静态三件**（讲义 D5）：单页四区——身份区（「个人研发工作台」「FlowERP 是客户项目案例」身份文案 marker）、合同区（本讲合同）、任务列表区（views 列表 + 汇总计数 + 状态归属人）、详情区（事件时间线/Eval 摘要/integrity 块/动作按钮「提交并复验」「批准完成」）；取数面五条且仅五条；加载/空/失败三态文案；客户端转义（对照客户页 esc() 精神）；零依赖零 CDN；不 JSON.stringify 整个 detail。
 - **ERP 受控实例与对账**（讲义 D3）：子进程 python 起客户 `App(临时库)` + `ThreadingHTTPServer(("127.0.0.1", 0))`（客户 tests/test_http_api.py 同形起法），随机端口，客户 web/ 由客户 server 自 serve；种子业务经客户 API（不写客户库文件）；对账四向断言留 Java；客户自测 `test_http_api.py` 以本仓 `.venv` python 照跑；**客户源码零改动**（收口 submodule status 恒空复核）。
-- **no_committed_secrets Java 对应物**（讲义 D7）：扫本仓根；markers = `sk-proj-` / `-----BEGIN PRIVATE KEY-----` / `AKIA` 同形；忽略目录集 = `.git/.tmp/.runtime/.cache` 同形 **+ `target/`**（Java 构建产物——形态差异落账）；后缀名单 = 上游七件同形 **+ `.java` + `.js`**（本仓源码与面板载体——上游是 Python 仓故无此二项，不补则主源码面扫不到；形态差异落账而非静默沿用）；扫描件自身豁免（对照上游 cases.py 自豁免）。
+- **no_committed_secrets Java 对应物**（讲义 D7）：扫本仓根；markers 三件语义 = 上游 cases.py:221 逐字，源件内**运行时拼接构造**（防自匹配——扫描器源码进证据链 diff 后整词字面会回流毒化扫描，首版实测抓获即此）；忽略 = `.git/.tmp/.runtime/.cache` 同形 **+ `target/.venv/vendors/java` 四目录**（Java 构建产物 / 环境非承诺 / 只读对照非本仓承诺 / L02-java 裁定保留的未跟踪件——形态差异落账）**+ diff-phase 采集件**（04-diff 输出 = 已扫描受跟踪源的衍生引用，扫描零增量）；后缀名单 = 上游七件同形 **+ `.java` + `.js`**（本仓源码与面板载体——上游是 Python 仓故无此二项，不补则主源码面扫不到；形态差异落账而非静默沿用）。
 - **L14Checks 构成**（`workbench/evals/l14/` 统一入口，默认门全 blocking，本 spec 定形）：`l14_projection_review_owner`（C4 review 投影）、`l14_projection_unknown_and_freshness`（C4 unknown 不可信 + 300s/review 不 stale）、`l14_projection_compact_and_list`（C4 压缩 + 九计数）、`l14_http_views_and_static`（C5 列表/详情/静态 serve/穿越 404/content-type/no-cache）、`l14_panel_static_asserts`（C1 marker 集 + fetch 面名单 + 无凭据 + 无 CDN + 三态）、`no_committed_secrets`（C3/C6 仓面扫描）、`l14_erp_reconciliation`（C2/C8 四向对账）、`l14_frozen_checks`（C7 指纹六件）。三件绑定 eval 中两件 L13 面的复验 = l13 DeliveryChecks 默认门照跑承载（断言面属主不变，L14Checks 不重复实现，证据账并列两门结论行）。
 
 ## Testing Decisions

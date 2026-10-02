@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>个人研发工作台——交付面板</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- 身份区：页面只投影工作台 API 与 ERP 权威状态，不生成假进度（story 14） -->
+  <header class="identity">
+    <h1>个人研发工作台</h1>
+    <p class="identity-sub">FlowERP 是客户项目案例：研发事项从这里进入，业务操作在客户产品中完成。</p>
+    <p class="capability-line" id="capabilities">加载中……</p>
+  </header>
+
+  <main>
+    <!-- 合同区：本讲合同（讲次身份与能力面来自 API） -->
+    <section class="contract card">
+      <h2>本讲合同</h2>
+      <p>L14：让交付状态在 Web 面板可见——页面数据来自 API 而非静态假数据；DOM、API、SQLite 与 ERP 状态可对账；页面不包含凭据。</p>
+      <dl id="contract-facts" class="contract-facts">
+        <dt>执行能力</dt><dd id="cap-execution-modes">加载中</dd>
+        <dt>幂等键要求</dt><dd id="cap-idempotency">加载中</dd>
+      </dl>
+    </section>
+
+    <!-- 提交区：提交并复验（202 受理不是完成） -->
+    <section class="submit card">
+      <h2>提交需求</h2>
+      <form id="submit-form">
+        <label>需求描述<input type="text" id="submit-request" placeholder="例如：复验补货交付的审批边界" required maxlength="1000"></label>
+        <label>具名提交人<input type="text" id="submit-actor" placeholder="你的名字" required maxlength="80"></label>
+        <label>业务引用（逗号分隔，可空）<input type="text" id="submit-refs" placeholder="REQUIREMENT:COURSE-L14"></label>
+        <button type="submit" id="submit-button">提交并复验</button>
+      </form>
+      <p id="submit-result" class="form-result" aria-live="polite"></p>
+    </section>
+
+    <!-- 任务列表区：views 列表投影 + 汇总计数 -->
+    <section class="tasks card">
+      <h2>交付任务 <button type="button" id="refresh-button">刷新</button></h2>
+      <div id="task-summary" class="task-summary">加载中……</div>
+      <div id="task-list" class="task-list">加载中……</div>
+    </section>
+
+    <!-- 详情区：下钻到任务事件 + Eval 证据 + 完整性 + 动作 -->
+    <section class="detail card" id="task-detail">
+      <h2>任务详情</h2>
+      <p id="detail-empty" class="detail-empty">从上方任务列表选择一个任务查看事件链、Eval 证据与下一步动作；review 态任务可在此具名批准完成或打回返工。</p>
+      <div id="detail-body"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>面板只投影 Task API——受理（202）不是完成；全绿停在具名人工审核；未知状态不显示为成功。</p>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

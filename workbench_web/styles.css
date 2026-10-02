@@ -1,0 +1,119 @@
+/* 个人研发工作台——交付面板（L14）。零依赖零 CDN；仅结构化布局与状态语义色。 */
+
+:root {
+  --ink: #1c2430;
+  --paper: #f6f7f9;
+  --card: #ffffff;
+  --line: #d8dee8;
+  --accent: #2b5bd7;
+  --ok: #1d7a4d;
+  --warn: #9a6700;
+  --bad: #b3372f;
+  --muted: #66707e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.6;
+}
+
+.identity {
+  padding: 18px 24px;
+  background: var(--ink);
+  color: #f2f5fa;
+}
+.identity h1 { margin: 0; font-size: 20px; }
+.identity-sub { margin: 4px 0 2px; color: #b9c4d4; font-size: 13px; }
+.capability-line { margin: 2px 0 0; color: #8fd3a9; font-size: 13px; }
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.card h2 { margin: 0 0 10px; font-size: 16px; }
+.card h3 { margin: 14px 0 6px; font-size: 14px; }
+
+.contract p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.contract-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 13px; }
+.contract-facts dt { color: var(--muted); }
+.contract-facts dd { margin: 0; }
+
+form label { display: block; margin-bottom: 8px; font-size: 13px; }
+form input {
+  display: block; width: 100%; margin-top: 2px;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px;
+}
+button {
+  padding: 6px 14px; border: 1px solid var(--line); border-radius: 6px;
+  background: #fff; font-size: 14px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { color: var(--bad); border-color: var(--bad); }
+.form-result { min-height: 20px; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+.task-summary { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.task-list { display: grid; gap: 8px; }
+
+.task-card {
+  display: grid; grid-template-columns: 96px 1fr; grid-template-rows: auto auto;
+  gap: 0 12px; text-align: left; padding: 10px 12px;
+}
+.task-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.task-card .task-owner { font-size: 12px; color: var(--muted); align-self: center; }
+.task-card .task-request { grid-column: 2; font-size: 13px; }
+.task-card .task-next { grid-column: 2; font-size: 12px; color: var(--muted); }
+
+.task-status {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; align-self: start; justify-self: start;
+  background: #edf1f7; color: var(--ink);
+}
+.status-review { background: #fff3d6; color: var(--warn); }
+.status-completed { background: #ddf2e5; color: var(--ok); }
+.status-rework { background: #fde8e6; color: var(--bad); }
+.status-failed, .status-dead_letter { background: #f7d4d0; color: var(--bad); }
+.status-executing, .status-evaluating, .status-spec_ready, .status-queued { background: #e2e9fa; color: var(--accent); }
+
+.detail-empty { color: var(--muted); font-size: 13px; }
+.detail-head { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.detail-label { font-size: 13px; color: var(--muted); }
+#task-detail dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 13px; }
+#task-detail dt { color: var(--muted); white-space: nowrap; }
+#task-detail dd { margin: 0; overflow-wrap: anywhere; }
+#task-detail code { font-size: 11px; color: var(--muted); }
+.truthful { color: var(--ok); }
+.untruthful { color: var(--bad); font-weight: 600; }
+
+.events { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+.events li { margin-bottom: 4px; }
+.event-status {
+  display: inline-block; min-width: 76px; padding: 0 6px; border-radius: 4px;
+  font-size: 11px; text-align: center; background: #edf1f7;
+}
+.event-actor { color: var(--muted); font-size: 12px; }
+
+.actions { margin-top: 12px; }
+.actions label { display: block; margin-bottom: 6px; font-size: 13px; }
+.actions input {
+  display: block; width: 320px; max-width: 100%; margin-top: 2px;
+  padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px;
+}
+
+.footer { max-width: 960px; margin: 0 auto; padding: 0 16px 24px; }
+.footer p { color: var(--muted); font-size: 12px; }
