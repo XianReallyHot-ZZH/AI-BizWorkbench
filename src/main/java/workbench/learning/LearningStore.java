@@ -148,10 +148,6 @@ public final class LearningStore {
         }
     }
 
-    public Path path() {
-        return dbPath;
-    }
-
     /** 合同拒绝（词面进 error 字段，rc=1；不写任何记录——S01 LearningError 同形）。 */
     public static final class LearningException extends RuntimeException {
         public final String code;
@@ -382,6 +378,13 @@ public final class LearningStore {
                 }
                 String assetId = row.assetId();
                 String state;
+                if (!"approve".equals(decision) && !"publish".equals(decision)
+                        && !"revoke".equals(decision)) {
+                    // argparse choices 同形防线（CLI 层 rc 2 之外，Store 层拒绝非法决定——
+                    // 静默 default 兜底会触发破坏性状态迁移，复查轮 S-硬1 修复）
+                    throw new LearningException("invalid_decision",
+                            "治理决定必须是 approve、publish 或 revoke：当前 " + decision);
+                }
                 switch (decision) {
                     case "approve" -> {
                         if (!"candidate".equals(row.state()) || !row.approvedBy().isEmpty()) {
@@ -724,6 +727,12 @@ public final class LearningStore {
 
     public Map<String, Object> run(Map<String, String> args) {
         String phase = args.get("phase");
+        String evidenceTable = args.getOrDefault("evidence_table", "");
+        if (!"events".equals(evidenceTable)) {
+            // S01 argparse choices 的 L15 单值同形（evidence/executions → delivery 形态 events）
+            throw new LearningException("invalid_evidence_table",
+                    "证据表必须是 events：当前 " + evidenceTable);
+        }
         try (Connection conn = open()) {
             Map<String, Object> payload = loadRow(conn, "learning_bindings",
                     "binding_id", args.get("binding_id"), "采用快照");
@@ -856,7 +865,7 @@ public final class LearningStore {
             if (!rs.next()) {
                 return null;
             }
-            Map<String, Object> payload = checkedPayloadText(rs.getString(1));
+            Map<String, Object> payload = parsePayload(rs.getString(1));
             payload.put("binding_id", payload.get("id"));
             return payload;
         } catch (SQLException error) {
@@ -923,7 +932,7 @@ public final class LearningStore {
         return parse(payloadText);
     }
 
-    private Map<String, Object> checkedPayloadText(String payloadText) {
+    private Map<String, Object> parsePayload(String payloadText) {
         return parse(payloadText);
     }
 

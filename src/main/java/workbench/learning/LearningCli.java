@@ -76,7 +76,16 @@ public final class LearningCli {
     // ---- workbench-learn-govern：记忆条目具名治理决定（approve/publish/revoke） ----------
 
     public static int govern(String[] argv) {
-        return emit("asset", prepared -> prepared.store().govern(prepared.flags()), argv, Set.of());
+        Prepared prepared = prepare(argv, Set.of());
+        String decision = prepared.flags().get("decision");
+        if (!"approve".equals(decision) && !"publish".equals(decision)
+                && !"revoke".equals(decision)) {
+            // S01 argparse choices 同形：非法决定 stderr + rc 2（Store 层另有防线）
+            System.err.println("argument --decision: invalid choice: '" + decision
+                    + "' (choose from 'approve', 'publish', 'revoke')");
+            return 2;
+        }
+        return emit("asset", p -> p.store().govern(p.flags()), argv, Set.of());
     }
 
     // ---- workbench-learn-recall：按项目与关键词召回记忆（预算 Top-k + 冲突分组） ----------

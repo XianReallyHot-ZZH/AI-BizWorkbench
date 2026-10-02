@@ -53,17 +53,25 @@ import java.util.stream.Stream;
  */
 public final class L15Checks {
 
-    /** 冻结指纹七件（讲义 C9）：上游对照源四件 + 客户改进对象一件 + 本讲 Java 源件两件。 */
+    /**
+     * 冻结指纹九件（讲义 C9 / spec story 35——复查轮 T-1 补齐）：S01 冻结面一件
+     * （{@code tag:} 前缀经 git show 读取——Python 载体退役形态）+ 上游对照源三件
+     * （evolution/feedback/delivery_view）+ 客户 harness/cases（EVALS blocking 静态
+     * 断言与 l13 复验的对照对象，l13 承袭口径）+ 客户改进对象一件 + 本讲源件两件。
+     */
     private static final String[] FROZEN_FILES = {
-            "eval/harness.py", "eval/cases.py", "workbench/evolution.py",
-            "workbench/feedback.py", "flowerp/service.py",
+            "tag:python-carrier-final:workbench/learning.py",
+            "workbench/evolution.py", "workbench/feedback.py",
+            "workbench/delivery_view.py",
+            "eval/harness.py", "eval/cases.py", "flowerp/service.py",
             "src/main/java/workbench/evolution/EvolutionStore.java",
             "src/main/java/workbench/learning/LearningStore.java"};
 
     /** 指纹期望值（实现收口时实采冻结；eval/* 与 flowerp/ 相对 --target 客户树，
      *  workbench/* 相对 vendors/CodexFDE 对照树，src/* 相对仓库根——树分流见 frozenChecks）。 */
     private static final String[] FROZEN_SHA256 = {
-            "e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4", "c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207", "f22813c6de5150d63131036f958dbdc76ff46c08deddc4e72941b497fd9161fe", "d38f44b447a89f9e063369fe739dbbda7f8ac80dbf9ef6729f9f76b7ec6ed4dc", "6c372dcd105c2c476bbbb76b97abaf6edfbbac233cc7cfb7567a73052325385a", "2e65170dca5c38668e3e30421f6c43e08b80e9cf727ecfe6fd34db1cb8e45fcc", "ddd64c6d51384e5c5edd9cb279895948200836794b146fa17830cb58b957ac8d"};
+"7443d93cf6a49e9a1df0136d2cecce4a2be014cc244b3e9591911df1c0a2156c", "f22813c6de5150d63131036f958dbdc76ff46c08deddc4e72941b497fd9161fe", "d38f44b447a89f9e063369fe739dbbda7f8ac80dbf9ef6729f9f76b7ec6ed4dc", "769aad0947a3141d18b51fcd2abbfc9c083c861c72773d478ce8ef028b045c14", "e2f526b6578043021be1f964b96a7da75caec0906bbdbeb48d70b057b2426bd4", "c8409488131e72ee52f74195d7e08c2b9fbcc4cc437c12cc2a5a59cd60d8d207", "6c372dcd105c2c476bbbb76b97abaf6edfbbac233cc7cfb7567a73052325385a", "809b5006117054c7b98b9c1fd9afae2f6c7346c0a2e938b3e4b5b3ce5d95322d", "3b4ce6460a2c6cdf18a82a67de35d09e44e3905c6e1b60bd4b5e40031088719a"
+            };
 
     private static final String DEFAULT_PYTHON = ".venv/bin/python";
 
@@ -278,7 +286,7 @@ public final class L15Checks {
                             + "\",\"adopt\":true,\"reason\":\"复用\"}]"));
             for (String phase : new String[]{"precheck", "implement", "eval"}) {
                 learning.run(Map.of("binding_id", String.valueOf(binding.get("binding_id")),
-                        "phase", phase, "result", "passed",
+                        "phase", phase, "result", "passed", "evidence_table", "events",
                         "evidence_record_id", String.valueOf(eventId), "summary", ""));
             }
             learning.finish(Map.of("binding_id", String.valueOf(binding.get("binding_id")),
@@ -340,6 +348,11 @@ public final class L15Checks {
             expectThrows(() -> learning.create(learnCreate("PROJ-L15", accepted,
                             "FAM-VER", "t", "c", "extractor", "", "ASSET-OTHER")),
                     "被替代对象不存在或不属于同 family");
+            // 复查轮 S-硬1：非法治理决定必须拒绝（argparse choices 同形——静默 default
+            // 兜底会触发破坏性 revoke）
+            expectThrows(() -> learning.govern(learnGovern("PROJ-L15", v1Id,
+                            "destory", "governor", "错拼决定")),
+                    "治理决定必须是 approve、publish 或 revoke");
             learning.govern(learnGovern("PROJ-L15", v2Id, "approve", "governor", "批"));
             learning.govern(learnGovern("PROJ-L15", v2Id, "publish", "governor", "发"));
             expect("superseded".equals(assetState(learning, v1Id)), "v1 应原子 superseded");
@@ -419,23 +432,23 @@ public final class L15Checks {
                                     + "\"reason\":\"r\"}]")),
                     "一次交付最多绑定一条");
             learning.run(Map.of("binding_id", bindingId, "phase", "precheck",
-                    "result", "passed", "evidence_record_id", String.valueOf(eventId),
-                    "summary", ""));
+                    "result", "passed", "evidence_table", "events",
+                    "evidence_record_id", String.valueOf(eventId), "summary", ""));
             expectThrows(() -> learning.run(Map.of("binding_id", bindingId, "phase", "precheck",
-                            "result", "passed", "evidence_record_id", String.valueOf(eventId),
-                            "summary", "")),
+                            "result", "passed", "evidence_table", "events",
+                            "evidence_record_id", String.valueOf(eventId), "summary", "")),
                     "相位已记录，只记一次");
             int foreignEvent = seedEvent(ledger, source, "别任务证据");
             expectThrows(() -> learning.run(Map.of("binding_id", bindingId, "phase", "implement",
-                            "result", "passed", "evidence_record_id", String.valueOf(foreignEvent),
-                            "summary", "")),
+                            "result", "passed", "evidence_table", "events",
+                            "evidence_record_id", String.valueOf(foreignEvent), "summary", "")),
                     "证据记录属于任务");
             learning.run(Map.of("binding_id", bindingId, "phase", "implement",
-                    "result", "passed", "evidence_record_id", String.valueOf(eventId),
-                    "summary", ""));
+                    "result", "passed", "evidence_table", "events",
+                    "evidence_record_id", String.valueOf(eventId), "summary", ""));
             learning.run(Map.of("binding_id", bindingId, "phase", "eval",
-                    "result", "passed", "evidence_record_id", String.valueOf(eventId),
-                    "summary", ""));
+                    "result", "passed", "evidence_table", "events",
+                    "evidence_record_id", String.valueOf(eventId), "summary", ""));
             expectThrows(() -> learning.finish(Map.of("binding_id", bindingId,
                             "outcome", "passed", "reviewer", "claude", "note", "")),
                     "操作人必须具名人工");
@@ -576,13 +589,20 @@ public final class L15Checks {
             // 客户 eval 升级后照跑（绿——改进不破坏客户合同）
             int evalAfter = runCustomerEval(interpreter, copy);
             expect(evalAfter == 0, "客户 eval 升级后照跑应绿");
-            // 只读铁律：vendors 恒空
+            // 只读铁律：双 submodule 恒空（复查轮 T-6——story 33 词面对齐）
             Process git = new ProcessBuilder("git", "-C", target.toString(),
                     "status", "--short").start();
             String dirty = new String(git.getInputStream().readAllBytes(),
                     StandardCharsets.UTF_8).strip();
             git.waitFor();
             expect(dirty.isEmpty(), "vendors/flowERP 应保持只读恒空：" + dirty);
+            Process gitVendor = new ProcessBuilder("git", "-C",
+                    repoRoot().resolve("vendors/CodexFDE").toString(),
+                    "status", "--short").start();
+            String vendorDirty = new String(gitVendor.getInputStream().readAllBytes(),
+                    StandardCharsets.UTF_8).strip();
+            gitVendor.waitFor();
+            expect(vendorDirty.isEmpty(), "vendors/CodexFDE 应保持只读恒空：" + vendorDirty);
             return "R1 受控改进：同一断言面前红后绿 + 客户 eval 前后照跑双绿 + vendors 恒空";
         } catch (IOException error) {
             throw new IllegalStateException("R1 场景失败：" + error.getMessage(), error);
@@ -743,29 +763,63 @@ public final class L15Checks {
     private static String frozenChecks(Path target) {
         for (int i = 0; i < FROZEN_FILES.length; i++) {
             String file = FROZEN_FILES[i];
-            Path path;
-            if (file.startsWith("src/")) {
-                path = repoRoot().resolve(file);
-            } else if (file.startsWith("workbench/")) {
-                path = repoRoot().resolve("vendors/CodexFDE").resolve(file);
-            } else {
-                path = target.resolve(file);
-            }
-            if (!Files.isRegularFile(path)) {
-                return failNow("指纹文件缺席：" + file);
-            }
             String actual;
-            try {
-                actual = sha256(Files.readAllBytes(path));
-            } catch (IOException error) {
-                throw new IllegalStateException("指纹读取失败：" + file, error);
+            if (file.startsWith("tag:")) {
+                // S01 冻结面：经 tag 读取（Python 载体退役形态——git show 现算）
+                int colon = file.indexOf(':', 4);
+                String tag = file.substring(4, colon);
+                String path = file.substring(colon + 1);
+                actual = sha256(gitShow(tag, path));
+            } else {
+                Path path;
+                if (file.startsWith("src/")) {
+                    path = repoRoot().resolve(file);
+                } else if (file.startsWith("workbench/")) {
+                    path = repoRoot().resolve("vendors/CodexFDE").resolve(file);
+                } else {
+                    path = target.resolve(file);
+                }
+                if (!Files.isRegularFile(path)) {
+                    return failNow("指纹文件缺席：" + file);
+                }
+                try {
+                    actual = sha256(Files.readAllBytes(path));
+                } catch (IOException error) {
+                    throw new IllegalStateException("指纹读取失败：" + file, error);
+                }
             }
             if (!FROZEN_SHA256[i].isBlank() && !FROZEN_SHA256[i].equals(actual)) {
                 return failNow("指纹不一致：" + file + " 期望 " + FROZEN_SHA256[i]
                         + " 实测 " + actual);
             }
         }
-        return "冻结指纹七件一致（evolution/feedback/交付投影对照源 + 客户改进对象 + 本讲源件两件）";
+        return "冻结指纹九件一致（S01 冻结面〔tag〕+ 上游 evolution/feedback/delivery_view "
+                + "+ 客户 harness/cases/service + 本讲源件两件）";
+    }
+
+    /** git show 取 tag 内文件字节（S01 冻结面指纹源——Python 载体退役形态）。 */
+    private static byte[] gitShow(String tag, String path) {
+        try {
+            Process process = new ProcessBuilder("git", "show", tag + ":" + path)
+                    .directory(repoRoot().toFile()).start();
+            byte[] stdout = process.getInputStream().readAllBytes();
+            String stderr = new String(process.getErrorStream().readAllBytes(),
+                    StandardCharsets.UTF_8);
+            if (!process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                throw new IllegalStateException("git show 超时：" + tag + ":" + path);
+            }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException("git show 失败：" + tag + ":" + path
+                        + "：" + stderr.strip());
+            }
+            return stdout;
+        } catch (IOException error) {
+            throw new IllegalStateException("git show 启动失败", error);
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("git show 被中断", error);
+        }
     }
 
     // ---- 支撑 ---------------------------------------------------------------------------

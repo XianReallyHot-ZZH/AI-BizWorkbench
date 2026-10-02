@@ -57,8 +57,9 @@ import java.util.UUID;
  * import LearningStore} 同形）——evolution ↔ learning 互相引用与上游同构。
  *
  * <p><b>CLI</b>（上游 argparse 单入口五子命令同形，--db → --runtime-dir 本仓
- * 形态适配落账）：{@code evolution create|review|assets|verify|summary}，独立
- * main 不进 REGISTRY 之外另有 FeedbackCli 三子命令承载反馈审核可观测面。
+ * 形态适配落账）：{@code evolution create|review|assets|verify|summary}——经
+ * REGISTRY 注册缝接入（{@code evolution} 一件，{@link #execute}）+ 独立 main
+ * 双入口；反馈审核可观测面另由 delivery 包 FeedbackCli 三子命令承载。
  */
 public final class EvolutionStore {
 
@@ -140,10 +141,6 @@ public final class EvolutionStore {
         } catch (SQLException error) {
             throw new IllegalStateException("evolutions 建表失败：" + path, error);
         }
-    }
-
-    public Path path() {
-        return dbPath;
     }
 
     // ---- create：反馈审核闸门 -----------------------------------------------------------
