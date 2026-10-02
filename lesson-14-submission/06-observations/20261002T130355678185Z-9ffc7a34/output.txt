@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "flowerp_connected": false,
+  "execution": {
+    "task_id": "CASE-WB-L14-001",
+    "mode": "verify",
+    "workspace": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+    "write_scope": [],
+    "executor_command": null,
+    "executor_prompt": "",
+    "eval_command": [
+      "java",
+      "-Dfile.encoding=UTF-8",
+      "-cp",
+      "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/classes:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.3/sqlite-jdbc-3.46.1.3.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter/5.10.2/junit-jupiter-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.10.2/junit-jupiter-api-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-commons/1.10.2/junit-platform-commons-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.10.2/junit-jupiter-params-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.10.2/junit-jupiter-engine-5.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/junit/platform/junit-platform-engine/1.10.2/junit-platform-engine-1.10.2.jar:/Users/xianreallyhotzzh/.m2/repository/org/assertj/assertj-core/3.26.0/assertj-core-3.26.0.jar:/Users/xianreallyhotzzh/.m2/repository/net/bytebuddy/byte-buddy/1.14.16/byte-buddy-1.14.16.jar",
+      "workbench.evals.l14.WebPanelChecks",
+      "--target",
+      "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/vendors/flowERP",
+      "--no-report"
+    ],
+    "returncode": null,
+    "timed_out": false,
+    "stdout_text": "",
+    "stderr_text": "",
+    "changed_files": [],
+    "out_of_scope_files": [],
+    "change_manifest": [],
+    "diff_text": "",
+    "eval_returncode": 0,
+    "eval_output_text": "{\n  \"schema_version\": \"1.0\",\n  \"suite\": \"all\",\n  \"requested_cases\": [\n    \"l14_projection_review_owner\",\n    \"l14_projection_unknown_and_freshness\",\n    \"l14_projection_compact_and_list\",\n    \"l14_http_views_and_static\",\n    \"l14_panel_static_asserts\",\n    \"no_committed_secrets\",\n    \"l14_erp_reconciliation\",\n    \"l14_frozen_checks\"\n  ],\n  \"generated_at\": \"2026-10-02T13:04:09.314089Z\",\n  \"summary\": {\n    \"total\": 8,\n    \"passed\": 8,\n    \"blocking_failed\": 0,\n    \"observing_failed\": 0,\n    \"decision\": \"pass\"\n  },\n  \"results\": [\n    {\n      \"name\": \"l14_projection_review_owner\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 723,\n      \"evidence\": \"review 投影：归属人 human:reviewer + 下一步具名 + 绿 Eval 摘要 + 压缩等价 + truthful\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l14_projection_unknown_and_freshness\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 2,\n      \"evidence\": \"未知状态不可信 + freshness 边界（301/300）+ review 不 stale + 终态 final + 时间戳破损兜底\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l14_projection_compact_and_list\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 110,\n      \"evidence\": \"列表轻投影压缩 + 汇总计数（review→completed 迁移即变）+ feedback 关联 + export_candidate 条件\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l14_http_views_and_static\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 329,\n      \"evidence\": \"views 列表/详情 HTTP 面 + 静态 serve（content-type/no-cache/穿越 404）+ verify 三拍（拒/匿名拒/跑通）\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l14_panel_static_asserts\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 9,\n      \"evidence\": \"面板静态断言：身份/三态/取数面五条 + esc + 无凭据 + 无 CDN + 无假数据\",\n      \"error\": null\n    },\n    {\n      \"name\": \"no_committed_secrets\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 2179,\n      \"evidence\": \"文本源文件未发现常见密钥特征（扫描 712 件；忽略集含本仓形态差异四目录）\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l14_erp_reconciliation\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 8290,\n      \"evidence\": \"受控客户实例四向对账（页静态/API/SQLite/工作台投影 business_refs）+ 客户自测 11 例照跑绿\",\n      \"error\": null\n    },\n    {\n      \"name\": \"l14_frozen_checks\",\n      \"level\": \"blocking\",\n      \"passed\": true,\n      \"duration_ms\": 49,\n      \"evidence\": \"冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e, flowerp/service.py=6c372dcd105c, flowerp/server.py=0b7528377a01, web/index.html=a329e94c9f67, web/app.js=651244ed640e, web/styles.css=4dc9eb041f9e\",\n      \"error\": null\n    }\n  ]\n}\n",
+    "eval_timed_out": false,
+    "status": "verify_completed",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "eval_output_sha256": "3e3b402101fcdf522ffc57a15e30b5c6fa67d7a5d837c84487267ceee23ca6d9",
+    "execution_id": 15,
+    "actor": "Claude",
+    "observed_at": "2026-10-02T13:05:02.349135+00:00"
+  },
+  "task_state": "review"
+}
