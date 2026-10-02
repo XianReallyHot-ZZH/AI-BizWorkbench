@@ -77,3 +77,11 @@ L09 之后，我能把一份红灯报告确定性地翻译成修复任务草案�
 - 讲前检查点 0003 已落地（pin `7f67533`→`406f7aa`，合同 fixture 零采纳）；本 spec 与讲义均按新 pin 材料起草。
 - 上游 Skill 引用的 assets/latest/candidate-last-repair/index.json 原始件 pin 内缺席（只有渲染件）——三轨迹以脚本重跑为准，如实记录。
 - 验收顺序：起始红 → 实现转绿 → 三轨迹受控实验 → verify 集成（CASE-WB-L10-001，actor 填实际执行者，eval-command 绝对路径）→ code-review 双轴 → 用户按讲义 §4 具名验收 → merge --no-ff。
+
+## 勘误（2026-10-02 复查轮后，实现与 spec 分歧钉死）
+
+- **注入缝形态**（User Stories 18 / Testing Decisions「库核三函数接口」）：实现将 SuiteRunner/LoopExecutor/Clock 三缝收敛为 CLI 参数注入（`--suite-command`/`--patch-command` 脚本 + 真时钟真等待），十二模式全经 `loop-run` CLI 子进程承载——高于 spec 字面的进程内接口缝，同语义且不绕公开入口（测试类头注已声明）。spec 原文保留不改，以本勘误为准。
+- **退出码面**（Implementation Decisions「退出码：converged 0，其余 2」）：另有 rc 1 = 运行护栏（runtime-dir 已存在拒绝，旧证据不可抹）与基础设施异常；用法错误 rc 2。
+- **oscillating 形态**（Testing Decisions 沿上游表格）：上游 lab 单用例报告形态与本仓「检查集集合相等」严格校验冲突，按双用例固定检查集、失败项 A/B 摆动测（3/3 到限不变——检查内容改变后失败数不可比正是上游口径；证据账 §3.1）。
+- **决策序**（Solution 段「预算→进展」与 Implementation Decisions「无进展→时间→Token」内部不一致）：以 Implementation Decisions 与上游 loop.py 为准——报告有效性 → 达标 → **无进展 → 时间 → Token** → 任务 → 执行。
+- **D4-④ 证据**：检查子进程独立超时经 `WORKBENCH_LOOP_SUITE_TIMEOUT` 环境变量测试缝压短实测（缺省 300s 不变）；该用例并抓获超时路径 `Map.of` 空值 NPE 真缺陷（已修）。

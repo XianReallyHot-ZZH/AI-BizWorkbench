@@ -484,7 +484,7 @@ class L10LoopRunnerContractTest {
         assertThat(result.exitCode()).isEqualTo(2);
         assertThat(loop.path("status").asText()).isEqualTo("stopped_executor_error");
         assertThat(executions(loop)).isEqualTo(1);
-        assertThat(loop.path("executor_error").path("cause").asText()).contains("timeout");
+        assertThat(loop.path("stop_detail").path("cause").asText()).contains("timeout");
         assertThat(loop.path("pending_verification").asBoolean()).isTrue();
     }
 
@@ -500,7 +500,7 @@ class L10LoopRunnerContractTest {
 
         assertThat(result.exitCode()).isEqualTo(2);
         assertThat(loop.path("status").asText()).isEqualTo("stopped_executor_error");
-        assertThat(loop.path("executor_error").path("cause").asText()).contains("99");
+        assertThat(loop.path("stop_detail").path("cause").asText()).contains("99");
     }
 
     @Test
@@ -515,6 +515,35 @@ class L10LoopRunnerContractTest {
         assertThat(result.exitCode()).isEqualTo(2);
         assertThat(loop.path("status").asText()).isEqualTo("stopped_invalid_report");
         assertThat(loop.path("history")).hasSize(1);
+        assertThat(executions(loop)).isZero();
+    }
+
+    @Test
+    void loopSuiteTimeoutIsStructuredInvalidReport(@TempDir Path tmp) throws IOException {
+        Path candidate = fakeCandidate(tmp);
+        // 检查子进程独立超时（C4/D4-④，复查轮 T-2 回归锚）：缺省 300s 过长无法实测，经
+        // WORKBENCH_LOOP_SUITE_TIMEOUT 测试缝压到 2s——检查挂死被结构化 stopped_invalid_report
+        // 拒绝（cause 含超时），不裸抛不无限等待；先处理检查为什么没完成，尚无信息判断业务对错
+        Path suite = patchScript(tmp, "hung-suite.sh", 3, RED_A, 1);
+        Path runtimeDir = tmp.resolve("runtime-suite-timeout");
+
+        Cli.Result result = Cli.runMainWithEnv("workbench.cli.Main",
+                java.util.Map.of("WORKBENCH_LOOP_SUITE_TIMEOUT", "2"),
+                "loop-run",
+                "--suite-command", suite.toString(),
+                "--runtime-dir", runtimeDir.toString(),
+                "--candidate", candidate.toString(),
+                "--python", tmp.resolve("python3").toString(),
+                "--source-task", "CASE-WB-L10-TEST",
+                "--source-version", "l10-test",
+                "--allowed-file", "flowerp/service.py",
+                "--case", "TEACHING_A");
+
+        assertThat(result.exitCode()).isEqualTo(2);
+        JsonNode loop = MAPPER.readTree(Files.readString(
+                runtimeDir.resolve("loop-result.json"), StandardCharsets.UTF_8));
+        assertThat(loop.path("status").asText()).isEqualTo("stopped_invalid_report");
+        assertThat(loop.path("stop_detail").path("cause").asText("")).contains("超时");
         assertThat(executions(loop)).isZero();
     }
 

@@ -239,8 +239,7 @@ public final class RepairMapper {
         try {
             args = new Args(argv,
                     Set.of("--report", "--source-task", "--source-version", "--candidate",
-                            "--objective", "--python", "--output", "--observed-exit", "--suite",
-                            "--checks-main-class"),
+                            "--objective", "--python", "--output", "--observed-exit", "--suite"),
                     Set.of(), List.of(), Set.of("--allowed-file", "--case"));
             for (String required : new String[]{"--report", "--source-task", "--source-version",
                     "--candidate", "--objective", "--python", "--output", "--observed-exit"}) {
@@ -274,7 +273,7 @@ public final class RepairMapper {
                     Path.of(args.require("--python")).toAbsolutePath().normalize(),
                     Path.of(args.require("--report")).toAbsolutePath().normalize(),
                     suite,
-                    args.optional("--checks-main-class", "workbench.evals.l09.CancelChecks"));
+                    "workbench.evals.l09.CancelChecks");
             byte[] raw;
             try {
                 raw = Files.readAllBytes(ctx.sourceReport());

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import workbench.bootstrap.Args;
 import workbench.bootstrap.PyJson;
 import workbench.evals.ReportContract;
+import workbench.evals.l10.ShipChecks;
 import workbench.execution.ProcessRunner;
 import workbench.execution.Shlex;
 import workbench.repair.RepairMapper;
@@ -72,8 +73,24 @@ import java.util.Set;
  */
 public final class LoopRunner {
 
-    /** 检查子进程独立超时（D4-④）：固定 300s（l06–l08 探针同值先例），独立于轮预算。 */
-    private static final int SUITE_TIMEOUT_SECONDS = 300;
+    /**
+     * 检查子进程独立超时（D4-④）：缺省 300s（l06–l09 探针同值先例），独立于轮预算。
+     * {@code WORKBENCH_LOOP_SUITE_TIMEOUT} 环境变量为测试缝（复查轮 T-2：缺省值过长无法
+     * 实测挂死面）——非法值回退缺省，生产面不传即 300s。
+     */
+    private static final int SUITE_TIMEOUT_SECONDS = suiteTimeoutSeconds();
+
+    private static int suiteTimeoutSeconds() {
+        String raw = System.getenv("WORKBENCH_LOOP_SUITE_TIMEOUT");
+        if (raw == null || raw.isBlank()) {
+            return 300;
+        }
+        try {
+            return Integer.parseInt(raw.strip());
+        } catch (NumberFormatException ignored) {
+            return 300;
+        }
+    }
 
     /** 执行器失败（D4-①）：携带结构化停止载荷，不裸抛——接手者可查已启动事实与最后报告。 */
     private static final class ExecutorFailure extends RuntimeException {
@@ -191,11 +208,14 @@ public final class LoopRunner {
             // 报告字节同源：落盘、解析、映射哈希用同一 strip 后文本——report_sha256 可对账
             String reportText = check.stdoutText().strip();
             Files.writeString(reportPath, reportText, StandardCharsets.UTF_8);
-            saveJson(runtimeDir.resolve("check-%02d.process.json".formatted(round)), Map.of(
-                    "command", suiteArgv, "cwd", candidate.toString(),
-                    "returncode", check.returncode() == null ? null : check.returncode(),
-                    "timed_out", check.timedOut(),
-                    "stdout", tail(check.stdoutText()), "stderr", tail(check.stderrText())));
+            Map<String, Object> processRecord = new LinkedHashMap<>();
+            processRecord.put("command", suiteArgv);
+            processRecord.put("cwd", candidate.toString());
+            processRecord.put("returncode", check.returncode());  // 超时为 null——Map.of 不容忍
+            processRecord.put("timed_out", check.timedOut());
+            processRecord.put("stdout", tail(check.stdoutText()));
+            processRecord.put("stderr", tail(check.stderrText()));
+            saveJson(runtimeDir.resolve("check-%02d.process.json".formatted(round)), processRecord);
 
             // ② 报告有效性先行（D4-②）：超时 / 退出码域外 / 协议无效 / 结果为空 → 拒绝。
             // 检查已发生的事实先进 History（本轮 entry 在有效性判定前入账——逐轮可重建）
@@ -269,7 +289,7 @@ public final class LoopRunner {
                 mapped = RepairMapper.map(reportText.getBytes(StandardCharsets.UTF_8),
                         new RepairMapper.Context(sourceTask, sourceVersion, candidate, objective,
                                 allowedFiles, cases, observedExit, python, reportPath, expectedSuite,
-                                "workbench.evals.l10.ShipChecks"));
+                                ShipChecks.class.getName()));
             } catch (Exception invalid) {
                 return finish("stopped_invalid_report", round, history, failures, tokenBudget,
                         tokensUsed, candidate, allowedFiles, lastVerifiedFiles, lastExecutionRound,
@@ -470,7 +490,7 @@ public final class LoopRunner {
         result.put("tokens_used", tokensUsed);
         result.put("tokens_remaining", Math.max(0, tokenBudget - tokensUsed));
         if (extra != null) {
-            result.put("executor_error", extra);
+            result.put("stop_detail", extra);
         }
         result.put("note", "stopped_* 是控制器结论（停止规则执行），不是业务通过，也不是负责人接受——"
                 + "三层分开；接手者先看 last_verified_candidate_files 与 current_candidate_files "
