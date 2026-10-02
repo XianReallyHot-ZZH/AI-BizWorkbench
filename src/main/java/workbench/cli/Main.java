@@ -7,6 +7,7 @@ import workbench.bootstrap.JsonOut;
 import workbench.evals.l07.QualityGate;
 import workbench.evals.l08.CiEvidence;
 import workbench.execution.ExecutionCommands;
+import workbench.graph.GraphRunner;
 import workbench.loop.LoopRunner;
 import workbench.repair.RepairMapper;
 import workbench.spec.SpecCommands;
@@ -45,6 +46,12 @@ public final class Main {
         // 只加注册调用。上游 agent/loop.py 的 agent 家族第二件——上游验收命令
         // python -m agent.loop --max-rounds 3 的本仓对应面）。
         REGISTRY.register("loop-run", LoopRunner::execute);
+        // L12：显式状态图控制器经同一条缝注册（讲义 D1——workbenchIncrement「显式状态图、
+        // 回退边和具名人审」即工作台命令，L07 D2 / L08 D3 / L09 D1 / L10 D1 先例；适配器在
+        // workbench.graph.GraphRunner。上游 agent/ 家族第四件（repair→loop→schedule→graph
+        // 四件收齐）——上游验收命令 python -X utf8 -m agent.graph --max-rounds 3 的本仓对应面，
+        // 退出码 0 completed / 3 awaiting_human_review（正常等待不是失败）/ 2 其余）。
+        REGISTRY.register("graph-run", GraphRunner::execute);
     }
 
     public static void main(String[] args) {
