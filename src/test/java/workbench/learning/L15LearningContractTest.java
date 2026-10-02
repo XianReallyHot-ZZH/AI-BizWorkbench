@@ -169,8 +169,8 @@ class L15LearningContractTest {
 
     @Test
     void learnGovernFace(@TempDir Path runtime) {
-        String asset = publishedAsset(runtime, "FAM-L15-GOV", "TASK-L15-GOV-SRC",
-                "治理经验", "extractor");
+        String asset = publishedAsset(runtime, "FAM-L15-GOV",
+                acceptedTaskForLearning(runtime), "治理经验", "extractor");
 
         // human() 门：AI 名义被拒（S01 词面——HUMAN_FORBIDDEN 含 claude 增补）
         assertThat(Cli.run("workbench-learn-govern", "--runtime-dir", runtime.toString(),
@@ -203,7 +203,8 @@ class L15LearningContractTest {
                 .contains("invalid_transition").contains("该版本已停用");
 
         // 跳过审批的 publish 被拒 + approve 后 publish 通过（新资产）
-        String fresh = candidateAsset(runtime, "FAM-L15-GOV2", "TASK-L15-GOV-SRC2", "fresh");
+        String fresh = candidateAsset(runtime, "FAM-L15-GOV2",
+                acceptedTaskForLearning(runtime), "fresh");
         assertThat(Cli.run("workbench-learn-govern", "--runtime-dir", runtime.toString(),
                         "--project-id", "PROJ-L15", "--asset-id", fresh,
                         "--decision", "publish", "--actor", "governor", "--note", "n").stdout())
@@ -226,6 +227,8 @@ class L15LearningContractTest {
 
     @Test
     void learnVersionSupersedeFace(@TempDir Path runtime) {
+        // 本用例自持已验收来源任务（夹具独立性——不依赖其它用例的库状态）
+        acceptedTaskForLearning(runtime);
         // v1 发布（active）→ v2（同 family + supersedes 声明）发布 → v1 原子 superseded
         String v1 = versionedAsset(runtime, "FAM-L15-VER", "v1 内容", null);
         String v2 = versionedAsset(runtime, "FAM-L15-VER", "v2 内容", v1);
@@ -475,7 +478,7 @@ class L15LearningContractTest {
                         "--reviewer", "XianReallyHot-ZZH", "--note", "n").stdout())
                 .contains("phase_not_passed").contains("存在未通过相位，不得标记通过");
 
-        // 缺相位（只记两相位就 finish）——第三链
+        // 缺相位 → S01 词面（missing_phase 无条件——outcome=failed 同样要求三相位齐全）——第三链
         String thirdConsumer = seedTask(runtime, "TASK-L15-BIND-USE3", "queued", null,
                 null, null);
         String thirdRecall = recallFor(runtime, thirdConsumer, "bind");
@@ -483,21 +486,34 @@ class L15LearningContractTest {
                 asset);
         int thirdEvidence = seedEvent(runtime, thirdConsumer, "第三链证据");
         assertThat(Cli.run("workbench-learn-run", "--runtime-dir", runtime.toString(),
-                "--binding-id", thirdBinding, "--phase", "precheck", "--result", "passed",
+                "--binding-id", thirdBinding, "--phase", "precheck", "--result", "failed",
                 "--evidence-table", "events",
                 "--evidence-record-id", String.valueOf(thirdEvidence), "--summary", "s")
                 .exitCode()).isZero();
         assertThat(Cli.run("workbench-learn-finish", "--runtime-dir", runtime.toString(),
                         "--binding-id", thirdBinding, "--outcome", "failed",
                         "--reviewer", "XianReallyHot-ZZH", "--note", "复用失败如实落账")
-                .exitCode()).as("outcome=failed 不强制相位齐全").isZero();
+                .stdout()).contains("missing_phase").contains("复验链缺相位");
+        for (String phase : new String[]{"implement", "eval"}) {
+            assertThat(Cli.run("workbench-learn-run", "--runtime-dir", runtime.toString(),
+                    "--binding-id", thirdBinding, "--phase", phase, "--result", "failed",
+                    "--evidence-table", "events",
+                    "--evidence-record-id", String.valueOf(thirdEvidence), "--summary", "s")
+                    .exitCode()).isZero();
+        }
+        // 三相位齐全后 failed 如实落账（复用失败不因历史成功标记通过——S01 场景 4）
+        assertThat(Cli.run("workbench-learn-finish", "--runtime-dir", runtime.toString(),
+                        "--binding-id", thirdBinding, "--outcome", "failed",
+                        "--reviewer", "XianReallyHot-ZZH", "--note", "复用失败如实落账")
+                .exitCode()).as("outcome=failed 且相位齐全应通过").isZero();
     }
 
     // ---- 读时重算（漂移阻断） --------------------------------------------------------------
 
     @Test
     void learnShowDriftFace(@TempDir Path runtime) {
-        String asset = candidateAsset(runtime, "FAM-L15-SHOW", "TASK-L15-SHOW-SRC", "展示");
+        String asset = candidateAsset(runtime, "FAM-L15-SHOW",
+                acceptedTaskForLearning(runtime), "展示");
         // 恰给一个目标（S01 词面）
         assertThat(Cli.run("workbench-learn-show", "--runtime-dir", runtime.toString())
                 .stdout()).contains("show_target_required").contains("恰给一个");
