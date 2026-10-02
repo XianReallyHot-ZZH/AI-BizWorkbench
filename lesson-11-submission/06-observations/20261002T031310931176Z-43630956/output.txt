@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l11_purchase_normal",
+    "l11_purchase_zero",
+    "l11_purchase_negative",
+    "l11_purchase_blank_reason",
+    "l11_purchase_unknown_sku",
+    "l11_purchase_duplicate_id",
+    "purchase_request_preserves_reason",
+    "write_sets_reject_conflict",
+    "l11_frozen_checks"
+  ],
+  "generated_at": "2026-10-02T03:13:13.884781Z",
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "blocking_failed": 0,
+    "observing_failed": 0,
+    "decision": "pass"
+  },
+  "results": [
+    {
+      "name": "l11_purchase_normal",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 398,
+      "evidence": "正常申请：五字段保存、可再查、10/2/8 不变、PR-OTHER 保护、五表只多一行",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_zero",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 327,
+      "evidence": "数量/原因非法拒绝：ValueError、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_negative",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 321,
+      "evidence": "数量/原因非法拒绝：ValueError、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_blank_reason",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 324,
+      "evidence": "数量/原因非法拒绝：ValueError、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_unknown_sku",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 355,
+      "evidence": "未知 SKU 拒绝：NotFound、五表不变",
+      "error": null
+    },
+    {
+      "name": "l11_purchase_duplicate_id",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 373,
+      "evidence": "重复编号拒绝：IntegrityError（非幂等成功）、五表不变",
+      "error": null
+    },
+    {
+      "name": "purchase_request_preserves_reason",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 273,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "write_sets_reject_conflict",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 18,
+      "evidence": "共享写集、目录覆盖与读写依赖不得并行；只读子任务可以并行",
+      "error": null
+    },
+    {
+      "name": "l11_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 12,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e, flowerp/service.py=6c372dcd105c",
+      "error": null
+    }
+  ]
+}

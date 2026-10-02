@@ -1,0 +1,2 @@
+declared-check rejected: 共享写集或读写依赖不得并行：impl×risk→flowerp/service.py
+declared-check revised: {parallel=true, tasks=[tests, risk], conflicts=[], input_version=}

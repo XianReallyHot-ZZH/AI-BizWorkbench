@@ -1,0 +1,15 @@
+{
+  "phase": "observation",
+  "argv": [
+    "bash",
+    "-c",
+    "cd /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L11-candidate && /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m unittest tests.test_l11_purchase -v"
+  ],
+  "command": "[\"bash\", \"-c\", \"cd /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L11-candidate && /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.venv/bin/python -X utf8 -m unittest tests.test_l11_purchase -v\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-10-02T03:13:05.664354+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-11-submission/06-observations/20261002T031305664354Z-b9b0b4d9/output.txt",
+  "sha256": "f3d8615ca0ce103e9054c55b7e26758a55966144ab3b19cf42f5e8c69c8295d2",
+  "provenance": "local_teaching_capture"
+}

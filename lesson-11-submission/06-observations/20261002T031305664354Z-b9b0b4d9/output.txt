@@ -1,0 +1,12 @@
+test_normal_request_keeps_stock_events_orders_and_pr_other_untouched (tests.test_l11_purchase.PurchaseProposalExpectationsTest.test_normal_request_keeps_stock_events_orders_and_pr_other_untouched) ... ok
+test_normal_request_saved_as_proposed_with_normalized_fields (tests.test_l11_purchase.PurchaseProposalExpectationsTest.test_normal_request_saved_as_proposed_with_normalized_fields) ... ok
+test_reject_blank_reason (tests.test_l11_purchase.PurchaseProposalExpectationsTest.test_reject_blank_reason) ... ok
+test_reject_duplicate_request_id_is_not_idempotent_success (tests.test_l11_purchase.PurchaseProposalExpectationsTest.test_reject_duplicate_request_id_is_not_idempotent_success) ... ok
+test_reject_negative_quantity (tests.test_l11_purchase.PurchaseProposalExpectationsTest.test_reject_negative_quantity) ... ok
+test_reject_unknown_sku (tests.test_l11_purchase.PurchaseProposalExpectationsTest.test_reject_unknown_sku) ... ok
+test_reject_zero_quantity (tests.test_l11_purchase.PurchaseProposalExpectationsTest.test_reject_zero_quantity) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.461s
+
+OK
