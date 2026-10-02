@@ -1,0 +1,249 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 118 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.delivery.L14WebPanelContractTest
+[ERROR] Tests run: 6, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 17.57 s <<< FAILURE! -- in workbench.delivery.L14WebPanelContractTest
+[ERROR] workbench.delivery.L14WebPanelContractTest.l14ChecksDefaultGateGreen -- Time elapsed: 13.04 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[默认门应全绿：{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l14_projection_review_owner",
+    "l14_projection_unknown_and_freshness",
+    "l14_projection_compact_and_list",
+    "l14_http_views_and_static",
+    "l14_panel_static_asserts",
+    "no_committed_secrets",
+    "l14_erp_reconciliation",
+    "l14_frozen_checks"
+  ],
+  "generated_at": "2026-10-02T12:55:28.709163Z",
+  "summary": {
+    "total": 8,
+    "passed": 7,
+    "blocking_failed": 1,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l14_projection_review_owner",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 873,
+      "evidence": "review 投影：归属人 human:reviewer + 下一步具名 + 绿 Eval 摘要 + 压缩等价 + truthful",
+      "error": null
+    },
+    {
+      "name": "l14_projection_unknown_and_freshness",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 3,
+      "evidence": "未知状态不可信 + freshness 边界（301/300）+ review 不 stale + 终态 final + 时间戳破损兜底",
+      "error": null
+    },
+    {
+      "name": "l14_projection_compact_and_list",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 108,
+      "evidence": "列表轻投影压缩 + 汇总计数（review→completed 迁移即变）+ feedback 关联 + export_candidate 条件",
+      "error": null
+    },
+    {
+      "name": "l14_http_views_and_static",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 306,
+      "evidence": "views 列表/详情 HTTP 面 + 静态 serve（content-type/no-cache/穿越 404）+ verify 三拍（拒/匿名拒/跑通）",
+      "error": null
+    },
+    {
+      "name": "l14_panel_static_asserts",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 14,
+      "evidence": "面板静态断言：身份/三态/取数面五条 + esc + 无凭据 + 无 CDN + 无假数据",
+      "error": null
+    },
+    {
+      "name": "no_committed_secrets",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 2122,
+      "evidence": "疑似密钥文件：[lesson-14-submission/04-diff/20261002T125503133431Z-e27d6da5/output.txt（含密钥特征）]",
+      "error": {
+        "type": "AssertionError",
+        "message": "疑似密钥文件：[lesson-14-submission/04-diff/20261002T125503133431Z-e27d6da5/output.txt（含密钥特征）]"
+      }
+    },
+    {
+      "name": "l14_erp_reconciliation",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 8483,
+      "evidence": "受控客户实例四向对账（页静态/API/SQLite/工作台投影 business_refs）+ 客户自测 11 例照跑绿",
+      "error": null
+    },
+    {
+      "name": "l14_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 33,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e, flowerp/service.py=6c372dcd105c, flowerp/server.py=0b7528377a01, web/index.html=a329e94c9f67, web/app.js=651244ed640e, web/styles.css=4dc9eb041f9e",
+      "error": null
+    }
+  ]
+}
+] 
+expected: 0
+ but was: 1
+	at workbench.delivery.L14WebPanelContractTest.l14ChecksDefaultGateGreen(L14WebPanelContractTest.java:264)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L14WebPanelContractTest.l14ChecksDefaultGateGreen:264 [默认门应全绿：{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l14_projection_review_owner",
+    "l14_projection_unknown_and_freshness",
+    "l14_projection_compact_and_list",
+    "l14_http_views_and_static",
+    "l14_panel_static_asserts",
+    "no_committed_secrets",
+    "l14_erp_reconciliation",
+    "l14_frozen_checks"
+  ],
+  "generated_at": "2026-10-02T12:55:28.709163Z",
+  "summary": {
+    "total": 8,
+    "passed": 7,
+    "blocking_failed": 1,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l14_projection_review_owner",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 873,
+      "evidence": "review 投影：归属人 human:reviewer + 下一步具名 + 绿 Eval 摘要 + 压缩等价 + truthful",
+      "error": null
+    },
+    {
+      "name": "l14_projection_unknown_and_freshness",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 3,
+      "evidence": "未知状态不可信 + freshness 边界（301/300）+ review 不 stale + 终态 final + 时间戳破损兜底",
+      "error": null
+    },
+    {
+      "name": "l14_projection_compact_and_list",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 108,
+      "evidence": "列表轻投影压缩 + 汇总计数（review→completed 迁移即变）+ feedback 关联 + export_candidate 条件",
+      "error": null
+    },
+    {
+      "name": "l14_http_views_and_static",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 306,
+      "evidence": "views 列表/详情 HTTP 面 + 静态 serve（content-type/no-cache/穿越 404）+ verify 三拍（拒/匿名拒/跑通）",
+      "error": null
+    },
+    {
+      "name": "l14_panel_static_asserts",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 14,
+      "evidence": "面板静态断言：身份/三态/取数面五条 + esc + 无凭据 + 无 CDN + 无假数据",
+      "error": null
+    },
+    {
+      "name": "no_committed_secrets",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 2122,
+      "evidence": "疑似密钥文件：[lesson-14-submission/04-diff/20261002T125503133431Z-e27d6da5/output.txt（含密钥特征）]",
+      "error": {
+        "type": "AssertionError",
+        "message": "疑似密钥文件：[lesson-14-submission/04-diff/20261002T125503133431Z-e27d6da5/output.txt（含密钥特征）]"
+      }
+    },
+    {
+      "name": "l14_erp_reconciliation",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 8483,
+      "evidence": "受控客户实例四向对账（页静态/API/SQLite/工作台投影 business_refs）+ 客户自测 11 例照跑绿",
+      "error": null
+    },
+    {
+      "name": "l14_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 33,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e, flowerp/service.py=6c372dcd105c, flowerp/server.py=0b7528377a01, web/index.html=a329e94c9f67, web/app.js=651244ed640e, web/styles.css=4dc9eb041f9e",
+      "error": null
+    }
+  ]
+}
+] 
+expected: 0
+ but was: 1
+[INFO] 
+[ERROR] Tests run: 6, Failures: 1, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  21.456 s
+[INFO] Finished at: 2026-10-02T20:55:33+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

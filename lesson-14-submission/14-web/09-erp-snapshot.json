@@ -1,0 +1,24 @@
+{
+  "customer_server": "flowerp.server ThreadingHTTPServer(127.0.0.1:0)",
+  "runtime_tmp": "/var/folders/2g/fb_sr5nd153b94j48r3dxq9m0000gn/T/l14-erp-exp-mhhh1gg2",
+  "seed_sku": "SKU-L14-PANEL-01",
+  "page": {
+    "status": 200,
+    "content_type": "text/html",
+    "has_api_face": true,
+    "appjs_status": 200,
+    "appjs_api_face": true,
+    "appjs_has_esc": true,
+    "appjs_no_credential": true,
+    "appjs_offline": true
+  },
+  "bootstrap_status": 201,
+  "login_status": 200,
+  "product_status": 201,
+  "api_skus": [
+    "SKU-L14-PANEL-01"
+  ],
+  "db_skus": [
+    "SKU-L14-PANEL-01"
+  ]
+}
