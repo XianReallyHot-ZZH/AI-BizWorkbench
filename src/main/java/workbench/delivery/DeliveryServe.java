@@ -114,11 +114,46 @@ public final class DeliveryServe {
             try {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> report = MAPPER.readValue(tail, Map.class);
-                return report;
+                return normalizeReport(report);
             } catch (IOException error) {
                 throw new IllegalStateException("检查子进程 stdout 末行不是 JSON 报告：" + tail, error);
             }
         };
+    }
+
+    /**
+     * 客户 eval 平铺报告 → 工作台统一 summary 形态（上游 lesson_eval_runner 的包装
+     * 语义对应物）：客户 harness 的 stdout 末行是 {total,passed,blocking_failed,
+     * decision} 平铺——Workflow 判定面读 summary 嵌套，缺包装则 decision/blocking_failed
+     * 皆 null 判红（首次受控实验抓获的形态分歧，如实入证据账）。
+     */
+    public static Map<String, Object> normalizeReport(Map<String, Object> report) {
+        if (report.containsKey("summary") || !report.containsKey("decision")) {
+            return report;
+        }
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("decision", report.get("decision"));
+        summary.put("blocking_failed", report.getOrDefault("blocking_failed", 0));
+        if (report.containsKey("total")) {
+            summary.put("total", report.get("total"));
+        }
+        if (report.containsKey("passed")) {
+            summary.put("passed", report.get("passed"));
+        }
+        if (report.containsKey("observing_failed")) {
+            summary.put("observing_failed", report.get("observing_failed"));
+        }
+        Object results = report.get("results");
+        if (results == null) {
+            results = report.get("cases");
+        }
+        if (results == null) {
+            results = new java.util.ArrayList<>();
+        }
+        Map<String, Object> wrapped = new LinkedHashMap<>();
+        wrapped.put("summary", summary);
+        wrapped.put("results", results);
+        return wrapped;
     }
 
     /** 缺省 suite：客户 purchase_requires_approval 原名照跑（cwd = vendors/flowERP）。 */

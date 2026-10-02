@@ -1,0 +1,192 @@
+{
+    "id": "TASK-ACF2CB5493",
+    "request": "从 Task API 提交补货需求：为 PURCHASE:COURSE-DEMO 生成 Spec、执行 Eval，并停在具名人工审核",
+    "status": "review",
+    "spec": {
+        "source": "- 课程主线合同：L13\n- 前置课次：L12\n- 业务对象：`PURCHASE:COURSE-DEMO`\n- 起始基线：`course/l13-start`",
+        "goal": "从 Task API 提交补货需求，生成 Spec、执行 Eval，并停在具名人工审核。\n\n工作台增量：可追溯 Task API 与异步状态。  \nERP 产品增量：通过 API 交付补货需求。\n\n课程建设主线：用 Codex 搭建个人工作台；通过个人工作台组织人与 AI 协同开发 FlowERP。\n本讲所在阶段：通过个人工作台组织人与 Codex 协同开发 FlowERP。\nCodex 当讲角色：Task API 共同建造者与补货任务执行者。\nFDE 循环：能力循环：把本地流程变成外部可提交、可查询资源。\n因果交接：Codex 执行被封装为有稳定身份、事件和合法状态的 Task。",
+        "non_goals": "- 不提前实现后续课次的 ERP 产品增量。\n- 不修改本讲允许写集之外的文件。\n- 不删除失败证据、降低 Eval 等级或绕过具名人工审核。",
+        "constraints": "- 允许写集：`workbench/`、`flowerp/`、`eval/`、`tests/`\n- 项目与路径归属：CodexFDE 是控制仓库，FlowERP 是独立客户项目。L04+ 的 write_scope 是相对于本次隔离教学候选的路径上限，不是 CodexFDE 根目录权限。flowerp/、web/ 的业务源码归属独立 FlowERP；workbench/、agent/ 归属工作台。eval/、tests/ 须按具体文件和来源记录区分工程检查与客户业务检查。当前课程候选仍组合两仓库源码，须记录来源与哈希；候选修改不自动写回任何源仓库。\n- 本讲复用 Eval：`delivery_evidence_and_review_controls`、`purchase_requires_approval`\n- 库存、订单、采购和任务状态必须遵守 `AGENTS.md` 的不可破坏规则。\n- 执行结果必须保存需求、Diff、命令、Eval 和人工决定之间的稳定引用。",
+        "acceptance": "1. API 接受请求后返回 Task ID 而非伪称完成。\n2. 任务事件可追溯到需求、业务对象和 Eval。\n3. 全绿后仍停在人工审核。",
+        "done": "- ERP 产品增量与工作台增量均有可复现证据，且能够说明二者因果。\n- 正常路径、失败路径和失败后不变状态均已验证。\n- 学生保存首次判断、失败、修订和复验结果；参考仓库终态不计作学生成果。\n- 若 `course-status --require-baselines` 未通过，不得声称完成了渐进式课程复现。"
+    },
+    "result": {
+        "summary": {
+            "decision": "pass",
+            "blocking_failed": 0,
+            "total": 1,
+            "passed": 1,
+            "observing_failed": 0
+        },
+        "results": [],
+        "report_path": "reports/TASK-ACF2CB5493-harness-blocking.json",
+        "report_sha256": "aec534773451345957b397ca8b73da052308a9a08d7092eccae2afa291419e45"
+    },
+    "error": null,
+    "requirement_id": "REQ-COURSE-L13",
+    "business_refs": [
+        "PURCHASE:COURSE-DEMO"
+    ],
+    "spec_path": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L13-delivery/course/L13/356ea5af91bb4f22ae7676fd75978fee/FDE_SPEC.md",
+    "reviewed_by": null,
+    "review_decision": null,
+    "review_note": null,
+    "reviewed_at": null,
+    "automation_mode": "automatic",
+    "execution_mode": "verify",
+    "write_scope": [
+        "workbench/",
+        "flowerp/",
+        "eval/",
+        "tests/"
+    ],
+    "execution_timeout_seconds": 900,
+    "version": 5,
+    "created_at": "2026-10-02 10:52:19",
+    "updated_at": "2026-10-02 10:52:19",
+    "events": [
+        {
+            "id": 23,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": null,
+            "to_status": "queued",
+            "detail": "任务已接收",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": {
+                "requirement_id": "REQ-COURSE-L13",
+                "business_refs": [
+                    "PURCHASE:COURSE-DEMO"
+                ],
+                "spec_path": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L13-delivery/course/L13/356ea5af91bb4f22ae7676fd75978fee/FDE_SPEC.md",
+                "automation_mode": "automatic",
+                "execution_mode": "verify",
+                "write_scope": [
+                    "workbench/",
+                    "flowerp/",
+                    "eval/",
+                    "tests/"
+                ],
+                "execution_timeout_seconds": 900
+            },
+            "created_at": "2026-10-02 10:52:19"
+        },
+        {
+            "id": 24,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": "queued",
+            "to_status": "queued",
+            "detail": "Web 已创建受控课程任务；尚未授权 Codex 写入",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": {
+                "lesson": 13,
+                "execution_mode": "verify"
+            },
+            "created_at": "2026-10-02 10:52:19"
+        },
+        {
+            "id": 25,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": "queued",
+            "to_status": "queued",
+            "detail": "自动流水线开始推进",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": {
+                "stages": [
+                    "spec",
+                    "execute",
+                    "blocking_eval",
+                    "human_review"
+                ],
+                "human_review_is_automatic": false,
+                "attempt": 1,
+                "max_attempts": 3
+            },
+            "created_at": "2026-10-02 10:52:19"
+        },
+        {
+            "id": 26,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": "queued",
+            "to_status": "spec_ready",
+            "detail": "结构化 Spec 已校验",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": {
+                "spec_path": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L13-delivery/course/L13/356ea5af91bb4f22ae7676fd75978fee/FDE_SPEC.md"
+            },
+            "created_at": "2026-10-02 10:52:19"
+        },
+        {
+            "id": 27,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": "spec_ready",
+            "to_status": "executing",
+            "detail": "开始受控执行",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": {
+                "requirement_id": "REQ-COURSE-L13",
+                "business_refs": [
+                    "PURCHASE:COURSE-DEMO"
+                ],
+                "execution_mode": "verify",
+                "write_scope": [
+                    "workbench/",
+                    "flowerp/",
+                    "eval/",
+                    "tests/"
+                ],
+                "execution_timeout_seconds": 900,
+                "allowed_actions": [
+                    "read_spec",
+                    "read_workspace",
+                    "run_blocking_eval",
+                    "run_workspace_shell"
+                ],
+                "forbidden_actions": [
+                    "write_runtime_database",
+                    "approve_business_document",
+                    "skip_eval"
+                ]
+            },
+            "created_at": "2026-10-02 10:52:19"
+        },
+        {
+            "id": 28,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": "executing",
+            "to_status": "executing",
+            "detail": "受控执行阶段完成",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": {
+                "mode": "verification_only",
+                "changed_files": [],
+                "message": "未配置代码写入执行器；本轮只验证当前候选，不产生业务数据副作用"
+            },
+            "created_at": "2026-10-02 10:52:19"
+        },
+        {
+            "id": 29,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": "executing",
+            "to_status": "evaluating",
+            "detail": "运行统一阻断级 Eval",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": null,
+            "created_at": "2026-10-02 10:52:19"
+        },
+        {
+            "id": 30,
+            "task_id": "TASK-ACF2CB5493",
+            "from_status": "evaluating",
+            "to_status": "review",
+            "detail": "阻断级 Eval 已通过，等待具名人工审核",
+            "actor": "XianReallyHot-ZZH",
+            "evidence": {
+                "decision": "pass",
+                "blocking_failed": 0,
+                "report_path": "reports/TASK-ACF2CB5493-harness-blocking.json",
+                "report_sha256": "aec534773451345957b397ca8b73da052308a9a08d7092eccae2afa291419e45"
+            },
+            "created_at": "2026-10-02 10:52:19"
+        }
+    ]
+}

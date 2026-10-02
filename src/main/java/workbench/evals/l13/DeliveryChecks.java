@@ -224,11 +224,24 @@ public final class DeliveryChecks {
             release.countDown();
             Map<String, Object> task = api.automation().wait(taskId, 30);
             expect("review".equals(task.get("status")), "全绿后应停在 review，实际 " + task.get("status"));
+
+            // 回归锚：客户 eval 平铺报告必须包装成 summary 形态（首次受控实验抓获的
+            // 形态分歧——缺包装则 Workflow 判定面读到 null 判红，见 13-api/02-attempt1）
+            Map<String, Object> flat = new LinkedHashMap<>();
+            flat.put("decision", "pass");
+            flat.put("blocking_failed", 0);
+            flat.put("total", 1);
+            flat.put("passed", 1);
+            Map<String, Object> wrapped = workbench.delivery.DeliveryServe.normalizeReport(flat);
+            expect(wrapped.get("summary") instanceof Map<?, ?> summary
+                    && "pass".equals(summary.get("decision"))
+                    && Integer.valueOf(0).equals(summary.get("blocking_failed")),
+                    "平铺报告应包装为 summary 形态（缺省 suite 面）");
         } finally {
             release.countDown();
             api.stop();
         }
-        return "202 契约 + 异步证明（202 先于 Eval 完成）+ capabilities verify-only + 词面拒绝五拍";
+        return "202 契约 + 异步证明（202 先于 Eval 完成）+ capabilities verify-only + 词面拒绝五拍 + 平铺报告包装回归锚";
     }
 
     /** C2：同键同需求重放同 Task ID / 同键异需求（含异 refs）409 / 跨实例并发提交原子。 */
