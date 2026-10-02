@@ -28,8 +28,11 @@ import java.util.concurrent.Executors;
  * + 幂等键要求）、POST {@code /api/v1/delivery/requests}（202 + Task ID——受理不是
  * 完成；Idempotency-Key 头承载提交键）、GET {@code /api/v1/tasks/{id}}、
  * GET {@code /api/v1/delivery/views/{id}}、POST {@code /api/v1/tasks/{id}/review}。
- * 错误映射同上游：415 unsupported_media_type / 400 invalid_json·类名+词面 /
+ * 错误映射同上游：415 unsupported_media_type / 400 invalid_json·词面 /
  * 404 not_found / 409 conflict（同键异需求「请使用新键」）/ body 上限 8192。
+ * 形态差异如实声明：400 的 error 字段 = Java 异常 SimpleName（上游 = Python
+ * 异常类名如 "ValueError"）——退出码与 message 词面对齐上游，类名字段按本仓
+ * 语言自然形态（L12 D2「上游裸栈 rc 1 形态差异如实入账」同款口径）。
  *
  * <p>D1 裁剪如实记录：上游 main 版 capabilities 的 code_execution 簇字段、
  * graphs/preview/artifacts 路由、initiatives/projects/backups 面不在 L13 断言面，
@@ -75,9 +78,8 @@ public final class HttpApi {
         created.createContext("/", this::handle);
         created.setExecutor(Executors.newCachedThreadPool());
         created.start();
-        boundPort = created.getAddress().getPort();
         this.server = created;
-        return boundPort;
+        return created.getAddress().getPort();
     }
 
     public void stop() {
@@ -87,7 +89,6 @@ public final class HttpApi {
     }
 
     private HttpServer server;
-    private int boundPort;
 
     // ---- 应用面（WorkbenchApp 断言面子集） ------------------------------------------------------------------
 
@@ -333,7 +334,8 @@ public final class HttpApi {
             try {
                 return Integer.parseInt(text);
             } catch (NumberFormatException error) {
-                // fallthrough：非数字按 0 处理（上游 int() 会抛 ValueError → 400，同面）
+                // 非数字 → 400（上游 int() 抛 ValueError → 400 同面；error 字段 =
+                // Java 异常 SimpleName，message 承 int() 词面——形态差异见类 javadoc）
                 throw new IllegalArgumentException("int() invalid literal: " + text);
             }
         }

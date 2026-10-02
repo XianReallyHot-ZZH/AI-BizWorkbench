@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>接缝（spec docs/specs/L13-*.md 已具名确认）：本类三面全部经子进程——
  * ①REGISTRY 注册缝（{@code delivery-serve} 常驻服务，经 Server 支撑件起真实端口）
  * ②DeliveryChecks 独立 main 子进程缝（l09–l12 Checks 既有族形的新件）。
- * 工作台面九件登记项的机检在 Checks 内进程内承载（合成 suite 经 suite_runner 缝
+ * 工作台面八件登记项的机检在 Checks 内进程内承载（合成 suite 经 suite_runner 缝
  * 注入——上游 fixture 防递归同理，如实标注），本类只锁公开面：注册、argv、默认门。
  *
  * <p>红点组（commit 1，讲义 §3 步骤 2）：{@code delivery-serve} 未注册 → rc 2

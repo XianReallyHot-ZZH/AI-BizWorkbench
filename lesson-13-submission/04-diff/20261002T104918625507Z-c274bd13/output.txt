@@ -1,0 +1,3220 @@
+diff --git a/src/main/java/workbench/cli/Main.java b/src/main/java/workbench/cli/Main.java
+index 654f950..f2b20f1 100644
+--- a/src/main/java/workbench/cli/Main.java
++++ b/src/main/java/workbench/cli/Main.java
+@@ -4,6 +4,7 @@ import workbench.bootstrap.Args;
+ import workbench.bootstrap.BootstrapCommands;
+ import workbench.bootstrap.Command;
+ import workbench.bootstrap.JsonOut;
++import workbench.delivery.DeliveryServe;
+ import workbench.evals.l07.QualityGate;
+ import workbench.evals.l08.CiEvidence;
+ import workbench.execution.ExecutionCommands;
+@@ -52,6 +53,12 @@ public final class Main {
+         // 四件收齐）——上游验收命令 python -X utf8 -m agent.graph --max-rounds 3 的本仓对应面，
+         // 退出码 0 completed / 3 awaiting_human_review（正常等待不是失败）/ 2 其余）。
+         REGISTRY.register("graph-run", GraphRunner::execute);
++        // L13：交付任务 API 常驻服务经同一条缝注册（讲义 D2——workbenchIncrement
++        // 「可追溯 Task API 与异步状态」即工作台命令，L07 D2 起五连先例；适配器在
++        // workbench.delivery.DeliveryServe——上游 workbench/workbench_server.py serve()
++        // 的对应面。operate 阶段首讲：执行链路封装为 202 + Task ID 的可提交、可查询
++        // 资源，全绿停在 review 等具名人审）。
++        REGISTRY.register("delivery-serve", DeliveryServe::execute);
+     }
+ 
+     public static void main(String[] args) {
+diff --git a/src/main/java/workbench/delivery/DeliveryAutomation.java b/src/main/java/workbench/delivery/DeliveryAutomation.java
+new file mode 100644
+index 0000000..beb7e60
+--- /dev/null
++++ b/src/main/java/workbench/delivery/DeliveryAutomation.java
+@@ -0,0 +1,332 @@
++package workbench.delivery;
++
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++
++/**
++ * 交付自动化流水线（上游 {@code workbench/automation.py} 对应物，L13 讲义 D2/D4）：
++ * submit（生成 Task ID + 任务级 Spec + 首事件）→ start（worker 线程池 + 等待队列）→
++ * 有界重试（max_attempts，耗尽保留 failure_preserved）→ 失败自动沉淀待审反馈
++ * （观察自动、接受具名）→ wait（软超时按 version 续期 + 硬超时）→ recover（重启恢复）。
++ *
++ * <p>上游 docstring 逐字承接：「Automation deliberately stops at {@code review} or
++ * {@code rework}. Human approval is a separate authenticated API action and is
++ * never executed by this worker」——自动化停在人审前，人审是分离的具名动作、
++ * worker 永不执行。上游 maintenance gate / agent_runner 缝不在本讲断言面
++ * （讲义 D1 不采纳清单），如实不建。
++ */
++public final class DeliveryAutomation {
++
++    /** 等待超时（上游 TimeoutError 词面）。 */
++    public static final class WaitTimeout extends RuntimeException {
++        public WaitTimeout(String message) {
++            super(message);
++        }
++    }
++
++    private final TaskStore store;
++    private final Path runtimeDir;
++    private final Workflow.SuiteRunner suiteRunner;
++    private final Workflow.ExecutionRunner executionRunner;
++    private final int maxWorkers;
++    private final int maxAttempts;
++    private final Feedback feedback;
++
++    private final Object lock = new Object();
++    private final Map<String, Thread> threads = new LinkedHashMap<>();
++    private final List<String[]> pending = new ArrayList<>();
++
++    public DeliveryAutomation(TaskStore store, Path runtimeDir, Workflow.SuiteRunner suiteRunner,
++            int maxWorkers, Workflow.ExecutionRunner executionRunner, int maxAttempts) {
++        if (maxWorkers < 1) {
++            throw new IllegalArgumentException("max_workers 必须至少为 1");
++        }
++        if (maxAttempts < 1 || maxAttempts > 10) {
++            throw new IllegalArgumentException("max_attempts 必须在 1 到 10 之间");
++        }
++        this.store = store;
++        this.runtimeDir = runtimeDir.toAbsolutePath().normalize();
++        this.suiteRunner = suiteRunner;
++        this.executionRunner = executionRunner;
++        this.maxWorkers = maxWorkers;
++        this.maxAttempts = maxAttempts;
++        this.feedback = new Feedback(store.path());
++    }
++
++    /**
++     * 提交即受理（上游 submit 同形）：需求规范化 + 业务引用提取（空则挂需求编号）+
++     * Task ID 生成 + 任务级 Spec 生成（失败转 failed「自动生成 Spec 失败」）+
++     * 首事件「已从需求生成任务级结构化 Spec」+ 可选自动开跑。
++     */
++    public Map<String, Object> submit(String request, String requirementId, List<String> businessRefs,
++            String actor, String executionMode, List<String> writeScope,
++            int executionTimeoutSeconds, boolean autoStart) {
++        String requirement = SpecFactory.normalizeRequirementId(requirementId);
++        List<String> refs = SpecFactory.normalizeBusinessRefs(request, businessRefs);
++        if (refs.isEmpty()) {
++            refs = List.of("REQUIREMENT:" + requirement);
++        }
++        String taskId = "TASK-" + UUID.randomUUID().toString().replace("-", "")
++                .substring(0, 10).toUpperCase();
++        Path specPath = runtimeDir.resolve("specs").resolve(taskId + ".md");
++        Map<String, Object> task = store.create(request, requirement, refs,
++                specPath.toString(), actor, "automatic", taskId, executionMode,
++                writeScope, executionTimeoutSeconds, null);
++        try {
++            SpecFactory.writeDeliverySpec(specPath, request, requirement, refs);
++            Map<String, Object> evidence = new LinkedHashMap<>();
++            evidence.put("spec_path", specPath.toString());
++            evidence.put("business_refs", refs);
++            store.appendEvent(taskId, "已从需求生成任务级结构化 Spec", "automation", evidence);
++        } catch (RuntimeException error) {
++            Map<String, Object> evidence = new LinkedHashMap<>();
++            evidence.put("error_type", error.getClass().getSimpleName());
++            return store.transition(taskId, "failed", "自动生成 Spec 失败", "automation",
++                    evidence, Map.of("error", String.valueOf(error.getMessage())));
++        }
++        if (autoStart) {
++            start(taskId, "automation");
++        }
++        return store.get(taskId);
++    }
++
++    /** 便捷重载（上游默认参同形：actor=system / verify / 无写集 / 900s / 自动开跑）。 */
++    public Map<String, Object> submit(String request, String requirementId, List<String> businessRefs) {
++        return submit(request, requirementId, businessRefs, "system", "verify", null, 900, true);
++    }
++
++    /** 开跑（上游 start 同形）：存活去重 + 等待队列 + 状态面校验 + worker 线程。 */
++    public Map<String, Object> start(String taskId, String actor) {
++        synchronized (lock) {
++            Thread existing = threads.get(taskId);
++            if (existing != null && existing.isAlive()) {
++                return store.get(taskId);
++            }
++            if (pending.stream().anyMatch(item -> item[0].equals(taskId))) {
++                return store.get(taskId);
++            }
++            Map<String, Object> task = store.get(taskId);
++            String status = String.valueOf(task.get("status"));
++            if (!List.of("queued", "spec_ready", "rework").contains(status)) {
++                throw new IllegalArgumentException("自动流水线只允许 queued、spec_ready 或可安全重放的 rework 任务启动");
++            }
++            if (threads.size() >= maxWorkers) {
++                pending.add(new String[] {taskId, actor});
++                Map<String, Object> evidence = new LinkedHashMap<>();
++                evidence.put("max_workers", maxWorkers);
++                store.appendEvent(taskId, "自动流水线等待可用 Worker", actor, evidence);
++                return store.get(taskId);
++            }
++            Thread worker = new Thread(() -> executeOwned(taskId, actor), "delivery-" + taskId);
++            worker.setDaemon(true);
++            threads.put(taskId, worker);
++            worker.start();
++        }
++        return store.get(taskId);
++    }
++
++    // ---- worker ------------------------------------------------------------------
++
++    private void executeOwned(String taskId, String actor) {
++        boolean retry = false;
++        int attempts = 1;
++        try {
++            attempts = countStartEvents(taskId) + 1;
++            Map<String, Object> attemptEvidence = new LinkedHashMap<>();
++            attemptEvidence.put("stages", List.of("spec", "execute", "blocking_eval", "human_review"));
++            attemptEvidence.put("human_review_is_automatic", false);
++            attemptEvidence.put("attempt", attempts);
++            attemptEvidence.put("max_attempts", maxAttempts);
++            store.appendEvent(taskId, "自动流水线开始推进", actor, attemptEvidence);
++            Map<String, Object> result = Workflow.runTask(store, taskId, actor, suiteRunner, executionRunner);
++            String status = String.valueOf(result.get("status"));
++            if ("rework".equals(status) && attempts < maxAttempts) {
++                retry = true;
++                store.appendEvent(taskId, "自动流水线安排有界重试", actor,
++                        retryEvidence(attempts, result));
++            } else if ("rework".equals(status)) {
++                Map<String, Object> evidence = retryEvidence(attempts, result);
++                evidence.put("failure_preserved", true);
++                store.appendEvent(taskId, "有界重试已耗尽，保留阻断失败并等待人工处理", actor, evidence);
++            } else if ("failed".equals(status)) {
++                Map<String, Object> evidence = retryEvidence(attempts, result);
++                store.transition(taskId, "dead_letter", "自动流水线遇到不可重试的执行失败，转人工处理",
++                        actor, evidence, Map.of("error",
++                                String.valueOf(result.getOrDefault("error", "自动流水线未能收敛"))));
++            }
++        } catch (RuntimeException error) {
++            // 崩溃的 worker 不得留在进行中的持久状态里：保留异常为证据，复用有界重试策略
++            Map<String, Object> task = store.get(taskId);
++            String status = String.valueOf(task.get("status"));
++            Map<String, Object> evidence = new LinkedHashMap<>();
++            evidence.put("attempt", attempts);
++            evidence.put("max_attempts", maxAttempts);
++            evidence.put("error_type", error.getClass().getSimpleName());
++            evidence.put("error", String.valueOf(error.getMessage()));
++            evidence.put("failure_preserved", true);
++            Map<String, Object> current = task;
++            if (List.of("executing", "evaluating", "review").contains(status)) {
++                current = store.transition(taskId, "rework", "自动流水线异常中断，保留现场并进入有界返工",
++                        actor, evidence, Map.of("error", String.valueOf(error.getMessage())));
++            } else if (List.of("queued", "spec_ready").contains(status)) {
++                current = store.transition(taskId, "failed", "自动流水线在执行前异常中断",
++                        actor, evidence, Map.of("error", String.valueOf(error.getMessage())));
++            } else {
++                store.appendEvent(taskId, "自动流水线捕获未处理异常", actor, evidence);
++            }
++            String nowStatus = String.valueOf(current.get("status"));
++            if ("rework".equals(nowStatus) && attempts < maxAttempts) {
++                retry = true;
++                Map<String, Object> next = new LinkedHashMap<>(evidence);
++                next.put("next_attempt", attempts + 1);
++                store.appendEvent(taskId, "自动流水线为异常中断安排有界重试", actor, next);
++            } else if ("rework".equals(nowStatus)) {
++                store.appendEvent(taskId, "异常重试已耗尽，保留失败并等待人工处理", actor, evidence);
++            } else if ("failed".equals(nowStatus)) {
++                store.transition(taskId, "dead_letter", "不可安全重试的流水线异常转人工处理",
++                        actor, evidence, Map.of("error", String.valueOf(error.getMessage())));
++            }
++        } finally {
++            if (!retry) {
++                Map<String, Object> task = store.get(taskId);
++                String status = String.valueOf(task.get("status"));
++                if (List.of("rework", "failed", "dead_letter").contains(status)) {
++                    try {
++                        Map<String, Object> observation = feedback.observeTaskFailure(task);
++                        Map<String, Object> evidence = new LinkedHashMap<>();
++                        evidence.put("feedback_id", observation.get("id"));
++                        evidence.put("feedback_status", observation.get("status"));
++                        evidence.put("automatic_acceptance", false);
++                        store.appendEvent(taskId, "失败已沉淀为待具名审核的反馈候选", "automation", evidence);
++                    } catch (RuntimeException error) {
++                        Map<String, Object> evidence = new LinkedHashMap<>();
++                        evidence.put("error_type", error.getClass().getSimpleName());
++                        evidence.put("error", String.valueOf(error.getMessage()));
++                        store.appendEvent(taskId, "自动沉淀失败反馈失败，任务终态保持不变", "automation", evidence);
++                    }
++                }
++            }
++            String[] next = null;
++            synchronized (lock) {
++                threads.remove(taskId);
++                if (retry) {
++                    pending.add(new String[] {taskId, "automation"});
++                }
++                if (!pending.isEmpty()) {
++                    next = pending.remove(0);
++                }
++            }
++            if (next != null) {
++                start(next[0], next[1]);
++            }
++        }
++    }
++
++    private Map<String, Object> retryEvidence(int attempts, Map<String, Object> result) {
++        Map<String, Object> lastEval = result.get("result") instanceof Map<?, ?> map
++                ? nested(map) : null;
++        Map<String, Object> evidence = new LinkedHashMap<>();
++        evidence.put("attempt", attempts);
++        evidence.put("max_attempts", maxAttempts);
++        evidence.put("last_status", result.get("status"));
++        evidence.put("last_error", result.get("error"));
++        evidence.put("last_eval", lastEval == null ? null
++                : lastEval.getOrDefault("summary", Map.of()));
++        return evidence;
++    }
++
++    private Map<String, Object> nested(Map<?, ?> map) {
++        @SuppressWarnings("unchecked")
++        Map<String, Object> cast = (Map<String, Object>) map;
++        return cast;
++    }
++
++    @SuppressWarnings("unchecked")
++    private int countStartEvents(String taskId) {
++        Map<String, Object> task = store.get(taskId);
++        int count = 0;
++        for (Object item : (List<Object>) task.get("events")) {
++            if (item instanceof Map<?, ?> event
++                    && "自动流水线开始推进".equals(event.get("detail"))) {
++                count++;
++            }
++        }
++        return count;
++    }
++
++    // ---- wait / recover / isActive ------------------------------------------------------------------
++
++    /**
++     * 等待到终态（上游 wait 同形）：软超时按 version 变化续期（推进中的多段任务
++     * 不会误超时）；硬超时 = max(软, 执行超时+30)；worker 仍活跃时不抛软超时——
++     * 存活 worker 可能合法地在 Eval 子进程里耗时，其任务级执行超时才是硬上界。
++     */
++    public Map<String, Object> wait(String taskId, double timeoutSeconds) {
++        long deadline = System.nanoTime() + (long) (timeoutSeconds * 1_000_000_000L);
++        Map<String, Object> task = store.get(taskId);
++        int executionTimeout = task.get("execution_timeout_seconds") instanceof Number number
++                ? number.intValue() : 900;
++        long hardDeadline = System.nanoTime()
++                + (long) (Math.max(timeoutSeconds, executionTimeout + 30) * 1_000_000_000L);
++        Object lastVersion = null;
++        while (true) {
++            boolean active;
++            synchronized (lock) {
++                // 同一把锁下读持久状态与 worker 注册表：否则 worker 可能在两次读之间
++                // 收尾注销，让旧恢复检查点看起来已是终态
++                task = store.get(taskId);
++                Thread worker = threads.get(taskId);
++                active = (worker != null && worker.isAlive())
++                        || pending.stream().anyMatch(item -> item[0].equals(taskId));
++            }
++            Object version = task.get("version");
++            if (lastVersion == null || !version.equals(lastVersion)) {
++                lastVersion = version;
++                deadline = System.nanoTime() + (long) (timeoutSeconds * 1_000_000_000L);
++            }
++            String status = String.valueOf(task.get("status"));
++            if (List.of("review", "completed", "dead_letter", "rework", "failed").contains(status)
++                    && !active) {
++                return task;
++            }
++            long remaining = deadline - System.nanoTime();
++            if (remaining <= 0) {
++                if (!active) {
++                    throw new WaitTimeout("等待自动流水线超时：" + taskId);
++                }
++                long hardRemaining = hardDeadline - System.nanoTime();
++                if (hardRemaining <= 0) {
++                    throw new WaitTimeout("自动流水线超过任务执行硬超时：" + taskId);
++                }
++                remaining = Math.min(250_000_000L, hardRemaining);
++            }
++            try {
++                Thread.sleep(Math.min(remaining, 50_000_000L) / 1_000_000);
++            } catch (InterruptedException error) {
++                Thread.currentThread().interrupt();
++                throw new IllegalStateException("等待自动流水线被中断：" + taskId, error);
++            }
++        }
++    }
++
++    /** 重启恢复（上游 recover 同形）：安全重放集逐个重启。 */
++    public List<String> recover() {
++        List<String> recovered = store.recoverAutomaticTasks();
++        for (String taskId : recovered) {
++            start(taskId, "automation-recovery");
++        }
++        return recovered;
++    }
++
++    public boolean isActive(String taskId) {
++        synchronized (lock) {
++            Thread worker = threads.get(taskId);
++            return (worker != null && worker.isAlive())
++                    || pending.stream().anyMatch(item -> item[0].equals(taskId));
++        }
++    }
++}
+diff --git a/src/main/java/workbench/delivery/DeliveryServe.java b/src/main/java/workbench/delivery/DeliveryServe.java
+new file mode 100644
+index 0000000..2df5f32
+--- /dev/null
++++ b/src/main/java/workbench/delivery/DeliveryServe.java
+@@ -0,0 +1,141 @@
++package workbench.delivery;
++
++import com.fasterxml.jackson.databind.ObjectMapper;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++import workbench.execution.ProcessRunner;
++import workbench.execution.Shlex;
++
++import java.io.IOException;
++import java.net.URISyntaxException;
++import java.nio.file.Path;
++import java.util.LinkedHashMap;
++import java.util.Map;
++
++/**
++ * REGISTRY {@code delivery-serve}：交付任务 API 常驻服务（上游
++ * {@code workbench/workbench_server.py} {@code serve()} 对应物，L13 讲义 D2——
++ * repair-map/loop-run/graph-run 之后的第五个工作台命令，同一注册缝）。
++ *
++ * <p>CLI 面：{@code --runtime-dir}（必填；缺省即拒绝——服务永不落隐式目录）、
++ * {@code --host}（缺省 127.0.0.1）、{@code --port}（缺省 0 = 随机分配）、
++ * {@code --suite-command}（suite 缝的进程面：stdout 末行 = schema 1.0 报告、
++ * rc 0 绿 / 1 红——LoopRunner/GraphRunner 同款；缺省 = 客户绑定 eval
++ * {@code purchase_requires_approval} 原名照跑——「补货需求」的业务权威，
++ * 子进程 cwd = vendors/flowERP，ADR-0005）。启动后 stdout 打监听行 JSON
++ * （{"ok":true,"port":N,…}），随后常驻直到被停止（Ctrl-C / 进程销毁）。
++ */
++public final class DeliveryServe {
++
++    /** 检查子进程超时（GraphRunner SUITE_TIMEOUT_SECONDS 同值先例）。 */
++    private static final int SUITE_TIMEOUT_SECONDS = 300;
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private DeliveryServe() {}
++
++    public static int execute(String[] argv) {
++        Args args = new Args(argv,
++                java.util.Set.of("--runtime-dir", "--host", "--port", "--suite-command"),
++                java.util.Set.of(), java.util.List.of(), java.util.Set.of());
++        String runtimeDir = args.optional("--runtime-dir", "");
++        if (runtimeDir.isBlank()) {
++            throw new Args.UsageException(
++                    "delivery-serve: the following arguments are required: --runtime-dir");
++        }
++        String host = args.optional("--host", "127.0.0.1");
++        int port = parsePort(args.optional("--port", "0"));
++        String suiteCommand = args.optional("--suite-command", "");
++        Workflow.SuiteRunner suite = suiteCommand.isBlank()
++                ? defaultSuiteRunner()
++                : suiteCommandRunner(suiteCommand, Path.of("").toAbsolutePath());
++        HttpApi api = new HttpApi(Path.of(runtimeDir), suite);
++        int bound;
++        try {
++            bound = api.start(host, port);
++        } catch (IOException error) {
++            throw new java.io.UncheckedIOException("delivery-serve 监听失败：" + host + ":" + port, error);
++        }
++        Runtime.getRuntime().addShutdownHook(new Thread(api::stop));
++        Map<String, Object> listening = new LinkedHashMap<>();
++        listening.put("ok", true);
++        listening.put("listening", host + ":" + bound);
++        listening.put("port", bound);
++        listening.put("runtime_dir", Path.of(runtimeDir).toAbsolutePath().normalize().toString());
++        listening.put("suite", suiteCommand.isBlank() ? "default:purchase_requires_approval" : suiteCommand);
++        System.out.println(PyJson.dumpsCompact(listening));
++        System.out.flush();
++        while (true) {
++            try {
++                Thread.sleep(1000);
++            } catch (InterruptedException error) {
++                Thread.currentThread().interrupt();
++                return 0;
++            }
++        }
++    }
++
++    private static int parsePort(String value) {
++        try {
++            int parsed = Integer.parseInt(value);
++            if (parsed < 0 || parsed > 65535) {
++                throw new Args.UsageException("--port 必须在 0..65535：" + value);
++            }
++            return parsed;
++        } catch (NumberFormatException error) {
++            throw new Args.UsageException("--port 必须是整数：" + value);
++        }
++    }
++
++    /**
++     * suite 缝的进程面（LoopRunner/GraphRunner --suite-command 同款）：Shlex 拆分、
++     * 超时 / 退出码越界（预期 0|1）→ 异常、stdout 末行解析为报告对象
++     * （客户 harness 输出形态——SalesChecks.customerCase tail 同口径）。
++     */
++    static Workflow.SuiteRunner suiteCommandRunner(String suiteCommand, java.nio.file.Path cwd) {
++        return () -> {
++            java.util.List<String> command;
++            try {
++                command = Shlex.split(suiteCommand);
++            } catch (Shlex.Unparseable error) {
++                throw new IllegalStateException("--suite-command 无法解析：" + suiteCommand, error);
++            }
++            ProcessRunner.Outcome check = ProcessRunner.run(command,
++                    cwd, SUITE_TIMEOUT_SECONDS, null);
++            if (check.timedOut()) {
++                throw new IllegalStateException("检查子进程超时（" + SUITE_TIMEOUT_SECONDS + "s）");
++            }
++            if (check.returncode() == null || (check.returncode() != 0 && check.returncode() != 1)) {
++                throw new IllegalStateException(
++                        "检查退出码越界（预期 0|1，实际 " + check.returncode() + "）");
++            }
++            String stdout = check.stdoutText().strip();
++            String tail = stdout.isEmpty() ? "" : stdout.substring(stdout.lastIndexOf('\n') + 1);
++            try {
++                @SuppressWarnings("unchecked")
++                Map<String, Object> report = MAPPER.readValue(tail, Map.class);
++                return report;
++            } catch (IOException error) {
++                throw new IllegalStateException("检查子进程 stdout 末行不是 JSON 报告：" + tail, error);
++            }
++        };
++    }
++
++    /** 缺省 suite：客户 purchase_requires_approval 原名照跑（cwd = vendors/flowERP）。 */
++    static Workflow.SuiteRunner defaultSuiteRunner() {
++        Path repoRoot = repoRoot();
++        String command = repoRoot.resolve(".venv/bin/python") + " -X utf8 -m eval.harness"
++                + " --case purchase_requires_approval --no-report";
++        return suiteCommandRunner(command, repoRoot.resolve("vendors").resolve("flowERP"));
++    }
++
++    /** l06–l12 Checks.repoRoot 同形：锚定本类装载位置（target/classes → 仓库根）。 */
++    static Path repoRoot() {
++        try {
++            return Path.of(DeliveryServe.class.getProtectionDomain()
++                    .getCodeSource().getLocation().toURI()).toAbsolutePath().getParent().getParent();
++        } catch (URISyntaxException error) {
++            throw new IllegalStateException("仓库根定位失败（class 装载位置）", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/delivery/Feedback.java b/src/main/java/workbench/delivery/Feedback.java
+new file mode 100644
+index 0000000..8faaae7
+--- /dev/null
++++ b/src/main/java/workbench/delivery/Feedback.java
+@@ -0,0 +1,353 @@
++package workbench.delivery;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.sql.Connection;
++import java.sql.DriverManager;
++import java.sql.PreparedStatement;
++import java.sql.ResultSet;
++import java.sql.SQLException;
++import java.sql.Statement;
++import java.util.ArrayList;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.TreeMap;
++import java.util.UUID;
++
++/**
++ * 交付反馈沉淀与审核（上游 {@code workbench/feedback.py} 对应物，L13 讲义 D6）：
++ * 同库 feedback 表（schema 含 status、reviewed_* 演化列与 dedupe_key、evidence_json，
++ * 新库初建即终形）；观察自动、接受与提升永远具名（上游 docstring 语义）；
++ * 签名去重（同一失败重放不重复沉淀）；已审核不可重复改变结论。
++ */
++public final class Feedback {
++
++    /** 反馈不存在（上游 KeyError → HTTP 404 同族）。 */
++    public static final class FeedbackNotFound extends RuntimeException {
++        public FeedbackNotFound(String feedbackId) {
++            super(feedbackId);
++        }
++    }
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private final Path dbPath;
++
++    public Feedback(Path path) {
++        this.dbPath = path.toAbsolutePath().normalize();
++        try {
++            Files.createDirectories(this.dbPath.getParent());
++        } catch (IOException error) {
++            throw new UncheckedIOException("反馈库目录创建失败：" + this.dbPath.getParent(), error);
++        }
++        try (Connection conn = open()) {
++            try (Statement st = conn.createStatement()) {
++                st.executeUpdate("""
++                        CREATE TABLE IF NOT EXISTS feedback(
++                        id TEXT PRIMARY KEY, task_id TEXT NOT NULL, source TEXT NOT NULL,
++                        conclusion TEXT NOT NULL, next_step TEXT NOT NULL,
++                        reviewed INTEGER NOT NULL DEFAULT 0,
++                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
++                        status TEXT NOT NULL DEFAULT 'pending_review',
++                        reviewed_by TEXT, reviewed_at TEXT, review_note TEXT,
++                        dedupe_key TEXT, evidence_json TEXT)""");
++                st.executeUpdate("CREATE UNIQUE INDEX IF NOT EXISTS idx_feedback_dedupe "
++                        + "ON feedback(dedupe_key) WHERE dedupe_key IS NOT NULL");
++            }
++            conn.commit();
++        } catch (SQLException error) {
++            throw new TaskStore.StoreFailure("反馈库初始化失败：" + dbPath, error);
++        }
++    }
++
++    /**
++     * 人工反馈登记（上游 add_feedback 同形）：四要素词面校验 + 幂等键（&gt;200 拒绝）；
++     * 有幂等键 → INSERT OR IGNORE 后按键回读（重放返回既有件）。
++     */
++    public Map<String, Object> addFeedback(String taskId, String source, String conclusion,
++            String nextStep, Map<String, Object> evidence, String dedupeKey) {
++        if (isBlank(taskId) || isBlank(source) || isBlank(conclusion) || isBlank(nextStep)) {
++            throw new IllegalArgumentException("反馈必须包含 task_id、来源、结论和下一步");
++        }
++        String key = dedupeKey == null ? "" : dedupeKey.strip();
++        String normalizedKey = key.isEmpty() ? null : key;
++        if (normalizedKey != null && normalizedKey.length() > 200) {
++            throw new IllegalArgumentException("反馈幂等键不能超过 200 个字符");
++        }
++        String id = "FB-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
++        String evidenceJson = evidence == null ? null : dumps(evidence);
++        try (Connection conn = open()) {
++            if (normalizedKey != null) {
++                try (PreparedStatement insert = conn.prepareStatement("""
++                        INSERT OR IGNORE INTO feedback(id,task_id,source,conclusion,next_step,
++                          dedupe_key,evidence_json) VALUES(?,?,?,?,?,?,?)""")) {
++                    bindInsert(insert, id, taskId, source, conclusion, nextStep, normalizedKey, evidenceJson);
++                    insert.executeUpdate();
++                }
++                try (PreparedStatement query = conn.prepareStatement(
++                        "SELECT * FROM feedback WHERE dedupe_key=?")) {
++                    query.setString(1, normalizedKey);
++                    try (ResultSet row = query.executeQuery()) {
++                        if (row.next()) {
++                            Map<String, Object> existing = decode(row);
++                            conn.commit();
++                            return existing;
++                        }
++                    }
++                }
++            }
++            try (PreparedStatement insert = conn.prepareStatement("""
++                    INSERT INTO feedback(id,task_id,source,conclusion,next_step,evidence_json)
++                    VALUES(?,?,?,?,?,?)""")) {
++                bindInsert(insert, id, taskId, source, conclusion, nextStep, null, evidenceJson);
++                insert.executeUpdate();
++            }
++            conn.commit();
++        } catch (SQLException error) {
++            throw new TaskStore.StoreFailure("反馈登记失败：" + id, error);
++        }
++        return get(id);
++    }
++
++    /**
++     * 自动失败沉淀（上游 observe_task_failure 同形）：仅 rework/failed/dead_letter；
++     * 阻断失败名集合排序 + 签名去重（task-failure:{task}:{sig20}）；source
++     * = automation:{status}；下一步恒为「由具名人员复核失败是否稳定；接受后才能
++     * 建立 Evolution 候选」——观察自动、接受具名。
++     */
++    public Map<String, Object> observeTaskFailure(Map<String, Object> task) {
++        String status = String.valueOf(task.get("status") == null ? "" : task.get("status")).strip();
++        if (!"rework".equals(status) && !"failed".equals(status) && !"dead_letter".equals(status)) {
++            throw new IllegalArgumentException("只有 rework、failed 或 dead_letter 任务可以沉淀失败反馈");
++        }
++        String taskId = String.valueOf(task.get("id") == null ? "" : task.get("id")).strip();
++        if (taskId.isEmpty()) {
++            throw new IllegalArgumentException("失败反馈缺少 Task ID");
++        }
++        Map<String, Object> result = task.get("result") instanceof Map<?, ?> map
++                ? cast(map) : Map.of();
++        List<Object> resultsList = result.get("results") instanceof List<?> list ? castList(list) : List.of();
++        List<String> failedCases = new ArrayList<>(new java.util.TreeSet<>());
++        for (Object item : resultsList) {
++            if (item instanceof Map<?, ?> row && !Boolean.TRUE.equals(row.get("passed"))
++                    && "blocking".equals(row.get("level"))) {
++                failedCases.add(String.valueOf(row.get("name") == null ? "unknown" : row.get("name")));
++            }
++        }
++        String error = String.valueOf(task.get("error") == null ? "" : task.get("error")).strip();
++        Map<String, Object> signaturePayload = new TreeMap<>();
++        signaturePayload.put("status", status);
++        signaturePayload.put("blocking_failures", failedCases);
++        signaturePayload.put("error", error.length() > 500 ? error.substring(0, 500) : error);
++        String signatureHash = sha256(dumps(signaturePayload)).substring(0, 20);
++        String conclusion = !failedCases.isEmpty()
++                ? "Blocking Eval 失败：" + String.join("、", failedCases)
++                : "自动流水线进入 " + status + "：" + (error.isEmpty() ? "未提供错误摘要" : error);
++        Map<String, Object> evidence = new LinkedHashMap<>();
++        evidence.put("schema_version", "workbench.failure-observation/v1");
++        evidence.put("task_status", status);
++        evidence.put("requirement_id", task.get("requirement_id") == null ? "" : task.get("requirement_id"));
++        evidence.put("business_refs", task.get("business_refs") == null ? List.of() : task.get("business_refs"));
++        evidence.put("blocking_failures", failedCases);
++        evidence.put("error", error);
++        evidence.put("report_path", result.get("report_path"));
++        evidence.put("report_sha256", result.get("report_sha256"));
++        evidence.put("task_version", task.get("version"));
++        return addFeedback(taskId, "automation:" + status, conclusion,
++                "由具名人员复核失败是否稳定；接受后才能建立 Evolution 候选",
++                evidence, "task-failure:" + taskId + ":" + signatureHash);
++    }
++
++    /**
++     * 具名反馈审核（上游 review_feedback 同形）：accept/reject 二值；已审核不可
++     * 重复改变结论；reviewed=1 + 具名 reviewed_by/reviewed_at/review_note 落账。
++     */
++    public Map<String, Object> reviewFeedback(String feedbackId, String reviewer, String decision, String note) {
++        String identity = reviewer == null ? "" : reviewer.strip();
++        String id = feedbackId == null ? "" : feedbackId.strip();
++        if (id.isEmpty() || identity.isEmpty()) {
++            throw new IllegalArgumentException("审核必须包含反馈编号和审核人");
++        }
++        String normalized = decision == null ? "" : decision.strip().toLowerCase();
++        if (!"accept".equals(normalized) && !"reject".equals(normalized)) {
++            throw new IllegalArgumentException("审核决定必须为 accept 或 reject");
++        }
++        String status = "accept".equals(normalized) ? "accepted" : "rejected";
++        try (Connection conn = open()) {
++            String current;
++            try (PreparedStatement query = conn.prepareStatement(
++                    "SELECT status FROM feedback WHERE id=?")) {
++                query.setString(1, id);
++                try (ResultSet row = query.executeQuery()) {
++                    if (!row.next()) {
++                        throw new FeedbackNotFound(id);
++                    }
++                    current = row.getString("status");
++                }
++            }
++            if (!"pending_review".equals(current)) {
++                throw new IllegalArgumentException("反馈已经审核，不能重复改变结论");
++            }
++            try (PreparedStatement update = conn.prepareStatement("""
++                    UPDATE feedback SET status=?, reviewed=1, reviewed_by=?, reviewed_at=?,
++                      review_note=? WHERE id=? AND status='pending_review'""")) {
++                update.setString(1, status);
++                update.setString(2, identity);
++                update.setString(3, java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC)
++                        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME));
++                update.setString(4, note == null ? "" : note.strip());
++                update.setString(5, id);
++                update.executeUpdate();
++            }
++            conn.commit();
++        } catch (SQLException error) {
++            throw new TaskStore.StoreFailure("反馈审核失败：" + id, error);
++        }
++        return get(id);
++    }
++
++    /** 汇总（上游 summary 同形）：计数 + 明细按 created_at DESC, id DESC。 */
++    public Map<String, Object> summary() {
++        List<Map<String, Object>> items = new ArrayList<>();
++        try (Connection conn = openRead()) {
++            try (PreparedStatement query = conn.prepareStatement(
++                    "SELECT * FROM feedback ORDER BY created_at DESC, id DESC");
++                    ResultSet row = query.executeQuery()) {
++                while (row.next()) {
++                    items.add(decode(row));
++                }
++            }
++        } catch (SQLException error) {
++            throw new TaskStore.StoreFailure("反馈汇总读取失败", error);
++        }
++        long pending = items.stream().filter(item -> "pending_review".equals(item.get("status"))).count();
++        long accepted = items.stream().filter(item -> "accepted".equals(item.get("status"))).count();
++        long rejected = items.stream().filter(item -> "rejected".equals(item.get("status"))).count();
++        Map<String, Object> summary = new LinkedHashMap<>();
++        summary.put("total", items.size());
++        summary.put("reviewed", items.size() - (int) pending);
++        summary.put("pending_review", (int) pending);
++        summary.put("accepted", (int) accepted);
++        summary.put("rejected", (int) rejected);
++        summary.put("items", items);
++        return summary;
++    }
++
++    public Map<String, Object> get(String feedbackId) {
++        try (Connection conn = openRead()) {
++            try (PreparedStatement query = conn.prepareStatement(
++                    "SELECT * FROM feedback WHERE id=?")) {
++                query.setString(1, feedbackId);
++                try (ResultSet row = query.executeQuery()) {
++                    if (row.next()) {
++                        return decode(row);
++                    }
++                }
++            }
++        } catch (SQLException error) {
++            throw new TaskStore.StoreFailure("反馈读取失败：" + feedbackId, error);
++        }
++        throw new FeedbackNotFound(feedbackId);
++    }
++
++    // ---- 内部 ------------------------------------------------------------------
++
++    private Connection open() throws SQLException {
++        org.sqlite.SQLiteConfig config = new org.sqlite.SQLiteConfig();
++        config.setBusyTimeout(5000);
++        config.setSynchronous(org.sqlite.SQLiteConfig.SynchronousMode.FULL);
++        config.setTransactionMode(org.sqlite.SQLiteConfig.TransactionMode.IMMEDIATE);
++        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath, config.toProperties());
++        conn.setAutoCommit(false);
++        return conn;
++    }
++
++    /** 只读连接（TaskStore.openRead 同口径：读不抢写锁）。 */
++    private Connection openRead() throws SQLException {
++        org.sqlite.SQLiteConfig config = new org.sqlite.SQLiteConfig();
++        config.setBusyTimeout(5000);
++        return DriverManager.getConnection("jdbc:sqlite:" + dbPath, config.toProperties());
++    }
++
++    private static void bindInsert(PreparedStatement insert, String id, String taskId, String source,
++            String conclusion, String nextStep, String dedupeKey, String evidenceJson) throws SQLException {
++        insert.setString(1, id);
++        insert.setString(2, taskId);
++        insert.setString(3, source);
++        insert.setString(4, conclusion);
++        insert.setString(5, nextStep);
++        if (dedupeKey == null) {
++            insert.setString(6, evidenceJson);
++        } else {
++            insert.setString(6, dedupeKey);
++            insert.setString(7, evidenceJson);
++        }
++    }
++
++    private static Map<String, Object> decode(ResultSet row) throws SQLException {
++        Map<String, Object> item = new LinkedHashMap<>();
++        item.put("id", row.getString("id"));
++        item.put("task_id", row.getString("task_id"));
++        item.put("source", row.getString("source"));
++        item.put("conclusion", row.getString("conclusion"));
++        item.put("next_step", row.getString("next_step"));
++        item.put("reviewed", row.getInt("reviewed"));
++        item.put("created_at", row.getString("created_at"));
++        item.put("status", row.getString("status"));
++        item.put("reviewed_by", row.getString("reviewed_by"));
++        item.put("reviewed_at", row.getString("reviewed_at"));
++        item.put("review_note", row.getString("review_note"));
++        item.put("dedupe_key", row.getString("dedupe_key"));
++        String raw = row.getString("evidence_json");
++        if (raw != null) {
++            try {
++                item.put("evidence", MAPPER.readValue(raw, new TypeReference<Object>() {}));
++            } catch (IOException error) {
++                throw new TaskStore.StoreFailure("反馈 evidence 解析失败", error);
++            }
++        } else {
++            item.put("evidence", null);
++        }
++        return item;
++    }
++
++    private static boolean isBlank(String value) {
++        return value == null || value.strip().isEmpty();
++    }
++
++    @SuppressWarnings("unchecked")
++    private static Map<String, Object> cast(Map<?, ?> value) {
++        return (Map<String, Object>) value;
++    }
++
++    @SuppressWarnings("unchecked")
++    private static List<Object> castList(List<?> value) {
++        return (List<Object>) value;
++    }
++
++    private static String dumps(Object node) {
++        try {
++            return MAPPER.writeValueAsString(node);
++        } catch (IOException error) {
++            throw new TaskStore.StoreFailure("JSON 序列化失败", error);
++        }
++    }
++
++    private static String sha256(String value) {
++        try {
++            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
++                    .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
++        } catch (NoSuchAlgorithmException error) {
++            throw new TaskStore.StoreFailure("SHA-256 不可用", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/delivery/HttpApi.java b/src/main/java/workbench/delivery/HttpApi.java
+new file mode 100644
+index 0000000..bfbbb67
+--- /dev/null
++++ b/src/main/java/workbench/delivery/HttpApi.java
+@@ -0,0 +1,357 @@
++package workbench.delivery;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.sun.net.httpserver.HttpExchange;
++import com.sun.net.httpserver.HttpServer;
++import workbench.coursecontracts.CourseContracts;
++
++import java.io.IOException;
++import java.io.OutputStream;
++import java.net.InetSocketAddress;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++import java.util.concurrent.Executors;
++
++/**
++ * 交付任务 HTTP API（上游 {@code workbench/workbench_server.py} 的 L13 断言面子集，
++ * L13 讲义 D2/D3）：{@code com.sun.net.httpserver}（JDK 内置——依赖白名单零新增）。
++ *
++ * <p>端点（上游路由词面同形）：GET {@code /api/v1/delivery/capabilities}（verify-only
++ * + 幂等键要求）、POST {@code /api/v1/delivery/requests}（202 + Task ID——受理不是
++ * 完成；Idempotency-Key 头承载提交键）、GET {@code /api/v1/tasks/{id}}、
++ * GET {@code /api/v1/delivery/views/{id}}、POST {@code /api/v1/tasks/{id}/review}。
++ * 错误映射同上游：415 unsupported_media_type / 400 invalid_json·类名+词面 /
++ * 404 not_found / 409 conflict（同键异需求「请使用新键」）/ body 上限 8192。
++ *
++ * <p>D1 裁剪如实记录：上游 main 版 capabilities 的 code_execution 簇字段、
++ * graphs/preview/artifacts 路由、initiatives/projects/backups 面不在 L13 断言面，
++ * 不建；views 为稳定只读投影（完整面板投影是 L14 增量）。
++ */
++public final class HttpApi {
++
++    /** 上游 capabilities 断言面子集（execution_modes/requires_idempotency_key 是测试面）。 */
++    static Map<String, Object> capabilitiesBody() {
++        Map<String, Object> body = new LinkedHashMap<>();
++        body.put("surface", "workbench");
++        body.put("async_submission", true);
++        body.put("execution_modes", List.of("verify"));
++        body.put("requires_idempotency_key", true);
++        return body;
++    }
++
++    private static final int MAX_BODY_BYTES = 8192;
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private final Path runtime;
++    private final TaskStore tasks;
++    private final DeliveryAutomation automation;
++
++    public HttpApi(Path runtimeDir, Workflow.SuiteRunner suiteRunner) {
++        this.runtime = runtimeDir.toAbsolutePath().normalize();
++        this.tasks = new TaskStore(this.runtime.resolve("workbench.db"));
++        this.automation = new DeliveryAutomation(this.tasks, this.runtime, suiteRunner,
++                2, null, 3);
++    }
++
++    public TaskStore tasks() {
++        return tasks;
++    }
++
++    public DeliveryAutomation automation() {
++        return automation;
++    }
++
++    /** 起服务（上游 serve() 对应物；port 0 = 随机分配，返回实际端口）。 */
++    public int start(String host, int port) throws IOException {
++        HttpServer created = HttpServer.create(new InetSocketAddress(host, port), 0);
++        created.createContext("/", this::handle);
++        created.setExecutor(Executors.newCachedThreadPool());
++        created.start();
++        boundPort = created.getAddress().getPort();
++        this.server = created;
++        return boundPort;
++    }
++
++    public void stop() {
++        if (server != null) {
++            server.stop(0);
++        }
++    }
++
++    private HttpServer server;
++    private int boundPort;
++
++    // ---- 应用面（WorkbenchApp 断言面子集） ------------------------------------------------------------------
++
++    /**
++     * 创建课程任务（上游 create_course_task 同形）：lesson 4–16 / 词面校验 /
++     * 合同业务引用去重合并 / 讲次 Spec 生成 / 幂等重放清理新文件 /
++     * 「Web 已创建受控任务；尚未授权 Codex 写入」。
++     */
++    public Map<String, Object> createCourseTask(int lesson, String request, String actor,
++            String submissionKey, Object businessRefs) {
++        if (lesson < 4 || lesson > 16) {
++            throw new IllegalArgumentException("Web 受控任务只允许选择 L04-L16");
++        }
++        String need = request == null ? "" : request.strip();
++        if (need.isEmpty()) {
++            throw new IllegalArgumentException("现场需求不能为空");
++        }
++        if (need.length() > 1000) {
++            throw new IllegalArgumentException("现场需求不能超过 1000 个字符");
++        }
++        String submitter = actor == null ? "" : actor.strip();
++        if (submitter.isEmpty()) {
++            throw new IllegalArgumentException("必须填写具名提交人");
++        }
++        if (submitter.length() > 80) {
++            throw new IllegalArgumentException("提交人名称不能超过 80 个字符");
++        }
++        CourseContracts.LessonContract contract = CourseContracts.lessonContract(lesson);
++        List<?> rawRefs = businessRefs == null ? List.of() : null;
++        if (rawRefs == null) {
++            if (!(businessRefs instanceof List<?> provided) || provided.size() > 20) {
++                throw new IllegalArgumentException("业务引用必须是最多 20 个非空编号，每个不超过 200 字符");
++            }
++            rawRefs = provided;
++        }
++        for (Object ref : rawRefs) {
++            String value = ref instanceof String item ? item.strip() : "";
++            if (!(ref instanceof String) || value.isEmpty() || value.length() > 200) {
++                throw new IllegalArgumentException("业务引用必须是最多 20 个非空编号，每个不超过 200 字符");
++            }
++        }
++        LinkedHashSet<String> merged = new LinkedHashSet<>(contract.businessRefs());
++        for (Object ref : rawRefs) {
++            merged.add(String.valueOf(ref).strip());
++        }
++        List<String> refs = new ArrayList<>(merged);
++        Path specPath = runtime.resolve("course").resolve("L%02d".formatted(lesson))
++                .resolve(UUID.randomUUID().toString().replace("-", ""))
++                .resolve("FDE_SPEC.md");
++        SpecFactory.writeLessonSpec(lesson, specPath, List.of());
++        Map<String, Object> task = tasks.create(need, contract.requirementId(), refs,
++                specPath.toString(), submitter,
++                submissionKey != null ? "automatic" : "manual",
++                null, "verify", contract.writeScope(), 900, submissionKey);
++        if (!specPath.toString().equals(task.get("spec_path"))) {
++            // 本次尝试只拥有新生成（未使用）的文件——幂等重放清理
++            try {
++                Files.deleteIfExists(specPath);
++                Files.deleteIfExists(specPath.getParent());
++            } catch (IOException error) {
++                // 清理失败不破坏重放语义（上游 unlink + rmdir 同为尽力而为）
++            }
++            return view(String.valueOf(task.get("id")));
++        }
++        tasks.appendEvent(String.valueOf(task.get("id")),
++                "Web 已创建受控课程任务；尚未授权 Codex 写入", submitter,
++                Map.of("lesson", lesson, "execution_mode", "verify"));
++        return view(String.valueOf(task.get("id")));
++    }
++
++    /**
++     * 受理异步提交（上游 accept_course_task 同形）：Idempotency-Key 必填 +
++     * 幂等命中不重启自动化 + queued 才开跑；返回 202 契约体。
++     */
++    public Map<String, Object> acceptCourseTask(int lesson, String request, String actor,
++            String key, Object businessRefs) {
++        if (key == null || key.strip().isEmpty()) {
++            throw new IllegalArgumentException("异步提交必须提供 Idempotency-Key");
++        }
++        Map<String, Object> created = createCourseTask(lesson, request, actor, key.strip(), businessRefs);
++        String taskId = String.valueOf(created.get("task_id"));
++        if ("queued".equals(tasks.get(taskId).get("status"))) {
++            automation.start(taskId, actor);
++        }
++        Map<String, Object> accepted = new LinkedHashMap<>();
++        accepted.put("task_id", taskId);
++        accepted.put("accepted", true);
++        accepted.put("execution_mode", "verify");
++        accepted.put("status_url", "/api/v1/tasks/" + taskId);
++        accepted.put("view_url", "/api/v1/delivery/views/" + taskId);
++        return accepted;
++    }
++
++    /** 具名审核（上游 review_task 的断言面直通——日常研发/红绿差分门不在本讲面）。 */
++    public Map<String, Object> reviewTask(String taskId, String reviewer, String decision, String note) {
++        tasks.review(taskId, reviewer, decision, note);
++        return view(taskId);
++    }
++
++    /** 任务视图（稳定只读投影；完整面板投影 = L14 增量，D1 边界如实）。 */
++    public Map<String, Object> view(String taskId) {
++        Map<String, Object> task = tasks.get(taskId);
++        Map<String, Object> projection = new LinkedHashMap<>();
++        projection.put("schema", "workbench.delivery-view/v1");
++        projection.put("task_id", task.get("id"));
++        projection.putAll(task);
++        return projection;
++    }
++
++    // ---- HTTP 路由 ------------------------------------------------------------------
++
++    private void handle(HttpExchange exchange) throws IOException {
++        try {
++            String path = exchange.getRequestURI().getPath();
++            if ("GET".equals(exchange.getRequestMethod())) {
++                handleGet(exchange, path);
++            } else if ("POST".equals(exchange.getRequestMethod())) {
++                handlePost(exchange, path);
++            } else {
++                json(exchange, 404, Map.of("error", "not_found"));
++            }
++        } catch (TaskStore.TaskSubmissionConflict error) {
++            json(exchange, 409, Map.of("error", "conflict", "message", String.valueOf(error.getMessage())));
++        } catch (TaskStore.TaskNotFound error) {
++            json(exchange, 404, Map.of("error", "not_found", "message", String.valueOf(error.getMessage())));
++        } catch (Feedback.FeedbackNotFound error) {
++            json(exchange, 404, Map.of("error", "not_found", "message", String.valueOf(error.getMessage())));
++        } catch (IllegalArgumentException error) {
++            json(exchange, 400, Map.of("error", error.getClass().getSimpleName(),
++                    "message", String.valueOf(error.getMessage())));
++        } catch (RuntimeException error) {
++            json(exchange, 500, Map.of("error", error.getClass().getSimpleName(),
++                    "message", String.valueOf(error.getMessage())));
++        }
++    }
++
++    private void handleGet(HttpExchange exchange, String path) throws IOException {
++        if ("/api/v1/delivery/capabilities".equals(path)) {
++            json(exchange, 200, capabilitiesBody());
++            return;
++        }
++        if ("/api/v1/tasks".equals(path) || "/api/tasks".equals(path)) {
++            Map<String, Object> query = exchange.getRequestURI().getRawQuery() == null ? Map.of()
++                    : parseQuery(exchange.getRequestURI().getRawQuery());
++            int limit = 30;
++            Object requested = query.get("limit");
++            if (requested instanceof String value && !value.isEmpty()) {
++                try {
++                    limit = Integer.parseInt(value);
++                } catch (NumberFormatException error) {
++                    limit = 30;
++                }
++            }
++            Map<String, Object> listing = new LinkedHashMap<>();
++            listing.put("items", tasks.list(limit));
++            json(exchange, 200, listing);
++            return;
++        }
++        if (path.startsWith("/api/v1/tasks/")) {
++            String taskId = lastSegment(path);
++            json(exchange, 200, tasks.get(taskId));
++            return;
++        }
++        if (path.startsWith("/api/v1/delivery/views/")) {
++            json(exchange, 200, view(lastSegment(path)));
++            return;
++        }
++        json(exchange, 404, Map.of("error", "not_found"));
++    }
++
++    private static Map<String, Object> parseQuery(String rawQuery) {
++        Map<String, Object> query = new LinkedHashMap<>();
++        for (String pair : rawQuery.split("&")) {
++            int eq = pair.indexOf('=');
++            if (eq > 0) {
++                query.put(pair.substring(0, eq), pair.substring(eq + 1));
++            }
++        }
++        return query;
++    }
++
++    private void handlePost(HttpExchange exchange, String path) throws IOException {
++        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
++        String mediaType = contentType == null ? "" : contentType.split(";", 2)[0].strip().toLowerCase();
++        if (!"application/json".equals(mediaType)) {
++            json(exchange, 415, Map.of("error", "unsupported_media_type",
++                    "message", "只接受 application/json"));
++            return;
++        }
++        String lengthHeader = exchange.getRequestHeaders().getFirst("Content-Length");
++        int length = lengthHeader == null ? 0 : Integer.parseInt(lengthHeader);
++        if (length <= 0 || length > MAX_BODY_BYTES) {
++            json(exchange, 400, Map.of("error", "invalid_body", "message", "请求体为空或过大"));
++            return;
++        }
++        byte[] raw = exchange.getRequestBody().readAllBytes();
++        Map<String, Object> body;
++        try {
++            Object parsed = MAPPER.readValue(raw, new TypeReference<Object>() {});
++            if (!(parsed instanceof Map)) {
++                throw new IllegalArgumentException("请求体必须是 JSON 对象");
++            }
++            @SuppressWarnings("unchecked")
++            Map<String, Object> cast = (Map<String, Object>) parsed;
++            body = cast;
++        } catch (IOException error) {
++            json(exchange, 400, Map.of("error", "invalid_json", "message", "请求体不是合法 JSON"));
++            return;
++        }
++        if ("/api/v1/delivery/requests".equals(path)) {
++            String mode = String.valueOf(body.getOrDefault("execution_mode", "verify"));
++            if (!"verify".equals(mode)) {
++                throw new IllegalArgumentException("网页API只允许verify；代码执行须使用明确授权的课程CLI");
++            }
++            json(exchange, 202, acceptCourseTask(
++                    intArgument(body, "lesson"),
++                    String.valueOf(body.getOrDefault("request", "")),
++                    String.valueOf(body.getOrDefault("actor", "")),
++                    exchange.getRequestHeaders().getFirst("Idempotency-Key") == null
++                            ? "" : exchange.getRequestHeaders().getFirst("Idempotency-Key"),
++                    body.get("business_refs")));
++            return;
++        }
++        String[] segments = path.split("/");
++        // /api/v1/tasks/{id}/review
++        if (segments.length == 6 && "api".equals(segments[1]) && "v1".equals(segments[2])
++                && "tasks".equals(segments[3]) && "review".equals(segments[5])) {
++            json(exchange, 200, reviewTask(segments[4],
++                    String.valueOf(body.getOrDefault("reviewer", "")),
++                    String.valueOf(body.getOrDefault("decision", "")),
++                    String.valueOf(body.getOrDefault("note", ""))));
++            return;
++        }
++        json(exchange, 404, Map.of("error", "not_found"));
++    }
++
++    private static int intArgument(Map<String, Object> body, String key) {
++        Object value = body.get(key);
++        if (value instanceof Number number) {
++            return number.intValue();
++        }
++        if (value instanceof String text && !text.isEmpty()) {
++            try {
++                return Integer.parseInt(text);
++            } catch (NumberFormatException error) {
++                // fallthrough：非数字按 0 处理（上游 int() 会抛 ValueError → 400，同面）
++                throw new IllegalArgumentException("int() invalid literal: " + text);
++            }
++        }
++        return 0;
++    }
++
++    private static String lastSegment(String path) {
++        String[] segments = path.split("/");
++        return segments[segments.length - 1];
++    }
++
++    private static void json(HttpExchange exchange, int status, Map<String, Object> body)
++            throws IOException {
++        byte[] payload = MAPPER.writeValueAsBytes(body);
++        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
++        exchange.sendResponseHeaders(status, payload.length);
++        try (OutputStream out = exchange.getResponseBody()) {
++            out.write(payload);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/delivery/SpecFactory.java b/src/main/java/workbench/delivery/SpecFactory.java
+new file mode 100644
+index 0000000..f035b2e
+--- /dev/null
++++ b/src/main/java/workbench/delivery/SpecFactory.java
+@@ -0,0 +1,303 @@
++package workbench.delivery;
++
++import workbench.coursecontracts.CourseContracts;
++import workbench.spec.SpecParser;
++
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.nio.file.StandardCopyOption;
++import java.time.ZoneOffset;
++import java.time.ZonedDateTime;
++import java.time.format.DateTimeFormatter;
++import java.util.ArrayList;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.UUID;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
++
++/**
++ * 任务级 Spec 生成（上游 {@code workbench/spec.py} 的 build_delivery_spec /
++ * normalize_* 与 {@code course_mainline.py} 的 render_lesson_spec 对应物，
++ * L13 讲义 D5 新缝②）：六段模板逐字翻译 + 信号词路由（业务边界写进验收用例的
++ * 机制本体）+ REQ- 前缀校验与自动编号；写盘走 parse-before-publish——不完整的
++ * 生成合同永不成为任务的激活 Spec（上游同语义）。生成物可被 L03 SpecParser 解析。
++ */
++public final class SpecFactory {
++
++    /** 上游 BUSINESS_REF_PATTERN 逐字同形（前缀白名单 + 值段）。 */
++    static final Pattern BUSINESS_REF_PATTERN = Pattern.compile(
++            "\\b(SKU|CHANNEL|CHANNEL_ORDER|SALES_ORDER|ORDER|PURCHASE|PRODUCT|CUSTOMER|SUPPLIER|REQUIREMENT|PROJECT|SESSION|INITIATIVE):"
++                    + "([A-Za-z0-9][A-Za-z0-9._/-]{1,127})\\b");
++
++    private static final Pattern REQUIREMENT_ID_PATTERN =
++            Pattern.compile("REQ-[A-Z0-9][A-Z0-9._-]{2,63}");
++
++    private SpecFactory() {}
++
++    /** 需求编号规范化：空 → 自动 REQ-AUTO-{日期}-{hex6}；非空 → REQ- 前缀强校验。 */
++    public static String normalizeRequirementId(String value) {
++        String candidate = value == null ? "" : value.strip().toUpperCase();
++        if (!candidate.isEmpty()) {
++            if (!REQUIREMENT_ID_PATTERN.matcher(candidate).matches()) {
++                throw new IllegalArgumentException(
++                        "需求编号必须使用 REQ- 前缀，且只包含字母、数字、点、下划线或连字符");
++            }
++            return candidate;
++        }
++        String day = DateTimeFormatter.ofPattern("yyyyMMdd")
++                .withZone(ZoneOffset.UTC).format(ZonedDateTime.now(ZoneOffset.UTC));
++        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
++        return "REQ-AUTO-" + day + "-" + suffix;
++    }
++
++    /** 业务对象引用规范化：显式值逐个全匹配校验，再从需求文本提取，去重保序。 */
++    public static List<String> normalizeBusinessRefs(String request, List<String> values) {
++        List<String> refs = new ArrayList<>();
++        for (String raw : values == null ? List.<String>of() : values) {
++            String value = raw == null ? "" : raw.strip();
++            Matcher match = BUSINESS_REF_PATTERN.matcher(value);
++            if (!match.matches()) {
++                throw new IllegalArgumentException("业务对象引用格式无效：" + value);
++            }
++            refs.add(match.group(1).toUpperCase() + ":" + match.group(2));
++        }
++        Matcher found = BUSINESS_REF_PATTERN.matcher(request == null ? "" : request);
++        while (found.find()) {
++            refs.add(found.group(1).toUpperCase() + ":" + found.group(2));
++        }
++        return new ArrayList<>(new LinkedHashSet<>(refs));
++    }
++
++    // ---- 任务级交付 Spec（automation.submit 面） ----------------------------------------------
++
++    /** 需求 → 六段 Spec 文本（上游 build_delivery_spec 模板逐字翻译）。 */
++    public static String buildDeliverySpec(String request, String requirementId, List<String> businessRefs) {
++        String need = request.strip();
++        if (need.isEmpty()) {
++            throw new IllegalArgumentException("需求不能为空");
++        }
++        String refs = businessRefs == null || businessRefs.isEmpty()
++                ? "REQUIREMENT:" + requirementId
++                : String.join("、", businessRefs);
++        List<String> acceptanceLines = new ArrayList<>(businessAcceptance(need, businessRefs));
++        acceptanceLines.add("给定本需求和关联业务对象，当平台接收请求时，那么生成唯一 Task ID 和当前 Spec 文件。");
++        acceptanceLines.add("给定已校验 Spec，当平台执行任务时，那么状态只能按 `queued → spec_ready → executing → evaluating` 迁移。");
++        acceptanceLines.add("给定 Blocking Eval 全绿，当评测结束时，那么任务进入 `review`，不得自动进入 `completed`。");
++        acceptanceLines.add("给定任一 Blocking Eval 失败，当评测结束时，那么任务进入 `rework`，保存失败项和报告摘要。");
++        acceptanceLines.add("给定任务处于 `review`，当具名审核人批准或驳回时，那么分别进入 `completed` 或 `rework`，并保存审核理由。");
++        StringBuilder acceptance = new StringBuilder();
++        for (int index = 0; index < acceptanceLines.size(); index++) {
++            acceptance.append(index + 1).append(". ").append(acceptanceLines.get(index)).append("\n");
++        }
++        return """
++                # %s｜自动生成的交付 Spec
++
++                > 该文件由 FlowERP 交付工作台从需求入口生成。它是本次任务合同草案，不替代领域服务权限、数据库状态或具名人工审核。
++
++                ## 来源
++
++                - 需求编号：`%s`
++                - 业务对象：%s
++                - 原始需求：%s
++
++                ## 目标
++
++                %s
++
++                交付结果必须能够通过需求编号、任务编号、业务对象引用和 Eval 报告相互追溯。
++
++                ## 非目标
++
++                - 不直接修改运行数据库、库存余额、审批记录或审计历史。
++                - 不绕过订单、采购、库存和财务状态机。
++                - 不通过删除 Eval、降低阻断等级或伪造页面状态获得绿色结果。
++                - 不修改与本需求无关的模块、依赖和部署配置。
++
++                ## 约束
++
++                - 可用库存不得为负，预占必须原子化。
++                - 同一个入库幂等键只能生效一次。
++                - 订单只能按合法状态迁移，取消必须释放预占。
++                - 采购补货必须经过具名人工审批才能入库。
++                - 任务、Eval 报告、工具结果和审核决定必须保留可追溯证据。
++
++                ## 验收用例
++
++                %s## 完成定义
++
++                - 当前 Spec 可被解析且六个必要章节完整。
++                - Blocking Harness 的 decision、失败数和退出语义一致。
++                - 状态事件包含 actor、时间、迁移原因和关键证据。
++                - 全绿后仍完成具名人工验收；失败和剩余风险没有被隐藏。
++                """.formatted(requirementId, requirementId, refs, need, need, acceptance);
++    }
++
++    /**
++     * 信号词路由（上游 _business_acceptance 逐字翻译，保序去重）：库存/采购/渠道/
++     * 订单/回调五组业务边界用例 + 兜底组——FlowERP 边界按需求信号写进每份交付合同。
++     */
++    static List<String> businessAcceptance(String request, List<String> businessRefs) {
++        String signal = (request + " " + String.join(" ",
++                businessRefs == null ? List.<String>of() : businessRefs)).toUpperCase();
++        List<String> cases = new ArrayList<>();
++        if (signal.contains("回传") || signal.contains("回调") || signal.contains("CALLBACK")
++                || signal.contains("租约") || signal.contains("LEASE")) {
++            cases.add("给定同一渠道回传任务被两个 Worker 竞争，当任务被领取时，那么只有一个具名 Worker 获得有时限租约。");
++            cases.add("给定回传执行失败或租约过期，当任务重新入队时，那么保留失败证据并按有界退避重试，非租约持有者不得确认完成。");
++        }
++        if (signal.contains("库存") || signal.contains("缺货") || signal.contains("预占") || signal.contains("SKU:")) {
++            cases.add("给定需求量大于可用库存，当执行订单预占时，那么整单失败，`reserved` 与库存流水均不产生部分写入。");
++            cases.add("给定并发请求竞争同一 SKU，当事务提交时，那么 `available = on_hand - reserved` 始终不小于 0。");
++        }
++        if (signal.contains("采购") || signal.contains("补货") || signal.contains("PURCHASE:")) {
++            cases.add("给定补货建议尚未由具名人员批准，当尝试收货时，那么请求被阻断且库存不变。");
++            cases.add("给定已批准采购，当相同入库幂等键重放时，那么库存和流水只增加一次。");
++        }
++        if (signal.contains("渠道") || signal.contains("平台") || signal.contains("CHANNEL:")
++                || signal.contains("CHANNEL_ORDER:")) {
++            cases.add("给定同一平台订单重复推送，当接入渠道订单时，那么只保留一个业务身份，变化重放必须显式冲突。");
++            cases.add("给定 SKU 未映射、地址无效或库存不足，当统一审单时，那么异常保持可见且不得进入错误履约。");
++        }
++        if (signal.contains("订单") || signal.contains("履约") || signal.contains("发货")
++                || signal.contains("SALES_ORDER:") || signal.contains("ORDER:")) {
++            cases.add("给定订单未完成合法前置状态，当尝试发货时，那么状态迁移被拒绝。");
++            cases.add("给定已预占订单被取消，当取消完成时，那么全部预占被释放并留下可追溯事件。");
++        }
++        if (cases.isEmpty()) {
++            cases.add("给定需求中声明的业务对象，当执行正常路径时，那么对象状态产生可查询、可追溯的预期变化。");
++            cases.add("给定任一前置条件不满足，当执行失败路径时，那么返回明确原因且不留下部分副作用。");
++        }
++        return new ArrayList<>(new LinkedHashSet<>(cases));
++    }
++
++    /** 写任务级 Spec（parse-before-publish：先解析校验再原子替换）。 */
++    public static Path writeDeliverySpec(Path path, String request, String requirementId,
++            List<String> businessRefs) {
++        String text = buildDeliverySpec(request, requirementId, businessRefs);
++        SpecParser.parse(text);
++        return publish(path, text);
++    }
++
++    // ---- 讲次合同 Spec（create_course_task 面） ----------------------------------------------
++
++    /** 讲次合同 → 六段 Spec 文本（上游 render_lesson_spec 模板逐字翻译）。 */
++    public static String renderLessonSpec(int number, List<String> additionalEvalCases) {
++        CourseContracts.LessonContract lesson = CourseContracts.lessonContract(number);
++        String refs = lesson.businessRefs().isEmpty()
++                ? "`REQUIREMENT:" + lesson.requirementId() + "`"
++                : lesson.businessRefs().stream().map(item -> "`" + item + "`")
++                        .reduce((left, right) -> left + "、" + right).orElseThrow();
++        List<String> selectedEvals = new ArrayList<>(lesson.evalCases());
++        selectedEvals.addAll(additionalEvalCases == null ? List.of() : additionalEvalCases);
++        String evals = selectedEvals.isEmpty()
++                ? "本讲合同中的正反路径"
++                : selectedEvals.stream().map(item -> "`" + item + "`")
++                        .reduce((left, right) -> left + "、" + right).orElseThrow();
++        StringBuilder acceptance = new StringBuilder();
++        for (int index = 0; index < lesson.acceptance().size(); index++) {
++            acceptance.append(index + 1).append(". ").append(lesson.acceptance().get(index)).append("\n");
++        }
++        String prerequisites = lesson.prerequisites().isEmpty()
++                ? "课程起点"
++                : lesson.prerequisites().stream().map(item -> "L%02d".formatted(item))
++                        .reduce((left, right) -> left + ", " + right).orElseThrow();
++        String scope = lesson.writeScope().stream().map(item -> "`" + item + "`")
++                .reduce((left, right) -> left + "、" + right).orElseThrow();
++        CourseContracts.LessonStory story = CourseContracts.LESSON_STORY.get(number);
++        // L7 特例三行（上游 hook_constraints 逐字——前导换行是模板分隔的一部分，保留）
++        String hookConstraints = number == 7
++                ? "\n- L07 先生成 `hook_staging/hooks.json` 与 `hook_staging/quality_gate.py`，"
++                        + "人工审查后安装到实际候选的 `.codex/hooks.json` 与 `.codex/hooks/quality_gate.py`。"
++                        + "待审查文件不会自动启用；Codex 执行不得写入受保护的 `.codex`。"
++                        + "\n- 保留安装前内容与来源、审查者及安装后指纹；已有 Hook 配置须审查合并，不能覆盖其他项目规则。"
++                        + "\n- 安装与真实触发属于独立人工复验步骤，必须与同一任务候选关联；"
++                        + "暂存文件或模拟事件不能替代真实触发证据。"
++                : "";
++        return """
++                # %s｜L%02d %s
++
++                ## 来源
++
++                - 课程主线合同：L%02d
++                - 前置课次：%s
++                - 业务对象：%s
++                - 起始基线：`%s`
++
++                ## 目标
++
++                %s
++
++                工作台增量：%s。%s
++                ERP 产品增量：%s。
++
++                课程建设主线：%s。
++                本讲所在阶段：%s。
++                Codex 当讲角色：%s。
++                FDE 循环：%s。
++                因果交接：%s。
++
++                ## 非目标
++
++                - 不提前实现后续课次的 ERP 产品增量。
++                - 不修改本讲允许写集之外的文件。
++                - 不删除失败证据、降低 Eval 等级或绕过具名人工审核。
++
++                ## 约束
++
++                - 允许写集：%s
++                - 项目与路径归属：%s
++                - 本讲复用 Eval：%s
++                - 库存、订单、采购和任务状态必须遵守 `AGENTS.md` 的不可破坏规则。
++                - 执行结果必须保存需求、Diff、命令、Eval 和人工决定之间的稳定引用。%s
++
++                ## 验收用例
++
++                %s## 完成定义
++
++                - ERP 产品增量与工作台增量均有可复现证据，且能够说明二者因果。
++                - 正常路径、失败路径和失败后不变状态均已验证。
++                - 学生保存首次判断、失败、修订和复验结果；参考仓库终态不计作学生成果。
++                - 若 `course-status --require-baselines` 未通过，不得声称完成了渐进式课程复现。
++                """.formatted(
++                lesson.requirementId(), number, lesson.title(),
++                number, prerequisites, refs, lesson.baselineRef(),
++                lesson.request(),
++                lesson.workbenchIncrement(), "  ",
++                lesson.erpIncrement(),
++                CourseContracts.COURSE_BUILD_THESIS,
++                CourseContracts.constructionStage(number),
++                story.codexRole(), story.fdeLoop(), story.causalLink(),
++                scope,
++                CourseContracts.COURSE_WORKSPACE_BOUNDARY,
++                evals,
++                hookConstraints.isEmpty() ? "" : hookConstraints,
++                acceptance);
++    }
++
++    /** 写讲次 Spec（同 parse-before-publish）。 */
++    public static Path writeLessonSpec(int number, Path path, List<String> additionalEvalCases) {
++        String text = renderLessonSpec(number, additionalEvalCases);
++        SpecParser.parse(text);
++        return publish(path, text);
++    }
++
++    // ---- 内部 ------------------------------------------------------------------
++
++    private static Path publish(Path path, String text) {
++        Path target = path.toAbsolutePath().normalize();
++        try {
++            Files.createDirectories(target.getParent());
++            Path temporary = target.resolveSibling(target.getFileName() + ".tmp");
++            Files.writeString(temporary, text, StandardCharsets.UTF_8);
++            Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING,
++                    StandardCopyOption.ATOMIC_MOVE);
++        } catch (IOException error) {
++            throw new UncheckedIOException("Spec 写盘失败：" + target, error);
++        }
++        return target;
++    }
++}
+diff --git a/src/main/java/workbench/delivery/TaskStore.java b/src/main/java/workbench/delivery/TaskStore.java
+new file mode 100644
+index 0000000..a8cba48
+--- /dev/null
++++ b/src/main/java/workbench/delivery/TaskStore.java
+@@ -0,0 +1,648 @@
++package workbench.delivery;
++
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.ObjectMapper;
++
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.sql.Connection;
++import java.sql.DriverManager;
++import java.sql.PreparedStatement;
++import java.sql.ResultSet;
++import java.sql.SQLException;
++import java.sql.Statement;
++import java.util.ArrayList;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.TreeMap;
++import java.util.UUID;
++import java.util.regex.Pattern;
++
++/**
++ * 交付任务存储（上游 {@code workbench/task_store.py} 对应物，L13 讲义 D2）：
++ * 三表（tasks/task_events/task_submissions）同形 schema + 九态合法迁移表 +
++ * 提交键幂等（fingerprint 比对）+ 并发迁移守卫（原状态条件更新 + version 乐观锁）。
++ *
++ * <p>词面逐句继承上游中文原文（错误消息、事件 detail、状态名）；与 L01 信用账本
++ * 不混库（本件是交付任务面，独立运行库 {@code .runtime/course/L13-delivery/}）。
++ * 连接面：每操作短连接 + 事务即 BEGIN IMMEDIATE（对应上游 {@code BEGIN IMMEDIATE}
++ * 串行写语义）+ busy_timeout（并发实例等待锁而非立刻失败）。
++ *
++ * <p>上游 {@code main} 后期增量（spec_text 冻结面、frozen_contract、learning 绑定、
++ * WB-L04-BOOTSTRAP 特例）不在本讲断言面（讲义 D1 不采纳清单），如实不建。
++ */
++public final class TaskStore {
++
++    /** 九态合法迁移表（上游 VALID_TRANSITIONS 逐字同形）。 */
++    public static final Map<String, Set<String>> VALID_TRANSITIONS = Map.of(
++            "queued", Set.of("spec_ready", "failed", "dead_letter"),
++            "spec_ready", Set.of("executing", "failed", "dead_letter"),
++            "executing", Set.of("evaluating", "rework", "failed", "dead_letter"),
++            "evaluating", Set.of("review", "rework", "failed", "dead_letter"),
++            "review", Set.of("completed", "rework", "failed", "dead_letter"),
++            "rework", Set.of("executing", "failed", "dead_letter"),
++            "completed", Set.of(),
++            "failed", Set.of("dead_letter"),
++            "dead_letter", Set.of());
++
++    /** 提交键已用于不同需求（上游 TaskSubmissionConflict → HTTP 409）。 */
++    public static final class TaskSubmissionConflict extends RuntimeException {
++        public TaskSubmissionConflict(String message) {
++            super(message);
++        }
++    }
++
++    /** 任务不存在（上游 KeyError(task_id) → HTTP 404）。 */
++    public static final class TaskNotFound extends RuntimeException {
++        public TaskNotFound(String taskId) {
++            super(taskId);
++        }
++    }
++
++    /** 存储基础设施失败（不裸栈，保持可读消息面）。 */
++    public static final class StoreFailure extends RuntimeException {
++        public StoreFailure(String message, Throwable cause) {
++            super(message, cause);
++        }
++    }
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++    private static final Pattern TASK_ID_PATTERN = Pattern.compile("TASK-[A-Z0-9]{10}");
++
++    private final Path dbPath;
++
++    public TaskStore(Path path) {
++        this.dbPath = path.toAbsolutePath().normalize();
++        try {
++            Files.createDirectories(this.dbPath.getParent());
++        } catch (IOException error) {
++            throw new UncheckedIOException("任务库目录创建失败：" + this.dbPath.getParent(), error);
++        }
++        try (Connection conn = open()) {
++            try (Statement st = conn.createStatement()) {
++                st.executeUpdate("""
++                        CREATE TABLE IF NOT EXISTS tasks(
++                          id TEXT PRIMARY KEY, request TEXT NOT NULL, status TEXT NOT NULL,
++                          spec_json TEXT, result_json TEXT, error TEXT,
++                          requirement_id TEXT NOT NULL DEFAULT '',
++                          business_refs_json TEXT NOT NULL DEFAULT '[]',
++                          spec_path TEXT NOT NULL DEFAULT 'FDE_SPEC.md',
++                          reviewed_by TEXT, review_decision TEXT, review_note TEXT, reviewed_at TEXT,
++                          automation_mode TEXT NOT NULL DEFAULT 'manual',
++                          execution_mode TEXT NOT NULL DEFAULT 'verify',
++                          write_scope_json TEXT NOT NULL DEFAULT '[]',
++                          execution_timeout_seconds INTEGER NOT NULL DEFAULT 900,
++                          version INTEGER NOT NULL DEFAULT 1,
++                          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
++                          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
++                        )""");
++                st.executeUpdate("""
++                        CREATE TABLE IF NOT EXISTS task_events(
++                          id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL,
++                          from_status TEXT, to_status TEXT NOT NULL, detail TEXT,
++                          actor TEXT NOT NULL DEFAULT 'system', evidence_json TEXT,
++                          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
++                        )""");
++                st.executeUpdate("""
++                        CREATE TABLE IF NOT EXISTS task_submissions(
++                          submission_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL,
++                          task_id TEXT NOT NULL REFERENCES tasks(id)
++                        )""");
++            }
++            conn.commit();
++        } catch (SQLException error) {
++            throw new StoreFailure("任务库初始化失败：" + dbPath, error);
++        }
++    }
++
++    public Path path() {
++        return dbPath;
++    }
++
++    /**
++     * 每操作短连接：setAutoCommit(false) + IMMEDIATE 事务模式（驱动在首语句即
++     * BEGIN IMMEDIATE——对应上游 {@code BEGIN IMMEDIATE} 串行写语义）+
++     * busy_timeout=5000（并发实例等待锁而非立刻失败，上游 sqlite3.connect 默认口径）。
++     */
++    private Connection open() throws SQLException {
++        org.sqlite.SQLiteConfig config = new org.sqlite.SQLiteConfig();
++        config.setBusyTimeout(5000);
++        config.setSynchronous(org.sqlite.SQLiteConfig.SynchronousMode.FULL);
++        config.setTransactionMode(org.sqlite.SQLiteConfig.TransactionMode.IMMEDIATE);
++        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath, config.toProperties());
++        conn.setAutoCommit(false);
++        return conn;
++    }
++
++    /**
++     * 只读连接：autocommit、不显式开事务（对应上游 get/list 在 Python sqlite3
++     * 默认 DEFERRED 下的只读形态——读不抢写锁；wait 轮询高频读与写线程并存的
++     * 关键面）。busy_timeout 兜底 journal 切换瞬间的读锁等待。
++     */
++    private Connection openRead() throws SQLException {
++        org.sqlite.SQLiteConfig config = new org.sqlite.SQLiteConfig();
++        config.setBusyTimeout(5000);
++        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath, config.toProperties());
++        return conn;
++    }
++
++    // ---- create ------------------------------------------------------------------
++
++    /**
++     * 建任务（上游 create 同形）：全词面校验 + 提交键幂等（同键同指纹返回既有任务，
++     * 异指纹 TaskSubmissionConflict「请使用新键」——幂等键永不失效）+ 首事件「任务已接收」。
++     */
++    public Map<String, Object> create(String request, String requirementId, List<String> businessRefs,
++            String specPath, String actor, String automationMode, String taskId, String executionMode,
++            List<String> writeScope, int executionTimeoutSeconds, String submissionKey) {
++        if (request == null || request.strip().isEmpty()) {
++            throw new IllegalArgumentException("任务需求不能为空");
++        }
++        List<String> refs = new ArrayList<>();
++        for (Object value : businessRefs == null ? List.of() : businessRefs) {
++            String item = String.valueOf(value).strip();
++            if (!item.isEmpty()) {
++                refs.add(item);
++            }
++        }
++        if (new LinkedHashSet<>(refs).size() != refs.size()) {
++            throw new IllegalArgumentException("业务对象引用不能重复");
++        }
++        if (specPath == null || specPath.strip().isEmpty()) {
++            throw new IllegalArgumentException("Spec 路径不能为空");
++        }
++        if (!"manual".equals(automationMode) && !"automatic".equals(automationMode)) {
++            throw new IllegalArgumentException("automation_mode 必须是 manual 或 automatic");
++        }
++        if (!"verify".equals(executionMode) && !"codex".equals(executionMode)) {
++            throw new IllegalArgumentException("execution_mode 必须是 verify 或 codex");
++        }
++        List<String> scopes = writeScope == null ? List.of() : writeScope;
++        if ("codex".equals(executionMode) && scopes.isEmpty()) {
++            throw new IllegalArgumentException("Codex 代码执行至少需要一个明确写入范围");
++        }
++        if (executionTimeoutSeconds < 30 || executionTimeoutSeconds > 3600) {
++            throw new IllegalArgumentException("execution_timeout_seconds 必须在 30..3600");
++        }
++        String id = taskId == null || taskId.isEmpty()
++                ? "TASK-" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase()
++                : taskId;
++        if (!TASK_ID_PATTERN.matcher(id).matches()) {
++            throw new IllegalArgumentException("任务编号格式无效");
++        }
++        String normalizedKey = null;
++        if (submissionKey != null) {
++            normalizedKey = submissionKey.strip();
++            if (normalizedKey.isEmpty() || normalizedKey.length() > 200) {
++                throw new IllegalArgumentException("提交键不能为空且不能超过200字符");
++            }
++        }
++        Map<String, Object> fingerprintPayload = new TreeMap<>();
++        fingerprintPayload.put("request", request.strip());
++        fingerprintPayload.put("requirement", requirementId == null ? "" : requirementId.strip());
++        fingerprintPayload.put("refs", refs);
++        fingerprintPayload.put("actor", actor == null ? "" : actor.strip());
++        fingerprintPayload.put("mode", executionMode);
++        fingerprintPayload.put("scope", scopes);
++        fingerprintPayload.put("timeout", executionTimeoutSeconds);
++        fingerprintPayload.put("automation", automationMode);
++        String fingerprint = sha256(dumps(fingerprintPayload));
++        try (Connection conn = open()) {
++            if (normalizedKey != null) {
++                String existingId = null;
++                String existingFingerprint = null;
++                try (PreparedStatement query = conn.prepareStatement(
++                        "SELECT task_id, fingerprint FROM task_submissions WHERE submission_key=?")) {
++                    query.setString(1, normalizedKey);
++                    try (ResultSet row = query.executeQuery()) {
++                        if (row.next()) {
++                            existingId = row.getString("task_id");
++                            existingFingerprint = row.getString("fingerprint");
++                        }
++                    }
++                }
++                if (existingId != null) {
++                    if (!fingerprint.equals(existingFingerprint)) {
++                        throw new TaskSubmissionConflict("提交键已用于不同需求；请使用新键");
++                    }
++                    conn.commit();
++                    return get(existingId);
++                }
++            }
++            try (PreparedStatement insert = conn.prepareStatement("""
++                    INSERT INTO tasks(id,request,status,requirement_id,business_refs_json,spec_path,
++                      automation_mode,execution_mode,write_scope_json,execution_timeout_seconds)
++                    VALUES(?,?,?,?,?,?,?,?,?,?)""")) {
++                insert.setString(1, id);
++                insert.setString(2, request.strip());
++                insert.setString(3, "queued");
++                insert.setString(4, requirementId == null ? "" : requirementId.strip());
++                insert.setString(5, dumps(refs));
++                insert.setString(6, specPath.strip());
++                insert.setString(7, automationMode);
++                insert.setString(8, executionMode);
++                insert.setString(9, dumps(scopes));
++                insert.setInt(10, executionTimeoutSeconds);
++                insert.executeUpdate();
++            }
++            Map<String, Object> received = new LinkedHashMap<>();
++            received.put("requirement_id", requirementId == null ? "" : requirementId.strip());
++            received.put("business_refs", refs);
++            received.put("spec_path", specPath.strip());
++            received.put("automation_mode", automationMode);
++            received.put("execution_mode", executionMode);
++            received.put("write_scope", scopes);
++            received.put("execution_timeout_seconds", executionTimeoutSeconds);
++            insertEvent(conn, id, null, "queued", "任务已接收",
++                    actor == null || actor.strip().isEmpty() ? "system" : actor.strip(), received);
++            if (normalizedKey != null) {
++                try (PreparedStatement insert = conn.prepareStatement(
++                        "INSERT INTO task_submissions VALUES(?,?,?)")) {
++                    insert.setString(1, normalizedKey);
++                    insert.setString(2, fingerprint);
++                    insert.setString(3, id);
++                    insert.executeUpdate();
++                }
++            }
++            conn.commit();
++        } catch (SQLException error) {
++            throw new StoreFailure("任务创建失败：" + id, error);
++        }
++        return get(id);
++    }
++
++    // ---- get / list ------------------------------------------------------------------
++
++    /** 单任务视图（含 events 全序，evidence 反序列化；不存在抛 TaskNotFound）。 */
++    public Map<String, Object> get(String taskId) {
++        try (Connection conn = openRead()) {
++            return readTask(conn, taskId);
++        } catch (SQLException error) {
++            throw new StoreFailure("任务读取失败：" + taskId + "：" + error.getMessage(), error);
++        }
++    }
++
++    /** 任务列表（默认 30，上游同形；每条含 events）。 */
++    public List<Map<String, Object>> list(int limit) {
++        try (Connection conn = openRead()) {
++            List<Map<String, Object>> items = new ArrayList<>();
++            List<String> ids = new ArrayList<>();
++            try (PreparedStatement query = conn.prepareStatement(
++                    "SELECT id FROM tasks ORDER BY created_at DESC, rowid DESC LIMIT ?")) {
++                query.setInt(1, limit);
++                try (ResultSet row = query.executeQuery()) {
++                    while (row.next()) {
++                        ids.add(row.getString("id"));
++                    }
++                }
++            }
++            for (String id : ids) {
++                items.add(readTask(conn, id));
++            }
++            return items;
++        } catch (SQLException error) {
++            throw new StoreFailure("任务列表读取失败", error);
++        }
++    }
++
++    // ---- appendEvent / transition / review ------------------------------------------------------------------
++
++    /** 追加事件并返回任务视图（append-only，无状态迁移）。 */
++    public Map<String, Object> appendEvent(String taskId, String detail, String actor, Object evidence) {
++        try (Connection conn = open()) {
++            Map<String, Object> task = readTask(conn, taskId);
++            insertEvent(conn, taskId, (String) task.get("status"), (String) task.get("status"),
++                    detail, actor == null || actor.strip().isEmpty() ? "system" : actor.strip(), evidence);
++            conn.commit();
++        } catch (SQLException error) {
++            throw new StoreFailure("事件追加失败：" + taskId, error);
++        }
++        return get(taskId);
++    }
++
++    /**
++     * 状态迁移（上游 transition 同形）：合法边校验「非法任务状态迁移：x -&gt; y」；
++     * completed 双守卫（具名 approve「完成交付必须由具名审核人明确 approve」+
++     * 报告绿「阻断级 Eval 未通过，不能批准完成」）；并发守卫
++     * 「任务状态已变化，拒绝并发迁移」（原状态条件更新 rowcount）；version+1 乐观锁。
++     *
++     * @param extras 可选载荷键：spec / result / error / reviewer / review_decision / review_note
++     */
++    public Map<String, Object> transition(String taskId, String toStatus, String detail, String actor,
++            Object evidence, Map<String, Object> extras) {
++        Map<String, Object> extra = extras == null ? Map.of() : extras;
++        try (Connection conn = open()) {
++            String current;
++            String resultJson;
++            try (PreparedStatement query = conn.prepareStatement(
++                    "SELECT status, result_json FROM tasks WHERE id=?")) {
++                query.setString(1, taskId);
++                try (ResultSet row = query.executeQuery()) {
++                    if (!row.next()) {
++                        throw new TaskNotFound(taskId);
++                    }
++                    current = row.getString("status");
++                    resultJson = row.getString("result_json");
++                }
++            }
++            if (!VALID_TRANSITIONS.getOrDefault(current, Set.of()).contains(toStatus)) {
++                throw new IllegalArgumentException("非法任务状态迁移：" + current + " -> " + toStatus);
++            }
++            String reviewer = text(extra.get("reviewer"));
++            String decision = text(extra.get("review_decision"));
++            String reviewNote = text(extra.get("review_note"));
++            if ("completed".equals(toStatus)) {
++                if (reviewer.isEmpty() || !"approve".equals(decision)) {
++                    throw new IllegalArgumentException("完成交付必须由具名审核人明确 approve");
++                }
++                Map<String, Object> result = null;
++                if (resultJson != null && parse(resultJson) instanceof Map<?, ?> parsedResult) {
++                    @SuppressWarnings("unchecked")
++                    Map<String, Object> castResult = (Map<String, Object>) parsedResult;
++                    result = castResult;
++                }
++                Map<String, Object> summary;
++                if (result != null && result.get("summary") instanceof Map<?, ?> summaryMap) {
++                    @SuppressWarnings("unchecked")
++                    Map<String, Object> castSummary = (Map<String, Object>) summaryMap;
++                    summary = castSummary;
++                } else {
++                    summary = Map.of();
++                }
++                Object decisionField = summary.get("decision");
++                Object blockingFailed = summary.get("blocking_failed");
++                if (!"pass".equals(decisionField)
++                        || blockingFailed == null || ((Number) blockingFailed).intValue() != 0) {
++                    throw new IllegalArgumentException("阻断级 Eval 未通过，不能批准完成");
++                }
++            }
++            String specJson = extra.containsKey("spec") ? dumps(extra.get("spec")) : null;
++            String newResultJson = extra.containsKey("result") ? dumps(extra.get("result")) : null;
++            String error = text(extra.get("error"));
++            try (PreparedStatement update = conn.prepareStatement("""
++                    UPDATE tasks SET status=?,spec_json=COALESCE(?,spec_json),
++                      result_json=COALESCE(?,result_json),error=COALESCE(?,error),
++                      reviewed_by=COALESCE(?,reviewed_by),review_decision=COALESCE(?,review_decision),
++                      review_note=COALESCE(?,review_note),
++                      reviewed_at=CASE WHEN ? IS NOT NULL THEN CURRENT_TIMESTAMP ELSE reviewed_at END,
++                      version=version+1,updated_at=CURRENT_TIMESTAMP
++                    WHERE id=? AND status=?""")) {
++                update.setString(1, toStatus);
++                update.setString(2, specJson);
++                update.setString(3, newResultJson);
++                update.setString(4, error.isEmpty() ? null : error);
++                update.setString(5, reviewer.isEmpty() ? null : reviewer);
++                update.setString(6, decision.isEmpty() ? null : decision);
++                update.setString(7, reviewNote.isEmpty() ? null : reviewNote);
++                update.setString(8, reviewer.isEmpty() ? null : reviewer);
++                update.setString(9, taskId);
++                update.setString(10, current);
++                if (update.executeUpdate() != 1) {
++                    throw new IllegalArgumentException("任务状态已变化，拒绝并发迁移：" + current + " -> " + toStatus);
++                }
++            }
++            insertEvent(conn, taskId, current, toStatus, detail,
++                    actor == null || actor.strip().isEmpty() ? "system" : actor.strip(), evidence);
++            conn.commit();
++        } catch (SQLException error) {
++            throw new StoreFailure("状态迁移失败：" + taskId + " -> " + toStatus, error);
++        }
++        return get(taskId);
++    }
++
++    /**
++     * 老板终审（上游 review 同形，断言面子集）：Agent 不能代老板终审；
++     * 决定只认 approve/reject；理由必填；approve → completed / reject → rework，
++     * detail「老板终审：{decision}；{note}」+ evidence opc_final。
++     */
++    public Map<String, Object> review(String taskId, String reviewer, String decision, String note) {
++        String identity = reviewer == null ? "" : reviewer.strip();
++        if (identity.isEmpty()) {
++            throw new IllegalArgumentException("老板身份不能为空");
++        }
++        if (identity.startsWith("agent:")) {
++            throw new IllegalArgumentException("Agent 员工不能代替老板终审；请用老板身份提交验收");
++        }
++        String normalized = decision == null ? "" : decision.strip().toLowerCase();
++        String opinion = note == null ? "" : note.strip();
++        if (!"approve".equals(normalized) && !"reject".equals(normalized)) {
++            throw new IllegalArgumentException("审核决定必须是 approve 或 reject");
++        }
++        if (opinion.isEmpty()) {
++            throw new IllegalArgumentException("审核理由不能为空");
++        }
++        String target = "approve".equals(normalized) ? "completed" : "rework";
++        Map<String, Object> evidence = new LinkedHashMap<>();
++        evidence.put("reviewer", identity);
++        evidence.put("decision", normalized);
++        evidence.put("note", opinion);
++        evidence.put("opc_final", true);
++        Map<String, Object> extras = new LinkedHashMap<>();
++        extras.put("reviewer", identity);
++        extras.put("review_decision", normalized);
++        extras.put("review_note", opinion);
++        return transition(taskId, target, "老板终审：" + normalized + "；" + opinion,
++                identity, evidence, extras);
++    }
++
++    // ---- 内部 ------------------------------------------------------------------
++
++    /**
++     * 重启恢复面（上游 recover_automatic_tasks 同形）：中断的 automatic 任务——
++     * codex 转死信「代码任务中断，禁止自动重复写入」（进程崩溃丢失执行器活所有权），
++     * verify 转安全重放（executing/evaluating → rework）；再收 queued/spec_ready
++     * 与重放集，按创建序返回待恢复 id。
++     */
++    public List<String> recoverAutomaticTasks() {
++        List<String> replayable = new ArrayList<>();
++        try (Connection conn = open()) {
++            List<String[]> interrupted = new ArrayList<>();
++            try (Statement st = conn.createStatement();
++                    ResultSet row = st.executeQuery(
++                            "SELECT id,status,execution_mode FROM tasks WHERE automation_mode='automatic' "
++                                    + "AND status IN ('executing','evaluating')")) {
++                while (row.next()) {
++                    interrupted.add(new String[] {
++                            row.getString("id"), row.getString("status"), row.getString("execution_mode")});
++                }
++            }
++            for (String[] task : interrupted) {
++                String id = task[0];
++                String status = task[1];
++                if ("codex".equals(task[2])) {
++                    try (PreparedStatement update = conn.prepareStatement(
++                            "UPDATE tasks SET status='dead_letter',error=?,version=version+1,"
++                                    + "updated_at=CURRENT_TIMESTAMP WHERE id=?")) {
++                        update.setString(1, "代码执行中断，需人工核对残留进程、Diff与证据后另行授权");
++                        update.setString(2, id);
++                        update.executeUpdate();
++                    }
++                    insertEvent(conn, id, status, "dead_letter", "代码任务中断，禁止自动重复写入",
++                            "automation-recovery", Map.of("safe_replay", false, "human_review_required", true));
++                    continue;
++                }
++                replayable.add(id);
++                try (PreparedStatement update = conn.prepareStatement(
++                        "UPDATE tasks SET status='rework',error=?,version=version+1,"
++                                + "updated_at=CURRENT_TIMESTAMP WHERE id=? AND status=?")) {
++                    update.setString(1, "服务重启时任务停在 " + status + "，已转入安全重放");
++                    update.setString(2, id);
++                    update.setString(3, status);
++                    update.executeUpdate();
++                }
++                insertEvent(conn, id, status, "rework", "检测到中断执行，进入安全重放",
++                        "automation-recovery", Map.of("safe_replay", true));
++            }
++            List<String> resumable = new ArrayList<>();
++            StringBuilder sql = new StringBuilder(
++                    "SELECT id FROM tasks WHERE automation_mode='automatic' "
++                            + "AND (status IN ('queued','spec_ready')");
++            if (!replayable.isEmpty()) {
++                sql.append(" OR id IN (");
++                sql.append(String.join(",", java.util.Collections.nCopies(replayable.size(), "?")));
++                sql.append(")");
++            }
++            sql.append(") ORDER BY created_at,id");
++            try (PreparedStatement query = conn.prepareStatement(sql.toString())) {
++                for (int index = 0; index < replayable.size(); index++) {
++                    query.setString(index + 1, replayable.get(index));
++                }
++                try (ResultSet row = query.executeQuery()) {
++                    while (row.next()) {
++                        resumable.add(row.getString("id"));
++                    }
++                }
++            }
++            conn.commit();
++            return resumable;
++        } catch (SQLException error) {
++            throw new StoreFailure("重启恢复查询失败", error);
++        }
++    }
++
++    private Map<String, Object> readTask(Connection conn, String taskId) throws SQLException {
++        Map<String, Object> task;
++        try (PreparedStatement query = conn.prepareStatement("SELECT * FROM tasks WHERE id=?")) {
++            query.setString(1, taskId);
++            try (ResultSet row = query.executeQuery()) {
++                if (!row.next()) {
++                    throw new TaskNotFound(taskId);
++                }
++                task = new LinkedHashMap<>();
++                task.put("id", row.getString("id"));
++                task.put("request", row.getString("request"));
++                task.put("status", row.getString("status"));
++                task.put("spec", parseOrNull(row.getString("spec_json")));
++                task.put("result", parseOrNull(row.getString("result_json")));
++                task.put("error", row.getString("error"));
++                task.put("requirement_id", row.getString("requirement_id"));
++                task.put("business_refs", parseOrList(row.getString("business_refs_json")));
++                task.put("spec_path", row.getString("spec_path"));
++                task.put("reviewed_by", row.getString("reviewed_by"));
++                task.put("review_decision", row.getString("review_decision"));
++                task.put("review_note", row.getString("review_note"));
++                task.put("reviewed_at", row.getString("reviewed_at"));
++                task.put("automation_mode", row.getString("automation_mode"));
++                task.put("execution_mode", row.getString("execution_mode"));
++                task.put("write_scope", parseOrList(row.getString("write_scope_json")));
++                task.put("execution_timeout_seconds", row.getInt("execution_timeout_seconds"));
++                task.put("version", row.getInt("version"));
++                task.put("created_at", row.getString("created_at"));
++                task.put("updated_at", row.getString("updated_at"));
++            }
++        }
++        List<Map<String, Object>> events = new ArrayList<>();
++        try (PreparedStatement query = conn.prepareStatement(
++                "SELECT * FROM task_events WHERE task_id=? ORDER BY id")) {
++            query.setString(1, taskId);
++            try (ResultSet row = query.executeQuery()) {
++                while (row.next()) {
++                    Map<String, Object> event = new LinkedHashMap<>();
++                    event.put("id", row.getInt("id"));
++                    event.put("task_id", row.getString("task_id"));
++                    event.put("from_status", row.getString("from_status"));
++                    event.put("to_status", row.getString("to_status"));
++                    event.put("detail", row.getString("detail"));
++                    event.put("actor", row.getString("actor"));
++                    event.put("evidence", parseOrNull(row.getString("evidence_json")));
++                    event.put("created_at", row.getString("created_at"));
++                    events.add(event);
++                }
++            }
++        }
++        task.put("events", events);
++        return task;
++    }
++
++    private void insertEvent(Connection conn, String taskId, String fromStatus, String toStatus,
++            String detail, String actor, Object evidence) throws SQLException {
++        try (PreparedStatement insert = conn.prepareStatement(
++                "INSERT INTO task_events(task_id,from_status,to_status,detail,actor,evidence_json) "
++                        + "VALUES(?,?,?,?,?,?)")) {
++            insert.setString(1, taskId);
++            insert.setString(2, fromStatus);
++            insert.setString(3, toStatus);
++            insert.setString(4, detail);
++            insert.setString(5, actor);
++            insert.setString(6, evidence == null ? null : dumps(evidence));
++            insert.executeUpdate();
++        }
++    }
++
++    private static String text(Object value) {
++        return value == null ? "" : String.valueOf(value).strip();
++    }
++
++    @SuppressWarnings("unchecked")
++    private static Map<String, Object> cast(Object value) {
++        return (Map<String, Object>) value;
++    }
++
++    private static String dumps(Object node) {
++        try {
++            return MAPPER.writeValueAsString(node);
++        } catch (IOException error) {
++            throw new StoreFailure("JSON 序列化失败", error);
++        }
++    }
++
++    private static Object parseOrNull(String raw) {
++        return raw == null ? null : parse(raw);
++    }
++
++    private static List<Object> parseOrList(String raw) {
++        if (raw == null) {
++            return new ArrayList<>();
++        }
++        try {
++            return MAPPER.readValue(raw, new TypeReference<List<Object>>() {});
++        } catch (IOException error) {
++            throw new StoreFailure("JSON 列解析失败：" + raw, error);
++        }
++    }
++
++    private static Object parse(String raw) {
++        try {
++            return MAPPER.readValue(raw, new TypeReference<Object>() {});
++        } catch (IOException error) {
++            throw new StoreFailure("JSON 解析失败：" + raw, error);
++        }
++    }
++
++    private static String sha256(String value) {
++        try {
++            return HexFormat.of().formatHex(
++                    MessageDigest.getInstance("SHA-256").digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
++        } catch (NoSuchAlgorithmException error) {
++            throw new StoreFailure("SHA-256 不可用", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/delivery/Workflow.java b/src/main/java/workbench/delivery/Workflow.java
+new file mode 100644
+index 0000000..c73963a
+--- /dev/null
++++ b/src/main/java/workbench/delivery/Workflow.java
+@@ -0,0 +1,230 @@
++package workbench.delivery;
++
++import com.fasterxml.jackson.databind.ObjectMapper;
++import workbench.spec.SpecParser;
++
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.util.ArrayList;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.function.Function;
++
++/**
++ * 交付工作流四段链（上游 {@code workbench/workflow.py} 对应物，L13 讲义 D2/D5）：
++ * prepare（queued → spec_ready）→ start（→ executing，允许/禁止动作清单）→
++ * execute（verify 模式 = verification_only，不产生业务数据副作用）→ evaluate
++ * （→ evaluating → 绿 {@code review}/红 {@code rework}，报告落盘 + SHA-256）。
++ *
++ * <p>不变量（上游 docstring 逐字承接）：「Run the deterministic delivery stages
++ * and stop at review or rework … A green Harness report never becomes completed
++ * without a separate named review」——绿报告永不自动 completed。
++ */
++public final class Workflow {
++
++    /** 受控执行失败（上游 ControlledExecutionError：证据随异常保留）。 */
++    public static final class ControlledExecutionError extends RuntimeException {
++        public final Map<String, Object> evidence;
++
++        public ControlledExecutionError(String message, Map<String, Object> evidence) {
++            super(message);
++            this.evidence = evidence;
++        }
++    }
++
++    /** 执行器缝（上游 execution_runner 参数）：输入任务视图，返回结构化证据。 */
++    public interface ExecutionRunner extends Function<Map<String, Object>, Map<String, Object>> {}
++
++    /** suite 缝（上游 suite_runner 参数，L13 讲义 D5 新缝①）：返回 schema 1.0 报告。 */
++    public interface SuiteRunner {
++        Map<String, Object> run();
++    }
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private Workflow() {}
++
++    /** 第一段：Spec 校验（queued → spec_ready；.md + 工作区/受控运行目录内）。 */
++    public static Map<String, Object> prepareTask(TaskStore store, String taskId, String actor) {
++        Map<String, Object> task = store.get(taskId);
++        if (!"queued".equals(task.get("status"))) {
++            throw new IllegalArgumentException("只有 queued 任务可以准备 Spec");
++        }
++        Path specPath = Path.of(String.valueOf(task.getOrDefault("spec_path", "FDE_SPEC.md")))
++                .toAbsolutePath().normalize();
++        Path workspace = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
++        Path runtime = store.path().getParent();
++        boolean allowed = specPath.equals(workspace) || specPath.startsWith(workspace)
++                || specPath.equals(runtime) || specPath.startsWith(runtime);
++        if (!specPath.toString().toLowerCase().endsWith(".md") || !allowed) {
++            throw new IllegalArgumentException("Spec 必须是工作区或受控运行目录内的 Markdown 文件");
++        }
++        Map<String, String> spec;
++        try {
++            spec = SpecParser.load(specPath).asMap();
++        } catch (IOException error) {
++            throw new UncheckedIOException("Spec 读取失败：" + specPath, error);
++        }
++        Map<String, Object> evidence = new LinkedHashMap<>();
++        evidence.put("spec_path", specPath.toString());
++        return store.transition(taskId, "spec_ready", "结构化 Spec 已校验", actor, evidence,
++                Map.of("spec", spec));
++    }
++
++    /** 第二段：受控执行开跑（spec_ready/rework → executing；动作清单显式化）。 */
++    public static Map<String, Object> startTask(TaskStore store, String taskId, String actor) {
++        Map<String, Object> task = store.get(taskId);
++        if (!"spec_ready".equals(task.get("status")) && !"rework".equals(task.get("status"))) {
++            throw new IllegalArgumentException("只有 spec_ready 或 rework 任务可以开始执行");
++        }
++        boolean codeWrites = "codex".equals(task.get("execution_mode"));
++        List<String> allowedActions = new ArrayList<>(List.of(
++                "read_spec", "read_workspace", "run_blocking_eval", "run_workspace_shell"));
++        if (codeWrites) {
++            allowedActions.add("write_code_in_task_scope");
++        }
++        Map<String, Object> evidence = new LinkedHashMap<>();
++        evidence.put("requirement_id", task.getOrDefault("requirement_id", ""));
++        evidence.put("business_refs", task.getOrDefault("business_refs", List.of()));
++        evidence.put("execution_mode", task.getOrDefault("execution_mode", "verify"));
++        evidence.put("write_scope", task.getOrDefault("write_scope", List.of()));
++        evidence.put("execution_timeout_seconds", task.getOrDefault("execution_timeout_seconds", 900));
++        evidence.put("allowed_actions", allowedActions);
++        evidence.put("forbidden_actions", List.of(
++                "write_runtime_database", "approve_business_document", "skip_eval"));
++        return store.transition(taskId, "executing", "开始受控执行", actor, evidence, Map.of());
++    }
++
++    /** 第三段：受控动作（默认 verification_only——不产生业务数据副作用）。 */
++    public static Map<String, Object> executeTask(TaskStore store, String taskId, String actor,
++            ExecutionRunner executionRunner) {
++        Map<String, Object> task = store.get(taskId);
++        if (!"executing".equals(task.get("status"))) {
++            throw new IllegalArgumentException("只有 executing 任务可以执行受控动作");
++        }
++        Map<String, Object> evidence = executionRunner == null ? verificationOnlyEvidence() : null;
++        if (executionRunner != null) {
++            Map<String, Object> produced = executionRunner.apply(task);
++            if (produced == null) {
++                throw new IllegalArgumentException("执行器必须返回结构化证据");
++            }
++            evidence = produced;
++        }
++        Map<String, Object> updated = store.appendEvent(taskId, "受控执行阶段完成", actor, evidence);
++        if (Boolean.FALSE.equals(evidence.get("success"))) {
++            throw new ControlledExecutionError(
++                    String.valueOf(evidence.getOrDefault("message", "受控执行失败")), evidence);
++        }
++        return updated;
++    }
++
++    private static Map<String, Object> verificationOnlyEvidence() {
++        Map<String, Object> evidence = new LinkedHashMap<>();
++        evidence.put("mode", "verification_only");
++        evidence.put("changed_files", List.of());
++        evidence.put("message", "未配置代码写入执行器；本轮只验证当前候选，不产生业务数据副作用");
++        return evidence;
++    }
++
++    /**
++     * 第四段：统一阻断级 Eval（executing → evaluating → 绿 review / 红 rework）。
++     * 报告落 {@code reports/{taskId}-harness-blocking.json} + SHA-256 入 evidence 与报告。
++     */
++    public static Map<String, Object> evaluateTask(TaskStore store, String taskId, String actor,
++            SuiteRunner suiteRunner) {
++        Map<String, Object> task = store.get(taskId);
++        if (!"executing".equals(task.get("status"))) {
++            throw new IllegalArgumentException("只有 executing 任务可以进入评测");
++        }
++        store.transition(taskId, "evaluating", "运行统一阻断级 Eval", actor, null, Map.of());
++        Map<String, Object> report = suiteRunner.run();
++        Path reportDir = store.path().getParent().resolve("reports");
++        try {
++            Files.createDirectories(reportDir);
++        } catch (IOException error) {
++            throw new UncheckedIOException("报告目录创建失败：" + reportDir, error);
++        }
++        Path reportPath = reportDir.resolve(taskId + "-harness-blocking.json");
++        String reportRef = "reports/" + reportPath.getFileName();
++        report.put("report_path", reportRef);
++        byte[] payload;
++        try {
++            payload = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(report);
++            Files.write(reportPath, payload);
++        } catch (IOException error) {
++            throw new UncheckedIOException("Eval 报告写盘失败：" + reportPath, error);
++        }
++        report.put("report_sha256", sha256(payload));
++        Map<String, Object> summary = report.get("summary") instanceof Map<?, ?> map
++                ? cast(map) : Map.of();
++        Object decision = summary.get("decision");
++        Object blockingFailed = summary.get("blocking_failed");
++        Map<String, Object> evidence = new LinkedHashMap<>();
++        evidence.put("decision", decision);
++        evidence.put("blocking_failed", blockingFailed);
++        evidence.put("report_path", reportRef);
++        evidence.put("report_sha256", report.get("report_sha256"));
++        boolean green = blockingFailed != null && ((Number) blockingFailed).intValue() == 0
++                && "pass".equals(decision);
++        if (green) {
++            return store.transition(taskId, "review", "阻断级 Eval 已通过，等待具名人工审核",
++                    actor, evidence, Map.of("result", report));
++        }
++        return store.transition(taskId, "rework", "阻断项未通过，退回最小修复",
++                actor, evidence, Map.of("result", report));
++    }
++
++    /** 编排四段并停在人审前（异常处置上游同形：执行失败 → rework 留证据；其余 → failed 保留原因）。 */
++    public static Map<String, Object> runTask(TaskStore store, String taskId, String actor,
++            SuiteRunner suiteRunner, ExecutionRunner executionRunner) {
++        try {
++            Map<String, Object> task = store.get(taskId);
++            if ("queued".equals(task.get("status"))) {
++                prepareTask(store, taskId, actor);
++            }
++            startTask(store, taskId, actor);
++            executeTask(store, taskId, actor, executionRunner);
++            return evaluateTask(store, taskId, actor, suiteRunner);
++        } catch (ControlledExecutionError error) {
++            Map<String, Object> task = store.get(taskId);
++            if ("executing".equals(task.get("status"))) {
++                Map<String, Object> evidence = new LinkedHashMap<>();
++                evidence.put("error_type", error.getClass().getSimpleName());
++                evidence.put("execution", error.evidence);
++                return store.transition(taskId, "rework", "受控执行失败，保留证据并等待有界重试",
++                        actor, evidence, Map.of("error", error.getMessage()));
++            }
++            throw error;
++        } catch (RuntimeException error) {
++            Map<String, Object> task = store.get(taskId);
++            String status = String.valueOf(task.get("status"));
++            if (!List.of("completed", "failed", "rework").contains(status)) {
++                Map<String, Object> evidence = new LinkedHashMap<>();
++                evidence.put("error_type", error.getClass().getSimpleName());
++                return store.transition(taskId, "failed", "工作流异常，保留原因",
++                        actor, evidence, Map.of("error", String.valueOf(error.getMessage())));
++            }
++            throw error;
++        }
++    }
++
++    @SuppressWarnings("unchecked")
++    private static Map<String, Object> cast(Map<?, ?> value) {
++        return (Map<String, Object>) value;
++    }
++
++    private static String sha256(byte[] bytes) {
++        try {
++            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
++        } catch (NoSuchAlgorithmException error) {
++            throw new TaskStore.StoreFailure("SHA-256 不可用", error);
++        }
++    }
++}
+diff --git a/src/main/java/workbench/evals/l13/DeliveryChecks.java b/src/main/java/workbench/evals/l13/DeliveryChecks.java
+new file mode 100644
+index 0000000..c21aedd
+--- /dev/null
++++ b/src/main/java/workbench/evals/l13/DeliveryChecks.java
+@@ -0,0 +1,783 @@
++package workbench.evals.l13;
++
++import com.fasterxml.jackson.databind.ObjectMapper;
++import workbench.bootstrap.Args;
++import workbench.bootstrap.PyJson;
++import workbench.delivery.DeliveryAutomation;
++import workbench.delivery.Feedback;
++import workbench.delivery.HttpApi;
++import workbench.delivery.SpecFactory;
++import workbench.delivery.TaskStore;
++import workbench.delivery.Workflow;
++import workbench.evals.EvalHarness;
++import workbench.spec.SpecParser;
++
++import java.io.IOException;
++import java.net.URI;
++import java.net.http.HttpClient;
++import java.net.http.HttpRequest;
++import java.net.http.HttpResponse;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.security.MessageDigest;
++import java.security.NoSuchAlgorithmException;
++import java.time.Duration;
++import java.util.ArrayList;
++import java.util.HexFormat;
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.Future;
++import java.util.concurrent.TimeUnit;
++import java.util.regex.Pattern;
++
++/**
++ * L13 任务 API 统一入口（上游绑定 eval {@code delivery_evidence_and_review_controls}
++ * 断言面 + {@code task_api_contract.py}/{@code check_required_workbench} + HTTP 合同测试
++ * 的 Java 机检收口；讲义 §2 登记项构成）。
++ *
++ * <p>十件默认门全 blocking：工作台面八件（进程内装配 HttpApi——合成 suite 经
++ * suite_runner 缝注入：控制模式机检用合成缝，上游 eval 用例 fixture 防递归同理，
++ * 如实标注——真实检查面 = delivery-serve 的 {@code --suite-command} 子进程缝，
++ * 由受控 API 实验承载）+ 客户 {@code purchase_requires_approval} 原名照跑
++ * （l08 SalesChecks.customerCase 复用）+ 冻结指纹复核（客户 eval 双树 +
++ * {@code flowerp/service.py}，l07–l12 同形；本讲 Java 源件指纹承载面 = 证据账层面，
++ * L11 T-2 口径直承）。
++ *
++ * <p>argv 面（l08–l12 Checks 同形）：{@code --target} 必填（客户树根，须含
++ * flowerp/）；{@code --case}（可多，选跑子集）；{@code --python}（缺省
++ * .venv/bin/python）、{@code --no-report}、{@code --report-path}。
++ */
++public final class DeliveryChecks {
++
++    /** 冻结面（讲义 C8）：客户 eval 双树 + 采购面源件（l12 同三件）。 */
++    private static final String[] FROZEN_FILES = {
++            "eval/harness.py", "eval/cases.py", "flowerp/service.py"};
++
++    private static final String DEFAULT_PYTHON = ".venv/bin/python";
++
++    private static final Pattern TASK_ID_PATTERN = Pattern.compile("TASK-[A-Z0-9]{10}");
++
++    private static final ObjectMapper MAPPER = new ObjectMapper();
++
++    private static final HttpClient CLIENT = HttpClient.newBuilder()
++            .connectTimeout(Duration.ofSeconds(5)).build();
++
++    private DeliveryChecks() {}
++
++    public static void main(String[] argv) {
++        try {
++            Args args = new Args(argv,
++                    Set.of("--target", "--python", "--report-path"), Set.of("--no-report"),
++                    List.of(), Set.of("--case"));
++            Path target = Path.of(args.require("--target")).toAbsolutePath().normalize();
++            if (!Files.isDirectory(target.resolve("flowerp"))) {
++                throw new Args.UsageException("--target 下没有 flowerp/：" + target);
++            }
++            Path interpreter = resolveInterpreter(args.optional("--python", DEFAULT_PYTHON));
++            Path reportPath = (args.flag("--no-report") || !args.has("--report-path"))
++                    ? null : Path.of(args.require("--report-path"));
++            List<String> selected = args.repeatingList("--case");
++            List<EvalHarness.Entry> all = entries(target, interpreter);
++            List<EvalHarness.Entry> run = selected.isEmpty() ? all : all.stream()
++                    .filter(entry -> selected.contains(entry.name())).toList();
++            if (!selected.isEmpty() && run.size() != selected.size()) {
++                List<String> known = run.stream().map(EvalHarness.Entry::name).toList();
++                List<String> unknown = selected.stream().filter(name -> !known.contains(name)).toList();
++                if (!unknown.isEmpty()) {
++                    throw new Args.UsageException("未知登记项 --case：" + unknown);
++                }
++                List<String> duplicated = selected.stream().distinct()
++                        .filter(name -> selected.stream().filter(name::equals).count() > 1).toList();
++                throw new Args.UsageException("重复登记项 --case：" + duplicated);
++            }
++            EvalHarness.Outcome outcome = EvalHarness.run(run, "all", null, reportPath);
++            System.out.println(PyJson.dumps(outcome.report()));
++            if (outcome.exitCode() != 0) {
++                System.exit(outcome.exitCode());
++            }
++        } catch (Args.UsageException error) {
++            System.err.println(error.getMessage());
++            System.exit(2);
++        } catch (IllegalStateException error) {
++            System.err.println(error.getMessage());
++            System.exit(1);
++        }
++    }
++
++    /** 十件默认门（C 表映射见讲义 §2 登记项构成——全部 blocking，无必红选跑项）。 */
++    static List<EvalHarness.Entry> entries(Path target, Path interpreter) {
++        return List.of(
++                new EvalHarness.Entry("l13_task_api_accept", "blocking",
++                        DeliveryChecks::taskApiAccept),
++                new EvalHarness.Entry("l13_idempotency_and_conflict", "blocking",
++                        DeliveryChecks::idempotencyAndConflict),
++                new EvalHarness.Entry("l13_event_traceability", "blocking",
++                        DeliveryChecks::eventTraceability),
++                new EvalHarness.Entry("l13_stops_at_review", "blocking",
++                        DeliveryChecks::stopsAtReview),
++                new EvalHarness.Entry("l13_state_machine", "blocking",
++                        DeliveryChecks::stateMachine),
++                new EvalHarness.Entry("l13_rework_and_feedback_observation", "blocking",
++                        DeliveryChecks::reworkAndFeedbackObservation),
++                new EvalHarness.Entry("l13_feedback_review_loop", "blocking",
++                        DeliveryChecks::feedbackReviewLoop),
++                new EvalHarness.Entry("l13_required_workbench", "blocking",
++                        DeliveryChecks::requiredWorkbench),
++                new EvalHarness.Entry("purchase_requires_approval", "blocking",
++                        () -> customerCase(interpreter, target, "purchase_requires_approval")),
++                new EvalHarness.Entry("l13_frozen_checks", "blocking",
++                        () -> frozenChecks(target)));
++    }
++
++    // ---- 合成 suite（机检专用缝，真实面 = delivery-serve --suite-command 子进程缝） ----------
++
++    private static Map<String, Object> suiteReport(String decision, int blockingFailed, String caseName) {
++        Map<String, Object> summary = new LinkedHashMap<>();
++        summary.put("decision", decision);
++        summary.put("blocking_failed", blockingFailed);
++        Map<String, Object> row = new LinkedHashMap<>();
++        row.put("name", caseName);
++        row.put("level", "blocking");
++        row.put("passed", blockingFailed == 0);
++        Map<String, Object> report = new LinkedHashMap<>();
++        report.put("schema_version", "1.0");
++        report.put("summary", summary);
++        report.put("results", List.of(row));
++        return report;
++    }
++
++    private static Workflow.SuiteRunner greenSuite() {
++        return () -> suiteReport("pass", 0, "delivery_pipeline");
++    }
++
++    private static Workflow.SuiteRunner redSuite() {
++        return () -> suiteReport("block", 1, "observed_failure");
++    }
++
++    // ---- 场景断言（独立预期全部留 Java，不抄返回值） ------------------------------------------
++
++    /**
++     * C1：202 契约 + 异步诚实（202 先于 Eval 完成——latch 钉死，对照上游
++     * entered/release 形态）+ capabilities + 词面校验五拍。
++     */
++    private static String taskApiAccept() {
++        Path runtime = tempRuntime("l13-accept-");
++        CountDownLatch entered = new CountDownLatch(1);
++        CountDownLatch release = new CountDownLatch(1);
++        Workflow.SuiteRunner held = () -> {
++            entered.countDown();
++            try {
++                if (!release.await(10, TimeUnit.SECONDS)) {
++                    throw new IllegalStateException("fixture was not released");
++                }
++            } catch (InterruptedException error) {
++                Thread.currentThread().interrupt();
++                throw new IllegalStateException("fixture 等待被中断", error);
++            }
++            return suiteReport("pass", 0, "required_api_boundary_fixture");
++        };
++        HttpApi api = new HttpApi(runtime, held);
++        int port = startQuietly(api);
++        try {
++            Map<String, Object> capabilities = readJson(httpGet(port, "/api/v1/delivery/capabilities"), 200);
++            expect(List.of("verify").equals(capabilities.get("execution_modes")), "capabilities.execution_modes 应为 [verify]");
++            expect(Boolean.TRUE.equals(capabilities.get("requires_idempotency_key")), "capabilities.requires_idempotency_key 应为 true");
++            expect(Boolean.TRUE.equals(capabilities.get("async_submission")), "capabilities.async_submission 应为 true");
++
++            Map<String, Object> body = Map.of("lesson", 13, "request", "复验采购审批边界",
++                    "actor", "student-li", "business_refs", List.of("PURCHASE:PUR-FIXTURE"));
++            Map<String, Object> accepted = readJson(httpPost(port, "/api/v1/delivery/requests", body, "lesson-submit"), 202);
++            String taskId = String.valueOf(accepted.get("task_id"));
++            expect(TASK_ID_PATTERN.matcher(taskId).matches(), "task_id 形态应 TASK-[A-Z0-9]{10}，实际 " + taskId);
++            expect(Boolean.TRUE.equals(accepted.get("accepted")), "accepted 应为 true");
++            expect("verify".equals(accepted.get("execution_mode")), "execution_mode 应 verify");
++            expect(String.valueOf(accepted.get("status_url")).equals("/api/v1/tasks/" + taskId), "status_url 契约不符");
++            expect(String.valueOf(accepted.get("view_url")).equals("/api/v1/delivery/views/" + taskId), "view_url 契约不符");
++
++            // 异步证明：202 已到手而 suite 尚未放行完成
++            expect(awaitQuietly(entered, 5), "202 返回后 Eval 应已进入但未完成（entered）");
++            expect(release.getCount() == 1, "202 必须先于 Eval 完成返回（异步诚实）");
++
++            Map<String, Object> codex = new java.util.HashMap<>(body);
++            codex.put("execution_mode", "codex");
++            expect(httpPost(port, "/api/v1/delivery/requests", codex, "codex").statusCode() == 400,
++                    "网页 API 只允许 verify（codex 应 400）");
++            Map<String, Object> blank = Map.of("lesson", 13, "request", "", "actor", "student");
++            expect(httpPost(port, "/api/v1/delivery/requests", blank, "blank").statusCode() == 400,
++                    "空需求应 400");
++            Map<String, Object> anonymous = Map.of("lesson", 13, "request", "补货", "actor", "");
++            expect(httpPost(port, "/api/v1/delivery/requests", anonymous, "anon").statusCode() == 400,
++                    "匿名提交人应 400");
++            Map<String, Object> badRefs = Map.of("lesson", 13, "request", "补货", "actor", "s", "business_refs", "invalid");
++            expect(httpPost(port, "/api/v1/delivery/requests", badRefs, "badrefs").statusCode() == 400,
++                    "非法 business_refs 应 400");
++            Map<String, Object> early = Map.of("lesson", 3, "request", "补货", "actor", "s");
++            expect(httpPost(port, "/api/v1/delivery/requests", early, "early").statusCode() == 400,
++                    "L03 越界应 400（Web 受控任务只允许 L04-L16）");
++
++            release.countDown();
++            Map<String, Object> task = api.automation().wait(taskId, 30);
++            expect("review".equals(task.get("status")), "全绿后应停在 review，实际 " + task.get("status"));
++        } finally {
++            release.countDown();
++            api.stop();
++        }
++        return "202 契约 + 异步证明（202 先于 Eval 完成）+ capabilities verify-only + 词面拒绝五拍";
++    }
++
++    /** C2：同键同需求重放同 Task ID / 同键异需求（含异 refs）409 / 跨实例并发提交原子。 */
++    private static String idempotencyAndConflict() {
++        Path runtime = tempRuntime("l13-idem-");
++        HttpApi api = new HttpApi(runtime, greenSuite());
++        int port = startQuietly(api);
++        try {
++            Map<String, Object> body = Map.of("lesson", 13, "request", "补货 PURCHASE:PR-A",
++                    "actor", "student");
++            Map<String, Object> first = readJson(httpPost(port, "/api/v1/delivery/requests", body, "key-1"), 202);
++            Map<String, Object> replay = readJson(httpPost(port, "/api/v1/delivery/requests", body, "key-1"), 202);
++            expect(first.get("task_id").equals(replay.get("task_id")), "同键同需求重放应返回同一 Task ID");
++            Map<String, Object> listing = readJson(httpGet(port, "/api/v1/tasks?limit=30"), 200);
++            expect(((List<?>) listing.get("items")).size() == 1, "重放后任务列表应只有 1 条");
++
++            Map<String, Object> other = Map.of("lesson", 13, "request", "不同需求", "actor", "student");
++            expect(httpPost(port, "/api/v1/delivery/requests", other, "key-1").statusCode() == 409,
++                    "同键异需求应 409（请使用新键）");
++            Map<String, Object> otherRefs = Map.of("lesson", 13, "request", "补货 PURCHASE:PR-A",
++                    "actor", "student", "business_refs", List.of("PURCHASE:PR-OTHER"));
++            expect(httpPost(port, "/api/v1/delivery/requests", otherRefs, "key-1").statusCode() == 409,
++                    "同键异 business_refs 应 409（fingerprint 不同）");
++            readJson(httpGet(port, "/api/v1/tasks/" + first.get("task_id")), 200);
++            expect(httpGet(port, "/api/v1/tasks/TASK-MISSING00").statusCode() == 404, "未知任务应 404");
++        } finally {
++            api.stop();
++        }
++        Path db = runtime.resolve("workbench.db");
++        TaskStore first = new TaskStore(db);
++        TaskStore second = new TaskStore(db);
++        ExecutorService pool = Executors.newFixedThreadPool(2);
++        CountDownLatch start = new CountDownLatch(1);
++        try {
++            Future<Map<String, Object>> one = pool.submit(() -> {
++                start.await();
++                return first.create("同一需求", "", List.of(), "FDE_SPEC.md", "student",
++                        "automatic", null, "verify", null, 900, "same-key");
++            });
++            Future<Map<String, Object>> two = pool.submit(() -> {
++                start.await();
++                return second.create("同一需求", "", List.of(), "FDE_SPEC.md", "student",
++                        "automatic", null, "verify", null, 900, "same-key");
++            });
++            start.countDown();
++            expect(getQuietly(one).get("id").equals(getQuietly(two).get("id")),
++                    "跨实例并发同键应得到同一 Task ID");
++            expect(first.list(30).size() == 2, "并发提交后列表 = 既有 1 + 新 1");
++            try {
++                second.create("不同需求", "", List.of(), "FDE_SPEC.md", "student",
++                        "automatic", null, "verify", null, 900, "same-key");
++                throw new AssertionError("工作台接受了同键不同需求");
++            } catch (TaskStore.TaskSubmissionConflict expected) {
++                // 预期词面：提交键已用于不同需求；请使用新键
++            }
++        } finally {
++            pool.shutdownNow();
++        }
++        return "幂等提交三面：同键重放同 ID / 同键异需求与异 refs 409 / 跨实例并发原子";
++    }
++
++    /** C3：事件链全序 + evidence 三向 + Spec 落盘可解析 + 每任务独立 + 信号词路由。 */
++    private static String eventTraceability() {
++        Path runtime = tempRuntime("l13-trace-");
++        TaskStore store = new TaskStore(runtime.resolve("workbench.db"));
++        DeliveryAutomation automation = new DeliveryAutomation(store, runtime, greenSuite(), 2, null, 3);
++        Map<String, Object> task = automation.submit("补货 PURCHASE:PR-TRACE 的自动交付",
++                "REQ-EVAL-TRACE", List.of("PURCHASE:PR-TRACE"), "eval-requester", "verify", null, 900, true);
++        Map<String, Object> done = automation.wait(String.valueOf(task.get("id")), 30);
++        String taskId = String.valueOf(done.get("id"));
++        List<String> details = eventDetails(done);
++        for (String expected : List.of("任务已接收", "已从需求生成任务级结构化 Spec",
++                "自动流水线开始推进", "结构化 Spec 已校验", "开始受控执行", "受控执行阶段完成",
++                "阻断级 Eval 已通过，等待具名人工审核")) {
++            expect(details.contains(expected), "事件链缺：" + expected + "（实际 " + details + "）");
++        }
++        Map<String, Object> startEvent = findEvent(done, "自动流水线开始推进");
++        expect(List.of("spec", "execute", "blocking_eval", "human_review")
++                .equals(field(startEvent, "evidence", "stages")), "开始推进事件 stages 四段不符");
++        expect(Boolean.FALSE.equals(field(startEvent, "evidence", "human_review_is_automatic")),
++                "human_review_is_automatic 必须为 false（自动化永不代人审）");
++        expect("REQ-EVAL-TRACE".equals(done.get("requirement_id")), "evidence 三向之 requirement_id");
++        expect(String.valueOf(done.get("business_refs")).contains("PURCHASE:PR-TRACE"), "evidence 三向之 business_refs");
++        Map<String, Object> evalEvent = findEvent(done, "阻断级 Eval 已通过，等待具名人工审核");
++        expect(String.valueOf(field(evalEvent, "evidence", "report_path")).startsWith("reports/"),
++                "evidence 三向之 report_path");
++        expect(String.valueOf(field(evalEvent, "evidence", "report_sha256")).length() == 64,
++                "report_sha256 应为 64 位十六进制");
++        Path reportFile = runtime.resolve(String.valueOf(field(evalEvent, "evidence", "report_path")));
++        expect(Files.isRegularFile(reportFile), "Eval 报告应落盘");
++
++        Path specPath = Path.of(String.valueOf(done.get("spec_path")));
++        expect(Files.isRegularFile(specPath), "任务级 Spec 应落盘且每任务独立");
++        String specText = readString(specPath);
++        expect(specText.contains("补货建议尚未由具名人员批准") && specText.contains("相同入库幂等键重放"),
++                "补货信号词应触发两条业务边界验收用例");
++        try {
++            SpecParser.parse(specText);
++        } catch (RuntimeException error) {
++            throw new AssertionError("生成 Spec 应可被 L03 解析器解析：" + error.getMessage());
++        }
++        Map<String, Object> another = automation.submit("补货 PURCHASE:PR-TRACE-2 的自动交付",
++                "REQ-EVAL-TRACE2", List.of(), "eval-requester", "verify", null, 900, true);
++        expect(!String.valueOf(another.get("spec_path")).equals(done.get("spec_path")),
++                "每任务 Spec 路径应独立");
++        return "事件链 7 段全序 + 三向 evidence（需求/对象/报告+SHA）+ Spec 落盘可解析 + 信号词路由";
++    }
++
++    /** C4：绿链 review 停住 + 匿名/Agent/未绿批准三拒绝 + 具名 approve/reject 分叉。 */
++    private static String stopsAtReview() {
++        Path runtime = tempRuntime("l13-review-");
++        TaskStore store = new TaskStore(runtime.resolve("workbench.db"));
++        DeliveryAutomation automation = new DeliveryAutomation(store, runtime, greenSuite(), 2, null, 3);
++        Map<String, Object> task = automation.submit("验证 SKU:NOTEBOOK-AI 的自动交付证据状态机",
++                "REQ-EVAL-DELIVERY", List.of("SKU:NOTEBOOK-AI"), "eval-requester", "verify", null, 900, true);
++        Map<String, Object> done = automation.wait(String.valueOf(task.get("id")), 30);
++        String taskId = String.valueOf(done.get("id"));
++        expect("review".equals(done.get("status")) && "automatic".equals(done.get("automation_mode")),
++                "自动链应停在 review（automatic），实际 " + done.get("status"));
++        expect(done.get("reviewed_by") == null, "review 停住时 reviewed_by 应为空");
++        expect(Files.isRegularFile(Path.of(String.valueOf(done.get("spec_path")))), "Spec 文件应在");
++        expect(goalOf(done).isEmpty() == false, "task.spec.goal 应非空");
++
++        expectRejected(() -> store.transition(taskId, "completed", "匿名完成", "system", null, Map.of()),
++                "完成交付必须由具名审核人明确 approve");
++        expectRejected(() -> store.review(taskId, "agent:coder", "approve", "代签"),
++                "Agent 员工不能代替老板终审");
++        expectRejected(() -> store.review(taskId, "  ", "approve", "空白身份"),
++                "老板身份不能为空");
++        expectRejected(() -> store.review(taskId, "boss", "maybe", "决定无效"),
++                "审核决定必须是 approve 或 reject");
++        expectRejected(() -> store.review(taskId, "boss", "approve", "  "),
++                "审核理由不能为空");
++        Map<String, Object> delivery = store.review(taskId, "delivery-reviewer", "approve", "阻断证据完整");
++        expect("completed".equals(delivery.get("status")), "具名 approve 应完成");
++        expect("delivery-reviewer".equals(delivery.get("reviewed_by")), "reviewed_by 应具名");
++
++        Map<String, Object> second = automation.submit("验证打回路径", "REQ-EVAL-REJECT", List.of(),
++                "eval-requester", "verify", null, 900, true);
++        String secondId = String.valueOf(second.get("id"));
++        automation.wait(secondId, 30);
++        Map<String, Object> rejected = store.review(secondId, "boss", "reject", "证据不足，返工");
++        expect("rework".equals(rejected.get("status")), "具名 reject 应回 rework");
++        expect(eventDetails(rejected).stream().anyMatch(detail -> detail.startsWith("老板终审：reject")),
++                "老板终审事件 detail 词面不符");
++        return "全绿停 review（reviewed_by 空）+ 匿名/Agent/无效决定/空理由四拒绝 + 具名分叉";
++    }
++
++    /** C5：九态合法迁移表 + 跳步拒绝 + 并发迁移互斥（恰好一成一拒）。 */
++    private static String stateMachine() {
++        expect(Set.of().equals(TaskStore.VALID_TRANSITIONS.get("completed"))
++                && Set.of().equals(TaskStore.VALID_TRANSITIONS.get("dead_letter")),
++                "completed/dead_letter 应为终态（空出边）");
++        expect(TaskStore.VALID_TRANSITIONS.get("queued").equals(Set.of("spec_ready", "failed", "dead_letter")),
++                "queued 出边不符（上游同形）");
++        expect(TaskStore.VALID_TRANSITIONS.get("review").containsAll(Set.of("completed", "rework", "failed", "dead_letter")),
++                "review 出边不符");
++
++        Path runtime = tempRuntime("l13-machine-");
++        TaskStore store = new TaskStore(runtime.resolve("workbench.db"));
++        Map<String, Object> task = store.create("验证不能跳过交付阶段", "REQ-EVAL-JUMP", List.of(),
++                "FDE_SPEC.md", "eval", "manual", null, "verify", null, 900, null);
++        String taskId = String.valueOf(task.get("id"));
++        expectRejected(() -> store.transition(taskId, "completed", "跳过评测", "eval", null, Map.of()),
++                "非法任务状态迁移：queued -> completed");
++        expectRejected(() -> store.transition(taskId, "evaluating", "跳过执行", "eval", null, Map.of()),
++                "非法任务状态迁移：queued -> evaluating");
++
++        // 并发互斥：两实例两线程同时迁移同一任务，恰好一个成功、另一个被拒
++        TaskStore second = new TaskStore(runtime.resolve("workbench.db"));
++        ExecutorService pool = Executors.newFixedThreadPool(2);
++        CountDownLatch start = new CountDownLatch(1);
++        try {
++            Future<String> one = pool.submit(() -> {
++                start.await();
++                return tryTransition(store, taskId, "worker-a");
++            });
++            Future<String> two = pool.submit(() -> {
++                start.await();
++                return tryTransition(second, taskId, "worker-b");
++            });
++            start.countDown();
++            String firstOutcome = getQuietly(one);
++            String secondOutcome = getQuietly(two);
++            int successes = ("ok".equals(firstOutcome) ? 1 : 0) + ("ok".equals(secondOutcome) ? 1 : 0);
++            expect(successes == 1, "并发迁移应恰好一个成功（互斥），实际 a=" + firstOutcome
++                    + " b=" + secondOutcome);
++            String loser = "ok".equals(firstOutcome) ? secondOutcome : firstOutcome;
++            expect(loser.contains("拒绝并发迁移") || loser.contains("非法任务状态迁移"),
++                    "并发被拒方词面应是互斥守卫，实际 " + loser);
++            expect("spec_ready".equals(store.get(taskId).get("status")), "终态应为 spec_ready");
++        } finally {
++            pool.shutdownNow();
++        }
++        return "九态合法迁移表 + 跳步拒绝（queued→completed/evaluating）+ 并发迁移互斥";
++    }
++
++    /** C6：红 Eval → rework + 自动反馈沉淀 + 有界重试（耗尽保留）+ 异常分类处置。 */
++    private static String reworkAndFeedbackObservation() {
++        Path runtime = tempRuntime("l13-rework-");
++        TaskStore store = new TaskStore(runtime.resolve("workbench.db"));
++        Feedback feedback = new Feedback(runtime.resolve("workbench.db"));
++        DeliveryAutomation single = new DeliveryAutomation(store, runtime, redSuite(), 2, null, 1);
++        Map<String, Object> failed = single.submit("验证自动失败进入待审反馈",
++                "REQ-EVAL-FAILURE-OBSERVATION", List.of("SKU:NOTEBOOK-AI"), "eval-requester",
++                "verify", null, 900, true);
++        Map<String, Object> failedTask = single.wait(String.valueOf(failed.get("id")), 30);
++        String failedId = String.valueOf(failedTask.get("id"));
++        expect("rework".equals(failedTask.get("status")), "红 Eval 应进 rework");
++        Map<String, Object> observation = firstItemFor(feedback, failedId);
++        expect("pending_review".equals(observation.get("status")), "自动反馈应 pending_review");
++        expect("automation:rework".equals(observation.get("source")), "source 应 automation:rework");
++        expect(String.valueOf(field(observation, "evidence", "blocking_failures"))
++                .contains("observed_failure"), "blocking_failures 应含 observed_failure");
++        expect(eventDetails(failedTask).contains("失败已沉淀为待具名审核的反馈候选"),
++                "失败沉淀事件应在链");
++
++        DeliveryAutomation bounded = new DeliveryAutomation(store, runtime, redSuite(), 2, null, 3);
++        Map<String, Object> retried = bounded.submit("验证有界重试", "REQ-EVAL-RETRY", List.of(),
++                "eval-requester", "verify", null, 900, true);
++        Map<String, Object> exhausted = bounded.wait(String.valueOf(retried.get("id")), 60);
++        List<String> details = eventDetails(exhausted);
++        expect(details.contains("自动流水线安排有界重试"), "重试事件应在链");
++        expect(details.contains("有界重试已耗尽，保留阻断失败并等待人工处理"),
++                "耗尽保留事件应在链（failure_preserved）");
++        long attempts = details.stream().filter("自动流水线开始推进"::equals).count();
++        expect(attempts == 3, "三次尝试后停止（max_attempts=3），实际 " + attempts);
++
++        // suite 异常的可达路径：runTask 把 executing/evaluating 中的异常分类为不可重试 →
++        // failed → 流水线转 dead_letter「转人工处理」（error 摘要保留、不静默吞）。
++        // 上游「executing 中异常 → rework 保留现场」是防御分支（runTask 之外的存储层
++        // 异常才触发），正常序列不可达——如实标注，防御代码在 Workflow/自动化件内保留。
++        Workflow.SuiteRunner crashing = () -> {
++            throw new IllegalStateException("合成执行器异常");
++        };
++        DeliveryAutomation crashingPipeline = new DeliveryAutomation(store, runtime, crashing, 2, null, 1);
++        Map<String, Object> crashed = crashingPipeline.submit("验证异常不静默吞",
++                "REQ-EVAL-CRASH", List.of(), "eval-requester", "verify", null, 900, true);
++        Map<String, Object> crashedTask = crashingPipeline.wait(String.valueOf(crashed.get("id")), 30);
++        expect("dead_letter".equals(crashedTask.get("status")),
++                "suite 异常应转人工处理（dead_letter），实际 " + crashedTask.get("status"));
++        expect(eventDetails(crashedTask).stream()
++                        .anyMatch(detail -> detail.contains("不可重试的执行失败，转人工处理")),
++                "转人工处理事件词面应在链（不静默吞）");
++        expect(String.valueOf(crashedTask.get("error")).contains("合成执行器异常"), "异常摘要应保留");
++        return "红 Eval→rework+自动反馈 + 有界重试 3 次耗尽保留 + suite 异常→dead_letter 转人工（防御分支如实标注）";
++    }
++
++    /** C7：人工反馈登记 + 具名审核 + 重复决定拒绝 + summary 统计。 */
++    private static String feedbackReviewLoop() {
++        Path runtime = tempRuntime("l13-feedback-");
++        TaskStore store = new TaskStore(runtime.resolve("workbench.db"));
++        DeliveryAutomation automation = new DeliveryAutomation(store, runtime, greenSuite(), 2, null, 3);
++        Map<String, Object> task = automation.submit("验证反馈审核闭环", "REQ-EVAL-FEEDBACK",
++                List.of(), "eval-requester", "verify", null, 900, true);
++        Map<String, Object> done = automation.wait(String.valueOf(task.get("id")), 30);
++        String taskId = String.valueOf(done.get("id"));
++        store.review(taskId, "boss", "approve", "先完成后审反馈");
++
++        Feedback feedback = new Feedback(runtime.resolve("workbench.db"));
++        Map<String, Object> added = feedback.addFeedback(taskId, "eval", "证据待确认", "人工复核", null, "");
++        expect("pending_review".equals(added.get("status")), "人工反馈应 pending_review");
++        expectRejected(() -> feedback.addFeedback(" ", "eval", "x", "y", null, ""),
++                "反馈必须包含 task_id、来源、结论和下一步");
++        Map<String, Object> reviewed = feedback.reviewFeedback(String.valueOf(added.get("id")),
++                "eval-reviewer", "accept", "证据有效");
++        expect("accepted".equals(reviewed.get("status")), "具名 accept 应 accepted");
++        expect("eval-reviewer".equals(reviewed.get("reviewed_by")), "reviewed_by 应具名");
++        expectRejected(() -> feedback.reviewFeedback(String.valueOf(added.get("id")),
++                "other-reviewer", "reject", "重复决定"), "反馈已经审核，不能重复改变结论");
++        expectRejected(() -> feedback.reviewFeedback(String.valueOf(added.get("id")),
++                "boss", "undo", "无效决定"), "审核决定必须为 accept 或 reject");
++        Map<String, Object> summary = feedback.summary();
++        expect(((Number) summary.get("pending_review")).intValue() == 0
++                        && ((Number) summary.get("accepted")).intValue() == 1,
++                "summary 统计不符：" + PyJson.dumpsCompact(summary));
++        return "反馈登记→具名审核→重复决定拒绝→summary 统计";
++    }
++
++    /**
++     * C8（上游 check_required_workbench 全断言对照）：accept → wait review 停住 →
++     * 同键重放同 id → 异需求冲突 → 重开实例状态持久 → recover 空 → 无 flowerp.db。
++     */
++    private static String requiredWorkbench() {
++        Path runtime = tempRuntime("l13-required-");
++        HttpApi api = new HttpApi(runtime, greenSuite());
++        Map<String, Object> accepted = api.acceptCourseTask(13, "复验采购审批", "eval-student",
++                "required-api-eval", null);
++        String taskId = String.valueOf(accepted.get("task_id"));
++        Map<String, Object> task = api.automation().wait(taskId, 30);
++        expect("review".equals(task.get("status")) && "verify".equals(task.get("execution_mode")),
++                "API 任务应停在 review（verify），实际 " + task.get("status"));
++        expect(task.get("reviewed_by") == null, "review 停住时 reviewed_by 应空");
++        Map<String, Object> replay = api.acceptCourseTask(13, "复验采购审批", "eval-student",
++                "required-api-eval", null);
++        expect(taskId.equals(replay.get("task_id")), "同键同需求重放应同 Task ID");
++        expect(api.tasks().list(30).size() == 1, "重放后列表应 1 条");
++        try {
++            api.acceptCourseTask(13, "另一需求", "eval-student", "required-api-eval", null);
++            throw new AssertionError("工作台接受了同键不同需求");
++        } catch (TaskStore.TaskSubmissionConflict expected) {
++            // 预期词面：提交键已用于不同需求；请使用新键
++        }
++        HttpApi reopened = new HttpApi(runtime, greenSuite());
++        Map<String, Object> persisted = reopened.tasks().get(taskId);
++        expect("review".equals(persisted.get("status")), "重开实例后状态应仍在（SQLite 持久）");
++        expect(String.valueOf(persisted.get("business_refs")).contains("PURCHASE:COURSE-DEMO"),
++                "lesson 13 合同自带业务对象应在（PURCHASE:COURSE-DEMO）");
++        expect(reopened.automation().recover().isEmpty(), "无中断任务时 recover 应为空");
++        expect(Files.notExists(runtime.resolve("flowerp.db")),
++                "API 运行目录不得出现 flowerp.db（不触客户库）");
++        return "accept→review 停住 + 重放同 id + 冲突 409 面 + 重开持久 + recover 空 + 无 flowerp.db";
++    }
++
++    // ---- 客户 eval 与冻结指纹（l08–l12 同形） ------------------------------------
++
++    /** 客户 blocking eval 子进程照跑（l08 SalesChecks.customerCase 复用）。 */
++    private static String customerCase(Path interpreter, Path target, String caseName) {
++        return workbench.evals.l08.SalesChecks.customerCase(interpreter, target, caseName);
++    }
++
++    /** 客户 eval 双树 + 采购面源件指纹复核（l07–l12 frozenChecks 同形）。 */
++    private static String frozenChecks(Path target) {
++        Map<String, Object> mismatched = new LinkedHashMap<>();
++        for (String rel : FROZEN_FILES) {
++            String targetHash = sha256(target.resolve(rel));
++            String sourceHash = sha256(repoRoot().resolve("vendors").resolve("flowERP").resolve(rel));
++            if (!targetHash.equals(sourceHash)) {
++                mismatched.put(rel, Map.of(
++                        "target", targetHash.substring(0, 12),
++                        "vendors", sourceHash.substring(0, 12)));
++            }
++        }
++        if (!mismatched.isEmpty()) {
++            throw new AssertionError("冻结检查被改动: " + PyJson.dumpsCompact(mismatched));
++        }
++        StringBuilder evidence = new StringBuilder("冻结检查指纹一致: ");
++        for (int i = 0; i < FROZEN_FILES.length; i++) {
++            if (i > 0) {
++                evidence.append(", ");
++            }
++            evidence.append(FROZEN_FILES[i]).append('=')
++                    .append(sha256(target.resolve(FROZEN_FILES[i])).substring(0, 12));
++        }
++        return evidence.toString();
++    }
++
++    // ---- 断言与工具 ------------------------------------------------------------------
++
++    private static void expect(boolean condition, String message) {
++        if (!condition) {
++            throw new AssertionError(message);
++        }
++    }
++
++    private static String tryTransition(TaskStore store, String taskId, String actor) {
++        try {
++            store.transition(taskId, "spec_ready", "并发迁移 " + actor, actor, null, Map.of());
++            return "ok";
++        } catch (IllegalArgumentException error) {
++            return error.getMessage();
++        }
++    }
++
++    private static int startQuietly(HttpApi api) {
++        try {
++            return api.start("127.0.0.1", 0);
++        } catch (IOException error) {
++            throw new IllegalStateException("测试服务监听失败", error);
++        }
++    }
++
++    private static boolean awaitQuietly(CountDownLatch latch, int seconds) {
++        try {
++            return latch.await(seconds, TimeUnit.SECONDS);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new IllegalStateException("latch 等待被中断", error);
++        }
++    }
++
++    private static <V> V getQuietly(Future<V> future) {
++        try {
++            return future.get();
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new IllegalStateException("并发任务等待被中断", error);
++        } catch (java.util.concurrent.ExecutionException error) {
++            if (error.getCause() instanceof RuntimeException runtime) {
++                throw runtime;
++            }
++            throw new IllegalStateException("并发任务失败", error);
++        }
++    }
++
++    /** l12 ApprovalProbe.resolveInterpreter 同义（包私有不可跨包，本地复刻）：绝对化 + 存在性检查。 */
++    private static Path resolveInterpreter(String candidate) {
++        Path python = Path.of(candidate).toAbsolutePath().normalize();
++        if (!Files.isRegularFile(python)) {
++            throw new Args.UsageException("python 不存在：" + python);
++        }
++        return python;
++    }
++
++    private interface ThrowingRunnable {
++        void run();
++    }
++
++    private static void expectRejected(ThrowingRunnable action, String expectedPhrase) {
++        try {
++            action.run();
++        } catch (IllegalArgumentException error) {
++            expect(String.valueOf(error.getMessage()).contains(expectedPhrase),
++                    "拒绝词面不符——期望含「" + expectedPhrase + "」，实际「" + error.getMessage() + "」");
++            return;
++        }
++        throw new AssertionError("预期被拒绝但通过了：" + expectedPhrase);
++    }
++
++    private static Path tempRuntime(String prefix) {
++        try {
++            return Files.createTempDirectory(prefix);
++        } catch (IOException error) {
++            throw new IllegalStateException("临时运行目录创建失败", error);
++        }
++    }
++
++    private static List<String> eventDetails(Map<String, Object> task) {
++        List<String> details = new ArrayList<>();
++        for (Object item : (List<?>) task.get("events")) {
++            if (item instanceof Map<?, ?> event) {
++                details.add(String.valueOf(event.get("detail")));
++            }
++        }
++        return details;
++    }
++
++    private static Map<String, Object> findEvent(Map<String, Object> task, String detail) {
++        for (Object item : (List<?>) task.get("events")) {
++            if (item instanceof Map<?, ?> event && detail.equals(event.get("detail"))) {
++                @SuppressWarnings("unchecked")
++                Map<String, Object> cast = (Map<String, Object>) event;
++                return cast;
++            }
++        }
++        throw new AssertionError("找不到事件：" + detail);
++    }
++
++    private static Object field(Map<String, Object> node, String outer, String inner) {
++        if (node.get(outer) instanceof Map<?, ?> map) {
++            return map.get(inner);
++        }
++        return null;
++    }
++
++    @SuppressWarnings("unchecked")
++    private static Map<String, Object> firstItemFor(Feedback feedback, String taskId) {
++        for (Object item : (List<?>) feedback.summary().get("items")) {
++            Map<String, Object> row = (Map<String, Object>) item;
++            if (taskId.equals(row.get("task_id"))) {
++                return row;
++            }
++        }
++        throw new AssertionError("找不到任务的自动反馈：" + taskId);
++    }
++
++    private static String goalOf(Map<String, Object> task) {
++        return task.get("spec") instanceof Map<?, ?> spec ? String.valueOf(spec.get("goal")) : "";
++    }
++
++    private static String readString(Path path) {
++        try {
++            return Files.readString(path, StandardCharsets.UTF_8);
++        } catch (IOException error) {
++            throw new IllegalStateException("文件读取失败：" + path, error);
++        }
++    }
++
++    // ---- HTTP 便捷 ------------------------------------------------------------------
++
++    private static HttpResponse<String> httpGet(int port, String path) {
++        try {
++            return CLIENT.send(HttpRequest.newBuilder()
++                            .uri(URI.create("http://127.0.0.1:" + port + path)).GET().build(),
++                    HttpResponse.BodyHandlers.ofString());
++        } catch (IOException error) {
++            throw new IllegalStateException("HTTP GET 失败：" + path, error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new IllegalStateException("HTTP GET 被中断：" + path, error);
++        }
++    }
++
++    private static HttpResponse<String> httpPost(int port, String path, Map<String, Object> body,
++            String idempotencyKey) {
++        try {
++            HttpRequest.Builder request = HttpRequest.newBuilder()
++                    .uri(URI.create("http://127.0.0.1:" + port + path))
++                    .header("Content-Type", "application/json")
++                    .POST(HttpRequest.BodyPublishers.ofString(
++                            MAPPER.writeValueAsString(body), StandardCharsets.UTF_8));
++            if (idempotencyKey != null) {
++                request.header("Idempotency-Key", idempotencyKey);
++            }
++            return CLIENT.send(request.build(), HttpResponse.BodyHandlers.ofString());
++        } catch (IOException error) {
++            throw new IllegalStateException("HTTP POST 失败：" + path, error);
++        } catch (InterruptedException error) {
++            Thread.currentThread().interrupt();
++            throw new IllegalStateException("HTTP POST 被中断：" + path, error);
++        }
++    }
++
++    private static Map<String, Object> readJson(HttpResponse<String> response, int expectedStatus) {
++        expect(response.statusCode() == expectedStatus,
++                "HTTP " + response.uri().getPath() + " 期望 " + expectedStatus
++                        + " 实际 " + response.statusCode() + "：" + response.body());
++        try {
++            @SuppressWarnings("unchecked")
++            Map<String, Object> body = MAPPER.readValue(response.body(), Map.class);
++            return body;
++        } catch (IOException error) {
++            throw new AssertionError("响应体不是 JSON：" + response.body(), error);
++        }
++    }
++
++    private static String sha256(Path file) {
++        try {
++            return sha256(Files.readAllBytes(file));
++        } catch (IOException error) {
++            throw new IllegalStateException("冻结检查文件读取失败：" + file, error);
++        }
++    }
++
++    private static String sha256(byte[] bytes) {
++        try {
++            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
++        } catch (NoSuchAlgorithmException error) {
++            throw new IllegalStateException("SHA-256 不可用", error);
++        }
++    }
++
++    /** l06–l12 Checks.repoRoot 同形：锚定本类装载位置（target/classes → 仓库根）。 */
++    private static Path repoRoot() {
++        try {
++            return Path.of(DeliveryChecks.class.getProtectionDomain()
++                    .getCodeSource().getLocation().toURI()).toAbsolutePath().getParent().getParent();
++        } catch (java.net.URISyntaxException error) {
++            throw new IllegalStateException("仓库根定位失败（class 装载位置）", error);
++        }
++    }
++}

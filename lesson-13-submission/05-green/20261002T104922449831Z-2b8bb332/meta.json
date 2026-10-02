@@ -1,0 +1,15 @@
+{
+  "phase": "green",
+  "argv": [
+    "mvn",
+    "test",
+    "-Dtest=L13DeliveryContractTest"
+  ],
+  "command": "[\"mvn\", \"test\", \"-Dtest=L13DeliveryContractTest\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-10-02T10:49:22.449831+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-13-submission/05-green/20261002T104922449831Z-2b8bb332/output.txt",
+  "sha256": "75c054e5c1b32bc2ef6a1cd067a748acf3bc97057547c3247f0b87579e54be85",
+  "provenance": "local_teaching_capture"
+}

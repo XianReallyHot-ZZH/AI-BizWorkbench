@@ -40,6 +40,11 @@ public final class Feedback {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /** 失败沉淀触发集（上游 observe_task_failure 的 {rework, failed, dead_letter}——
+     *  与 DeliveryAutomation 终态判定共享同一口径，S-5 复查收敛）。 */
+    public static final java.util.Set<String> FAILURE_STATES =
+            java.util.Set.of("rework", "failed", "dead_letter");
+
     private final Path dbPath;
 
     public Feedback(Path path) {
@@ -126,7 +131,7 @@ public final class Feedback {
      */
     public Map<String, Object> observeTaskFailure(Map<String, Object> task) {
         String status = String.valueOf(task.get("status") == null ? "" : task.get("status")).strip();
-        if (!"rework".equals(status) && !"failed".equals(status) && !"dead_letter".equals(status)) {
+        if (!FAILURE_STATES.contains(status)) {
             throw new IllegalArgumentException("只有 rework、failed 或 dead_letter 任务可以沉淀失败反馈");
         }
         String taskId = String.valueOf(task.get("id") == null ? "" : task.get("id")).strip();
@@ -136,13 +141,14 @@ public final class Feedback {
         Map<String, Object> result = task.get("result") instanceof Map<?, ?> map
                 ? cast(map) : Map.of();
         List<Object> resultsList = result.get("results") instanceof List<?> list ? castList(list) : List.of();
-        List<String> failedCases = new ArrayList<>(new java.util.TreeSet<>());
+        java.util.TreeSet<String> uniqueFailures = new java.util.TreeSet<>();
         for (Object item : resultsList) {
             if (item instanceof Map<?, ?> row && !Boolean.TRUE.equals(row.get("passed"))
                     && "blocking".equals(row.get("level"))) {
-                failedCases.add(String.valueOf(row.get("name") == null ? "unknown" : row.get("name")));
+                uniqueFailures.add(String.valueOf(row.get("name") == null ? "unknown" : row.get("name")));
             }
         }
+        List<String> failedCases = new ArrayList<>(uniqueFailures);
         String error = String.valueOf(task.get("error") == null ? "" : task.get("error")).strip();
         Map<String, Object> signaturePayload = new TreeMap<>();
         signaturePayload.put("status", status);

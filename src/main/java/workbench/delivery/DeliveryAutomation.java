@@ -194,7 +194,7 @@ public final class DeliveryAutomation {
             if (!retry) {
                 Map<String, Object> task = store.get(taskId);
                 String status = String.valueOf(task.get("status"));
-                if (List.of("rework", "failed", "dead_letter").contains(status)) {
+                if (Feedback.FAILURE_STATES.contains(status)) {
                     try {
                         Map<String, Object> observation = feedback.observeTaskFailure(task);
                         Map<String, Object> evidence = new LinkedHashMap<>();
@@ -214,7 +214,8 @@ public final class DeliveryAutomation {
             synchronized (lock) {
                 threads.remove(taskId);
                 if (retry) {
-                    pending.add(new String[] {taskId, "automation"});
+                    // 上游 pending.append((task_id, actor))——保留本轮 actor（不硬编码）
+                    pending.add(new String[] {taskId, actor});
                 }
                 if (!pending.isEmpty()) {
                     next = pending.remove(0);

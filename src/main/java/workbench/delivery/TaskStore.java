@@ -601,11 +601,6 @@ public final class TaskStore {
         return value == null ? "" : String.valueOf(value).strip();
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> cast(Object value) {
-        return (Map<String, Object>) value;
-    }
-
     private static String dumps(Object node) {
         try {
             return MAPPER.writeValueAsString(node);

@@ -367,6 +367,19 @@ public final class DeliveryChecks {
 
         expectRejected(() -> store.transition(taskId, "completed", "匿名完成", "system", null, Map.of()),
                 "完成交付必须由具名审核人明确 approve");
+        // C4 第二拒绝拍：未绿批准——review 态但 result 无绿 summary（直推链构造，
+        // 对照上游 transition 守卫「阻断级 Eval 未通过，不能批准完成」）
+        Map<String, Object> unverified = store.create("验证未绿批准被拒", "REQ-EVAL-UNGREEN",
+                List.of(), "FDE_SPEC.md", "eval", "manual", null, "verify", null, 900, null);
+        String unverifiedId = String.valueOf(unverified.get("id"));
+        store.transition(unverifiedId, "spec_ready", "直推", "eval", null, Map.of());
+        store.transition(unverifiedId, "executing", "直推", "eval", null, Map.of());
+        store.transition(unverifiedId, "evaluating", "直推", "eval", null, Map.of());
+        store.transition(unverifiedId, "review", "直推进 review（无报告）", "eval", null, Map.of());
+        expectRejected(() -> store.transition(unverifiedId, "completed", "未绿批准",
+                "boss", null,
+                Map.of("reviewer", "boss", "review_decision", "approve", "review_note", "无绿报告")),
+                "阻断级 Eval 未通过，不能批准完成");
         expectRejected(() -> store.review(taskId, "agent:coder", "approve", "代签"),
                 "Agent 员工不能代替老板终审");
         expectRejected(() -> store.review(taskId, "  ", "approve", "空白身份"),
@@ -487,7 +500,31 @@ public final class DeliveryChecks {
                         .anyMatch(detail -> detail.contains("不可重试的执行失败，转人工处理")),
                 "转人工处理事件词面应在链（不静默吞）");
         expect(String.valueOf(crashedTask.get("error")).contains("合成执行器异常"), "异常摘要应保留");
-        return "红 Eval→rework+自动反馈 + 有界重试 3 次耗尽保留 + suite 异常→dead_letter 转人工（防御分支如实标注）";
+        // 复查轮 S-3b 回归锚：重复失败名必须去重排序（上游 sorted(set(...)) 语义）
+        Map<String, Object> duplicateResultRow = new LinkedHashMap<>();
+        duplicateResultRow.put("name", "b_failure");
+        duplicateResultRow.put("level", "blocking");
+        duplicateResultRow.put("passed", false);
+        Map<String, Object> duplicateResultRow2 = new LinkedHashMap<>();
+        duplicateResultRow2.put("name", "a_failure");
+        duplicateResultRow2.put("level", "blocking");
+        duplicateResultRow2.put("passed", false);
+        Map<String, Object> duplicateSummary = new LinkedHashMap<>();
+        duplicateSummary.put("decision", "block");
+        duplicateSummary.put("blocking_failed", 2);
+        Map<String, Object> duplicateResult = new LinkedHashMap<>();
+        duplicateResult.put("summary", duplicateSummary);
+        duplicateResult.put("results", List.of(duplicateResultRow, duplicateResultRow2, duplicateResultRow));
+        Map<String, Object> duplicateTask = new LinkedHashMap<>();
+        duplicateTask.put("id", "TASK-DUPLICATE1");
+        duplicateTask.put("status", "rework");
+        duplicateTask.put("result", duplicateResult);
+        Map<String, Object> deduped = feedback.observeTaskFailure(duplicateTask);
+        expect(String.valueOf(field(deduped, "evidence", "blocking_failures"))
+                .equals("[a_failure, b_failure]"),
+                "重复失败名应去重并排序（上游 sorted set 语义），实际 "
+                        + field(deduped, "evidence", "blocking_failures"));
+        return "红 Eval→rework+自动反馈 + 有界重试 3 次耗尽保留 + suite 异常→dead_letter 转人工（防御分支如实标注）+ 重复名去重回归锚";
     }
 
     /** C7：人工反馈登记 + 具名审核 + 重复决定拒绝 + summary 统计。 */
@@ -551,9 +588,26 @@ public final class DeliveryChecks {
         expect(String.valueOf(persisted.get("business_refs")).contains("PURCHASE:COURSE-DEMO"),
                 "lesson 13 合同自带业务对象应在（PURCHASE:COURSE-DEMO）");
         expect(reopened.automation().recover().isEmpty(), "无中断任务时 recover 应为空");
+
+        // T-6 复查轮补拍：中断自动任务 → recover 安全重放（executing → rework + 事件词面
+        // 「检测到中断执行，进入安全重放」+ 重启返回该 id——上游 recover_automatic_tasks 语义）
+        Map<String, Object> interrupted = reopened.tasks().create("验证中断恢复", "REQ-EVAL-RECOVER",
+                List.of(), "FDE_SPEC.md", "eval", "automatic", null, "verify", null, 900, null);
+        String interruptedId = String.valueOf(interrupted.get("id"));
+        reopened.tasks().transition(interruptedId, "spec_ready", "直推", "eval", null, Map.of());
+        reopened.tasks().transition(interruptedId, "executing", "模拟中断前状态", "eval", null, Map.of());
+        TaskStore reopenedStore = reopened.tasks();
+        java.util.List<String> resumed = reopenedStore.recoverAutomaticTasks();
+        expect(resumed.contains(interruptedId), "中断自动任务应进入恢复集，实际 " + resumed);
+        Map<String, Object> recoveredTask = reopenedStore.get(interruptedId);
+        expect("rework".equals(recoveredTask.get("status")), "中断任务应转安全重放 rework");
+        expect(eventDetails(recoveredTask).contains("检测到中断执行，进入安全重放"),
+                "安全重放事件词面应在链");
+        expect(String.valueOf(recoveredTask.get("error")).contains("已转入安全重放"),
+                "中断转重放 error 摘要应保留");
         expect(Files.notExists(runtime.resolve("flowerp.db")),
                 "API 运行目录不得出现 flowerp.db（不触客户库）");
-        return "accept→review 停住 + 重放同 id + 冲突 409 面 + 重开持久 + recover 空 + 无 flowerp.db";
+        return "accept→review 停住 + 重放同 id + 冲突 409 面 + 重开持久 + recover 空/中断重放 + 无 flowerp.db";
     }
 
     // ---- 客户 eval 与冻结指纹（l08–l12 同形） ------------------------------------

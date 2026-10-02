@@ -60,7 +60,7 @@ write_scope 映射（合同四路径 → 本仓库）：`workbench/` → `src/ma
 | C8 | 冻结与回归 | blocking | 客户 eval 双树 + `flowerp/service.py` 指纹复核（L05–L12 机制承袭）+ 本讲 Java 源件指纹初冻与收口复核 + `mvn test` 全量绿（含 golden 六重放 + L07–L12 合同） |
 | C9 | 诚实性分层留痕 | observing | 202 不写成完成；review 不写成 completed；异步不得先跑完再返 202；合成 suite/fixture 只用于机检与断言面，不冒充真实 Eval；「API 不触客户库」以运行目录无 flowerp.db 断言钉住；上游 main 后期增量不采纳边界如实记录（D1）；教学验收人字串不冒充身份认证 |
 
-登记项构成（`DeliveryChecks` 收口，`workbench/evals/l13/`）：默认门全 blocking——`l13_task_api_accept`（C1：202 契约 + 异步证明 + capabilities）、`l13_idempotency_and_conflict`（C2）、`l13_event_traceability`（C3）、`l13_stops_at_review`（C4：含三拒绝拍）、`l13_state_machine`（C5：跳步/并发/异常分类）、`l13_rework_and_feedback_observation`（C5+C6 失败沉淀）、`l13_feedback_review_loop`（C6）、`l13_required_workbench`（C7：对照上游 check_required_workbench——accept → wait → review 停住 → 同键重放 → 冲突 409 → reopen 持久 → 无 flowerp.db）、`purchase_requires_approval`（C7 客户名原样）、`l13_frozen_checks`（C8）。HTTP 端到端合同测试（真实端口 + HttpClient，对照 test_course_task_http 三测：202/查询/冲突/持久、跨实例原子、spec 独立）落 `src/test/java/`。
+登记项构成（`DeliveryChecks` 收口，`workbench/evals/l13/`）：默认门全 blocking——`l13_task_api_accept`（C1：202 契约 + 异步证明 + capabilities）、`l13_idempotency_and_conflict`（C2）、`l13_event_traceability`（C3）、`l13_stops_at_review`（C4：含三拒绝拍）、`l13_state_machine`（C5：跳步/并发/异常分类）、`l13_rework_and_feedback_observation`（C5+C6 失败沉淀）、`l13_feedback_review_loop`（C6）、`l13_required_workbench`（C7：对照上游 check_required_workbench——accept → wait → review 停住 → 同键重放 → 冲突 409 → reopen 持久 → 无 flowerp.db）、`purchase_requires_approval`（C7 客户名原样）、`l13_frozen_checks`（C8）。HTTP 端到端（真实端口 + HttpClient，对照 test_course_task_http 三测：202/查询/冲突/持久、跨实例原子、spec 独立）在 DeliveryChecks 工作台面场景承载（L09–L12 族形——机检进 Checks、合同测试锁 Checks 公开面；〔复查轮 T-4 勘误：原文「落 src/test/java/」与本仓 Checks 承载口径不符〕）。
 
 ## 3. 实操流程 + Claude 简报
 
