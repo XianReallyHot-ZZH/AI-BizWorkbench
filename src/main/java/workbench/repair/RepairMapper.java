@@ -51,10 +51,17 @@ import java.util.Set;
  */
 public final class RepairMapper {
 
-    /** 映射输入上下文（全部由可信调用方提供；candidate 须为已存在目录的绝对路径）。 */
+    /**
+     * 映射输入上下文（全部由可信调用方提供；candidate 须为已存在目录的绝对路径）。
+     * {@code checksMainClass} = 复现/验收命令的统一入口主类（L09 调用方传
+     * {@code workbench.evals.l09.CancelChecks}——行为零变化；L10 Loop 传
+     * {@code workbench.evals.l10.ShipChecks}——草案命令指向本讲检查面，真树首跑抓获的
+     * 命令面错位修复）。
+     */
     public record Context(String sourceTask, String sourceVersion, Path candidate, String objective,
                           List<String> allowedFiles, List<String> requiredCases, int actualExit,
-                          Path python, Path sourceReport, String expectedSuite) {}
+                          Path python, Path sourceReport, String expectedSuite,
+                          String checksMainClass) {}
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
@@ -212,7 +219,7 @@ public final class RepairMapper {
     private static void embedCommands(Map<String, Object> task, Context ctx, List<String> scope) {
         List<String> base = new ArrayList<>(List.of(
                 "java", "-cp", System.getProperty("java.class.path"),
-                "workbench.evals.l09.CancelChecks", "--no-report",
+                ctx.checksMainClass(), "--no-report",
                 "--target", ctx.candidate().toString(),
                 "--python", ctx.python().toString()));
         List<String> reproduce = new ArrayList<>(base);
@@ -232,7 +239,8 @@ public final class RepairMapper {
         try {
             args = new Args(argv,
                     Set.of("--report", "--source-task", "--source-version", "--candidate",
-                            "--objective", "--python", "--output", "--observed-exit", "--suite"),
+                            "--objective", "--python", "--output", "--observed-exit", "--suite",
+                            "--checks-main-class"),
                     Set.of(), List.of(), Set.of("--allowed-file", "--case"));
             for (String required : new String[]{"--report", "--source-task", "--source-version",
                     "--candidate", "--objective", "--python", "--output", "--observed-exit"}) {
@@ -265,7 +273,8 @@ public final class RepairMapper {
                     args.requireInt("--observed-exit"),
                     Path.of(args.require("--python")).toAbsolutePath().normalize(),
                     Path.of(args.require("--report")).toAbsolutePath().normalize(),
-                    suite);
+                    suite,
+                    args.optional("--checks-main-class", "workbench.evals.l09.CancelChecks"));
             byte[] raw;
             try {
                 raw = Files.readAllBytes(ctx.sourceReport());

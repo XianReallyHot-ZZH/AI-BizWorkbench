@@ -188,7 +188,9 @@ public final class LoopRunner {
             Path reportDir = runtimeDir.resolve("check-%02d".formatted(round));
             Files.createDirectories(reportDir);
             Path reportPath = reportDir.resolve("report.json");
-            Files.writeString(reportPath, check.stdoutText(), StandardCharsets.UTF_8);
+            // 报告字节同源：落盘、解析、映射哈希用同一 strip 后文本——report_sha256 可对账
+            String reportText = check.stdoutText().strip();
+            Files.writeString(reportPath, reportText, StandardCharsets.UTF_8);
             saveJson(runtimeDir.resolve("check-%02d.process.json".formatted(round)), Map.of(
                     "command", suiteArgv, "cwd", candidate.toString(),
                     "returncode", check.returncode() == null ? null : check.returncode(),
@@ -214,7 +216,7 @@ public final class LoopRunner {
                             + check.returncode() + "）");
                 }
                 observedExit = check.returncode();
-                report = MAPPER.readTree(check.stdoutText().strip());
+                report = MAPPER.readTree(reportText);
                 ReportContract.validateReport(report, cases, observedExit, expectedSuite);
                 failures = blockingFailureNames(report);
             } catch (Exception invalid) {
@@ -264,9 +266,10 @@ public final class LoopRunner {
             // ⑦ 修复任务：L09 严格映射器（三态；用例名不是文件权限，human_review 恒 pending）
             Map<String, Object> mapped;
             try {
-                mapped = RepairMapper.map(check.stdoutText().strip().getBytes(StandardCharsets.UTF_8),
+                mapped = RepairMapper.map(reportText.getBytes(StandardCharsets.UTF_8),
                         new RepairMapper.Context(sourceTask, sourceVersion, candidate, objective,
-                                allowedFiles, cases, observedExit, python, reportPath, expectedSuite));
+                                allowedFiles, cases, observedExit, python, reportPath, expectedSuite,
+                                "workbench.evals.l10.ShipChecks"));
             } catch (Exception invalid) {
                 return finish("stopped_invalid_report", round, history, failures, tokenBudget,
                         tokensUsed, candidate, allowedFiles, lastVerifiedFiles, lastExecutionRound,

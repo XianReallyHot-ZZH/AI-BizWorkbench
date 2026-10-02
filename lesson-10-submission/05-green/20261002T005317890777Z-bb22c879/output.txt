@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l10_ship_legal",
+    "l10_ship_draft",
+    "l10_ship_cancelled",
+    "l10_ship_repeat",
+    "illegal_transition_is_blocked",
+    "l10_frozen_checks"
+  ],
+  "generated_at": "2026-10-02T00:53:20.328537Z",
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "blocking_failed": 0,
+    "observing_failed": 0,
+    "decision": "pass"
+  },
+  "results": [
+    {
+      "name": "l10_ship_legal",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 450,
+      "evidence": "合法发货：shipped、(6,2,4)、OTHER 不变、一条 ship 流水 (-4,-4)",
+      "error": null
+    },
+    {
+      "name": "l10_ship_draft",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 381,
+      "evidence": "draft 订单发货拒绝：InvalidTransition、四表不变",
+      "error": null
+    },
+    {
+      "name": "l10_ship_cancelled",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 417,
+      "evidence": "cancelled 订单发货拒绝：InvalidTransition、四表不变",
+      "error": null
+    },
+    {
+      "name": "l10_ship_repeat",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 397,
+      "evidence": "重复发货拒绝：InvalidTransition、四表不变（首单保留）",
+      "error": null
+    },
+    {
+      "name": "illegal_transition_is_blocked",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 243,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "l10_frozen_checks",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 17,
+      "evidence": "冻结检查指纹一致: eval/harness.py=e2f526b65780, eval/cases.py=c8409488131e, flowerp/service.py=6c372dcd105c, flowerp/sales.py=bc2d163c2655",
+      "error": null
+    }
+  ]
+}

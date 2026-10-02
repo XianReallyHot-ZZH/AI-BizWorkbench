@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l10_ship_legal",
+    "l10_ship_draft",
+    "l10_ship_cancelled",
+    "l10_ship_repeat",
+    "illegal_transition_is_blocked",
+    "l10_frozen_checks"
+  ],
+  "generated_at": "2026-10-01T17:11:44.778013Z",
+  "summary": {
+    "total": 6,
+    "passed": 3,
+    "blocking_failed": 3,
+    "observing_failed": 0,
+    "decision": "block"
+  },
+  "results": [
+    {
+      "name": "l10_ship_legal",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 428,
+      "evidence": "python 子进程失败 rc=1：Traceback (most recent call last):\n  File \"<string>\", line 48, in <module>\n    service.ship_order(\"TARGET\")\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L10-candidate/flowerp/service.py\", line 291, in ship_order\n    raise InvalidTransition(f\"只有 reserved 订单可发货，当前为 {order['status']}\")\nflowerp.models.InvalidTransition: 只有 reserved 订单可发货，当前为 reserved",
+      "error": {
+        "type": "ToolFailure",
+        "message": "python 子进程失败 rc=1：Traceback (most recent call last):\n  File \"<string>\", line 48, in <module>\n    service.ship_order(\"TARGET\")\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L10-candidate/flowerp/service.py\", line 291, in ship_order\n    raise InvalidTransition(f\"只有 reserved 订单可发货，当前为 {order['status']}\")\nflowerp.models.InvalidTransition: 只有 reserved 订单可发货，当前为 reserved"
+      }
+    },
+    {
+      "name": "l10_ship_draft",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 395,
+      "evidence": "draft 订单发货拒绝：InvalidTransition、四表不变",
+      "error": null
+    },
+    {
+      "name": "l10_ship_cancelled",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 436,
+      "evidence": "cancelled 订单发货拒绝：InvalidTransition、四表不变",
+      "error": null
+    },
+    {
+      "name": "l10_ship_repeat",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 350,
+      "evidence": "python 子进程失败 rc=1：Traceback (most recent call last):\n  File \"<string>\", line 30, in <module>\n    service.ship_order(\"TARGET\")\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L10-candidate/flowerp/service.py\", line 291, in ship_order\n    raise InvalidTransition(f\"只有 reserved 订单可发货，当前为 {order['status']}\")\nflowerp.models.InvalidTransition: 只有 reserved 订单可发货，当前为 reserved",
+      "error": {
+        "type": "ToolFailure",
+        "message": "python 子进程失败 rc=1：Traceback (most recent call last):\n  File \"<string>\", line 30, in <module>\n    service.ship_order(\"TARGET\")\n    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/.runtime/course/L10-candidate/flowerp/service.py\", line 291, in ship_order\n    raise InvalidTransition(f\"只有 reserved 订单可发货，当前为 {order['status']}\")\nflowerp.models.InvalidTransition: 只有 reserved 订单可发货，当前为 reserved"
+      }
+    },
+    {
+      "name": "illegal_transition_is_blocked",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 255,
+      "evidence": "{\"total\": 1, \"passed\": 1, \"blocking_failed\": 0, \"observing_failed\": 0, \"decision\": \"pass\"}",
+      "error": null
+    },
+    {
+      "name": "l10_frozen_checks",
+      "level": "blocking",
+      "passed": false,
+      "duration_ms": 15,
+      "evidence": "冻结检查被改动: {\"flowerp/service.py\": {\"target\": \"0e33a9d10d73\", \"vendors\": \"6c372dcd105c\"}}",
+      "error": {
+        "type": "AssertionError",
+        "message": "冻结检查被改动: {\"flowerp/service.py\": {\"target\": \"0e33a9d10d73\", \"vendors\": \"6c372dcd105c\"}}"
+      }
+    }
+  ]
+}
