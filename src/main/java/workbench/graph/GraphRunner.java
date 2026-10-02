@@ -134,7 +134,7 @@ public final class GraphRunner {
      * 等待点决定（主循环前）→ 主循环（检查异常 → failed 显式）→ 保存（父路径被文件
      * 占用等 IO 故障逃逸到顶层边界——不吞不伪装）。
      */
-    static Map<String, Object> runGraph(int maxRounds, boolean rejectOnce, boolean requireHumanReview,
+    private static Map<String, Object> runGraph(int maxRounds, boolean rejectOnce, boolean requireHumanReview,
             Path stateFile, String reviewDecision, String reviewer, String suiteCommand,
             RepairConfig repair) {
         DeliveryState state = stateFile != null && Files.isRegularFile(stateFile)
@@ -166,7 +166,7 @@ public final class GraphRunner {
                         state.report = suite.report();
                         if (suite.blockingFailed()) {
                             state.repairTask = buildRepairTask(state, repair, suite.reportText(),
-                                    suite.exitCode());
+                                    suite.exitCode(), stateFile);
                             state.move("rework", "阻断级 Eval 失败");
                         } else {
                             state.move("human_review", "阻断项为零，进入人工决策点");
@@ -246,7 +246,7 @@ public final class GraphRunner {
     // ---- 修复任务（RepairMapper 严格版复用，上下文按需装配） --------------------------
 
     private static Map<String, Object> buildRepairTask(DeliveryState state, RepairConfig cfg,
-            String reportText, int exitCode) throws Exception {
+            String reportText, int exitCode, Path stateFile) throws Exception {
         List<String> missing = new ArrayList<>();
         if (cfg.sourceTask().isBlank()) {
             missing.add("--source-task");
@@ -272,6 +272,7 @@ public final class GraphRunner {
                     + "本仓 L09 严格映射器按需装配）");
         }
         Path taskPath = cfg.repairTaskPath() != null ? cfg.repairTaskPath()
+                : stateFile != null ? stateFile.resolveSibling("graph-repair-task.json")
                 : Path.of(".runtime/graph-repair-task.json").toAbsolutePath().normalize();
         Files.createDirectories(taskPath.getParent());
         Path reportPath = taskPath.resolveSibling("graph-suite-report.json");
@@ -328,7 +329,7 @@ public final class GraphRunner {
         }
         DeliveryState state = new DeliveryState();
         state.state = strOr(data, "status", strOr(data, "state", "develop"));
-        state.roundNo = intOr(data, "rounds", intOr(data, "round_no", 0));
+        state.roundNo = loadRounds(data);
         if (data.get("trace") instanceof List<?> list) {
             for (Object item : list) {
                 if (item instanceof Map) {
@@ -372,19 +373,26 @@ public final class GraphRunner {
         return value == null ? null : String.valueOf(value);
     }
 
-    private static int intOr(Map<String, Object> data, String key, int fallback) {
-        Object value = data.get(key);
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        if (value instanceof String text) {
-            try {
-                return Integer.parseInt(text.strip());
-            } catch (NumberFormatException ignored) {
-                // 非整数回落缺省（上游 int() 会抛；此处状态加载容错，主循环兜到未知状态面）
+    private static int loadRounds(Map<String, Object> data) {
+        for (String key : new String[]{"rounds", "round_no"}) {
+            Object value = data.get(key);
+            if (value == null) {
+                continue;
             }
+            if (value instanceof Number number) {
+                return number.intValue();
+            }
+            if (value instanceof String text) {
+                try {
+                    return Integer.parseInt(text.strip());
+                } catch (NumberFormatException ignored) {
+                    // 落到下方逃逸（在场但不可解析——不静默回落）
+                }
+            }
+            throw new IllegalStateException("状态字段 " + key + " 无效（在场但不可解析）：" + value
+                    + "——不静默回落（上游 int() TypeError 逃逸同义面）");
         }
-        return fallback;
+        return 0;
     }
 
     private static int parseInt(String raw, String label) {

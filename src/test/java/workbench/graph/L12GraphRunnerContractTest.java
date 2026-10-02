@@ -62,6 +62,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * graphRunStaleApprovalStillApproves      C1 stale-approval：候选已变仍可批准（未绑定候选如实暴露）
  * graphRunApprovalWithoutWaitIgnored      C1 approval-without-wait：新跑带决定不直接批准
  * graphRunTerminalRerunUnchanged          C1 terminal-rerun：终态重读结果逐字不变零新查
+ * graphRunRepairTaskDefaultsToStateFileSibling 复查轮 T-1：修复任务缺省 = 状态文件同目录（spec story 24）
+ * graphRunUncheckedMoveAcceptedFromHandEditedState 复查轮 T-2：unchecked-move 缺口换 CLI 面钉住
+ *                                           （手工跳步进 human_review 被信任推进零检查——上游直调
+ *                                           move 在 Java 无私有缝，同缺口可观察承载）
+ * graphRunInvalidRoundsFieldEscapesToBoundary 复查轮 T-c1：rounds 在场无效不静默回落（rc 1）
  * </pre>
  */
 class L12GraphRunnerContractTest {
@@ -399,16 +404,13 @@ class L12GraphRunnerContractTest {
         Path script = suiteScript(tmp, "suite.sh", GREEN);
         Path state = tmp.resolve("state.json");
         Cli.run("graph-run", "--suite-command", script.toString(), "--state-file", state.toString());
-        // 上游同形：等待期间改动教学候选标记——参考支架不绑定候选身份
-        Path candidate = tmp.resolve("candidate.txt");
-        Files.writeString(candidate, "candidate X", StandardCharsets.UTF_8);
-        Files.writeString(candidate, "candidate Y: changed after test", StandardCharsets.UTF_8);
 
         Cli.Result result = Cli.run("graph-run",
                 "--suite-command", script.toString(), "--state-file", state.toString(),
                 "--review-decision", "approve", "--reviewer", "TEACHING reviewer");
 
-        // 如实暴露：批准未绑定候选、未重新检查（治理层缺口留后续讲次，不粉饰）
+        // 如实暴露（上游 stale-approval 同义）：批准未绑定候选身份、未重新检查——
+        // 等待期间候选可变而批准仍生效（治理层缺口留后续讲次，不粉饰）
         assertThat(result.exitCode()).isZero();
         assertThat(Cli.json(result).path("status").asText()).isEqualTo("completed");
         assertThat(suiteCalls(script)).isEqualTo(1);
@@ -448,6 +450,58 @@ class L12GraphRunnerContractTest {
         assertThat(rerun.exitCode()).isZero();
         assertThat(Cli.json(rerun)).isEqualTo(Cli.json(approved));
         assertThat(suiteCalls(script)).isEqualTo(1);
+    }
+
+    // ---- 复查轮新增（T-1 / T-2 / T-c1，2026-10-02） --------------------------------
+
+    @Test
+    void graphRunRepairTaskDefaultsToStateFileSibling(@TempDir Path tmp) throws IOException {
+        Path script = suiteScript(tmp, "suite.sh", RED);
+        Path state = tmp.resolve("state.json");
+        Path candidate = fakeCandidate(tmp);
+
+        Cli.Result result = Cli.run("graph-run",
+                "--suite-command", script.toString(), "--state-file", state.toString(),
+                "--source-task", "CASE-WB-L12-001", "--source-version", "r1",
+                "--allowed-file", "flowerp/service.py", "--case", "TEACHING_A",
+                "--candidate", candidate.toString(), "--python", candidate.resolve("python-placeholder").toString());
+
+        // spec story 24：修复任务缺省落**状态文件同目录** graph-repair-task.json
+        // （无状态文件时才是上游词面 .runtime/graph-repair-task.json——javadoc 在案）
+        assertThat(result.exitCode()).isEqualTo(2);
+        assertThat(tmp.resolve("graph-repair-task.json")).isRegularFile();
+    }
+
+    @Test
+    void graphRunUncheckedMoveAcceptedFromHandEditedState(@TempDir Path tmp) throws IOException {
+        Path script = suiteScript(tmp, "suite.sh", GREEN);
+        Path state = tmp.resolve("state.json");
+        Files.writeString(state, "{\"status\": \"human_review\", \"rounds\": 1}", StandardCharsets.UTF_8);
+
+        Cli.Result result = Cli.run("graph-run",
+                "--suite-command", script.toString(), "--state-file", state.toString());
+
+        // unchecked-move 缺口的 CLI 可观察面：上游直调 move 跳步在 Java 侧无私有缝——
+        // 手工跳步进 human_review 的状态被信任推进（move 不验边、加载态不校验历史），
+        // 零检查即达等待。缺口如实暴露（治理层留后续讲次）。
+        assertThat(result.exitCode()).isEqualTo(3);
+        assertThat(Cli.json(result).path("status").asText()).isEqualTo("awaiting_human_review");
+        assertThat(suiteCalls(script)).isZero();
+    }
+
+    @Test
+    void graphRunInvalidRoundsFieldEscapesToBoundary(@TempDir Path tmp) throws IOException {
+        Path script = suiteScript(tmp, "suite.sh", GREEN);
+        Path state = tmp.resolve("state.json");
+        Files.writeString(state, "{\"status\": \"develop\", \"rounds\": \"not-a-number\"}",
+                StandardCharsets.UTF_8);
+
+        Cli.Result result = Cli.run("graph-run",
+                "--suite-command", script.toString(), "--state-file", state.toString());
+
+        // 上游 int() TypeError 逃逸同义：字段在场但无效 → 不静默回落（rc 1 顶层边界）
+        assertThat(result.exitCode()).isEqualTo(1);
+        assertThat(Cli.json(result).path("error").asText()).contains("内部错误");
     }
 
     /** 轨迹折叠为 from>to 序列（断言用）。 */

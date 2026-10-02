@@ -1,0 +1,15 @@
+{
+  "phase": "green",
+  "argv": [
+    "mvn",
+    "test",
+    "-Dtest=L12GraphRunnerContractTest,L12ApprovalChecksContractTest"
+  ],
+  "command": "[\"mvn\", \"test\", \"-Dtest=L12GraphRunnerContractTest,L12ApprovalChecksContractTest\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-10-02T08:16:15.117954+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-12-submission/05-green/20261002T081615117954Z-3390e17b/output.txt",
+  "sha256": "a6194c83a3df4a9ac67bed310bd21590320496f188771b2995b3fc8f1bed116f",
+  "provenance": "local_teaching_capture"
+}

@@ -153,8 +153,8 @@ public final class ApprovalChecks {
             switch (mode) {
                 case "approved" -> {
                     JsonNode purchase = observed.path("receive_result").path("purchase");
-                    assertEquals("purchase.status", purchase.path("status").asText(), "received");
-                    assertEquals("approved_by", purchase.path("approved_by").asText(),
+                    assertFieldEquals("purchase.status", purchase.path("status").asText(), "received");
+                    assertFieldEquals("approved_by", purchase.path("approved_by").asText(),
                             "TEACHING business reviewer");
                     assertQuantities(observed.path("product"), 17, 2, 15);
                     assertSingleReceipt(observed, "receipt:target", 7);
@@ -187,8 +187,12 @@ public final class ApprovalChecks {
                         throw new AssertionError("mode=replay 重试未返回 idempotent_replay=true："
                                 + observed.path("replay_result").path("stock"));
                     }
+                    // 上游公共尾段（复查轮 T-c2 补齐）：终态三拍同收 received + 三量 + 保留面
+                    assertFieldEquals("purchase.status",
+                            observed.path("purchase").path("status").asText(), "received");
                     assertQuantities(observed.path("product"), 17, 2, 15);
                     assertSingleReceipt(observed, "receipt:target", 7);
+                    assertOthersPreserved(observed);
                     return "同键重放：五表不变、idempotent_replay=true——一次幂等入库";
                 }
                 case "different-key" -> {
@@ -199,7 +203,11 @@ public final class ApprovalChecks {
                     if (!observed.path("after_first").equals(observed.path("after"))) {
                         throw new AssertionError("mode=different-key 换键请求改变了五表状态");
                     }
+                    assertFieldEquals("purchase.status",
+                            observed.path("purchase").path("status").asText(), "received");
+                    assertQuantities(observed.path("product"), 17, 2, 15);
                     assertSingleReceipt(observed, "receipt:target", 7);
+                    assertOthersPreserved(observed);
                     return "已入库后换键必拒：InvalidTransition，五表不变";
                 }
                 case "recovery-same-key" -> {
@@ -215,11 +223,12 @@ public final class ApprovalChecks {
                                 + observed.path("product_partial").path("on_hand").asInt()
                                 + " status=" + observed.path("purchase_partial").path("status").asText());
                     }
-                    assertEquals("恢复后 purchase.status",
+                    assertFieldEquals("恢复后 purchase.status",
                             observed.path("receive_result").path("purchase").path("status").asText(),
                             "received");
                     assertQuantities(observed.path("product"), 17, 2, 15);
                     assertSingleReceipt(observed, "receipt:target", 7);
+                    assertOthersPreserved(observed);
                     return "同键恢复：故障后部分提交实录（on_hand=17、单据 approved）→ 移除触发器"
                             + "原键重试补齐 received、不重复加库存；恢复成功不证明第一次操作原子性成立";
                 }
@@ -278,7 +287,7 @@ public final class ApprovalChecks {
         }
     }
 
-    private static void assertEquals(String field, String actual, String expected) {
+    private static void assertFieldEquals(String field, String actual, String expected) {
         if (!expected.equals(actual)) {
             throw new AssertionError("expected " + field + "=" + expected + " actual=" + actual);
         }
@@ -301,7 +310,7 @@ public final class ApprovalChecks {
         if (events.size() != 1) {
             throw new AssertionError("expected 恰一条 PR-TARGET 收货事件 实际 " + events.size());
         }
-        assertEquals("events[0].event_key", events.path(0).path("event_key").asText(), eventKey);
+        assertFieldEquals("events[0].event_key", events.path(0).path("event_key").asText(), eventKey);
         if (events.path(0).path("quantity").asInt(-1) != quantity) {
             throw new AssertionError("expected quantity=" + quantity + " actual="
                     + events.path(0).path("quantity").asInt(-1));
