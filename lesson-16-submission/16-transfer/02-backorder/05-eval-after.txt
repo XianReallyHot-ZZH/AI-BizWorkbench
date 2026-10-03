@@ -1,0 +1,2 @@
+[PASS ] purchase_requires_approval             195 ms  未审批被阻断，审批后可入库
+{"total": 1, "passed": 1, "blocking_failed": 0, "observing_failed": 0, "decision": "pass"}

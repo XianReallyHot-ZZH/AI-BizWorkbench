@@ -1,0 +1,7 @@
+== 冷启动全量门（克隆 /tmp/l16-coldstart @ lesson-16 96bd601）==
+[INFO] Tests run: 281, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+rc=0
+== 克隆环境 ==
+clone: git clone --branch lesson-16（本地路径，--no-hardlinks）+ submodule update --init（CodexFDE@406f7aa / flowERP@e0088d3）
+venv: python3 -m venv .venv（3.13.5）

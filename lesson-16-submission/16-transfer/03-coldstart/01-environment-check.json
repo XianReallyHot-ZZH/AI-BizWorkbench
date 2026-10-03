@@ -1,0 +1,30 @@
+{
+  "ok" : true,
+  "scope" : "installation",
+  "product_checked" : false,
+  "checks" : [ {
+    "name" : "java",
+    "ok" : true,
+    "detail" : "JDK 21.0.10（要求 ≥21）"
+  }, {
+    "name" : "compiled_classes",
+    "ok" : true,
+    "detail" : "/private/tmp/l16-coldstart/target/classes/workbench/cli/Main.class"
+  }, {
+    "name" : "dependency_classpath",
+    "ok" : true,
+    "detail" : "/private/tmp/l16-coldstart/target/child-classpath.txt"
+  }, {
+    "name" : "golden_resources",
+    "ok" : true,
+    "detail" : "golden manifest 6/6"
+  }, {
+    "name" : "web_panel_assets",
+    "ok" : true,
+    "detail" : "index.html app.js styles.css"
+  }, {
+    "name" : "wb_wrapper",
+    "ok" : true,
+    "detail" : "/private/tmp/l16-coldstart/bin/wb"
+  } ]
+}
