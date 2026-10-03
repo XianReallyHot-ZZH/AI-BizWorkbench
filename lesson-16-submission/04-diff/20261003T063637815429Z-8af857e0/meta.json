@@ -1,0 +1,15 @@
+{
+  "phase": "diff",
+  "argv": [
+    "bash",
+    "-c",
+    "git diff 106f168..96bd601 -- src/ | head -4000"
+  ],
+  "command": "[\"bash\", \"-c\", \"git diff 106f168..96bd601 -- src/ | head -4000\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-10-03T06:36:37.815429+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-16-submission/04-diff/20261003T063637815429Z-8af857e0/output.txt",
+  "sha256": "2e9acff69ddd80ddc5f4bb098c0734b0dcae55bd3ef70b2ea3a91300fc3fb8b8",
+  "provenance": "local_teaching_capture"
+}

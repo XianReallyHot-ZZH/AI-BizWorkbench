@@ -1,0 +1,1 @@
+{"capability": "present", "reserve_rejected": true, "normal_ok": true, "date_filter_ok": true, "failed_qty": true, "failed_sku": true, "failed_dup": true, "unchanged_after_failure": true}

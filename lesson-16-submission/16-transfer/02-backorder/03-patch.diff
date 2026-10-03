@@ -1,0 +1,48 @@
+--- /dev/fd/11	2026-10-03 14:06:54
++++ .runtime/course/l16-p3-copy/flowerp/service.py	2026-10-03 14:06:45
+@@ -403,3 +403,45 @@
+                 (PurchaseStatus.RECEIVED, request_id),
+             )
+         return {"purchase": self.purchase(request_id), "stock": result}
++
++    def register_backorder(self, sku: str, quantity: int, note: str = "", reference: str = "") -> dict:
++        sku = (sku or "").strip().upper()
++        if quantity <= 0:
++            raise ValueError("登记数量必须为正")
++        with self.store.connect() as conn:
++            if not conn.execute("SELECT 1 FROM products WHERE sku=?", (sku,)).fetchone():
++                raise NotFound(f"商品不存在：{sku}")
++            conn.execute(
++                "CREATE TABLE IF NOT EXISTS backorder_requests("
++                "id TEXT PRIMARY KEY, sku TEXT NOT NULL, quantity INTEGER NOT NULL, "
++                "note TEXT NOT NULL DEFAULT '', reference TEXT NOT NULL DEFAULT '', "
++                "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
++            )
++            bid = f"BO-{uuid.uuid4().hex[:8].upper()}"
++            conn.execute(
++                "INSERT INTO backorder_requests(id,sku,quantity,note,reference) VALUES(?,?,?,?,?)",
++                (bid, sku, quantity, note.strip(), reference.strip()),
++            )
++            row = conn.execute(
++                "SELECT * FROM backorder_requests WHERE id=?", (bid,)
++            ).fetchone()
++        return dict(row)
++
++    def list_backorders(self, sku: str = "") -> list[dict]:
++        key = (sku or "").strip().upper()
++        with self.store.connect() as conn:
++            if not conn.execute(
++                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='backorder_requests'"
++            ).fetchone():
++                return []
++            if key:
++                rows = conn.execute(
++                    "SELECT * FROM backorder_requests WHERE sku=? ORDER BY created_at DESC, rowid DESC",
++                    (key,),
++                ).fetchall()
++            else:
++                rows = conn.execute(
++                    "SELECT * FROM backorder_requests ORDER BY created_at DESC, rowid DESC"
++                ).fetchall()
++        return [dict(row) for row in rows]
++

@@ -1,0 +1,23 @@
+{
+  "phase": "observation",
+  "argv": [
+    "env",
+    "JAVA_TOOL_OPTIONS=-Xmx6g",
+    "./bin/wb",
+    "workbench-status",
+    "--runtime-dir",
+    ".runtime/course/L01-workbench-java",
+    "--require-project",
+    "PERSONAL-WORKBENCH",
+    "--require-task",
+    "CASE-WB-L16-001",
+    "--require-red-green-evidence"
+  ],
+  "command": "[\"env\", \"JAVA_TOOL_OPTIONS=-Xmx6g\", \"./bin/wb\", \"workbench-status\", \"--runtime-dir\", \".runtime/course/L01-workbench-java\", \"--require-project\", \"PERSONAL-WORKBENCH\", \"--require-task\", \"CASE-WB-L16-001\", \"--require-red-green-evidence\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 0,
+  "observed_at": "2026-10-03T06:57:26.354142+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-16-submission/06-observations/20261003T065726354142Z-3f8b4761/output.txt",
+  "sha256": "897185b984dd8f9e415c2132f0bb7d052aba4de1d48fdc9718858af488649b4e",
+  "provenance": "local_teaching_capture"
+}

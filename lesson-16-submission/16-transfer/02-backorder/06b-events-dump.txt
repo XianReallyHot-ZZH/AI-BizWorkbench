@@ -1,0 +1,15 @@
+7||queued|任务已接收|l16-student
+8|queued|queued|Web 已创建受控课程任务；尚未授权 Codex 写入|l16-student
+9|queued|queued|自动流水线开始推进|l16-student
+10|queued|spec_ready|结构化 Spec 已校验|l16-student
+11|spec_ready|executing|开始受控执行|l16-student
+12|executing|executing|受控执行阶段完成|l16-student
+13|executing|evaluating|运行统一阻断级 Eval|l16-student
+14|evaluating|review|阻断级 Eval 已通过，等待具名人工审核|l16-student
+15|review|completed|老板终审：approve；P3 缺货登记现场交付验收：三态齐备，拒绝照旧，登记不建负库存|XianReallyHot-ZZH
+16|completed|completed|本次需求 Spec 已冻结|XianReallyHot-ZZH
+17|completed|completed|执行前课程 Eval 已完成|Claude
+18|completed|completed|受控执行阶段完成|Claude
+19|completed|completed|课程红绿差分判定已完成|XianReallyHot-ZZH
+20|completed|completed|本次需求 Spec 已冻结|XianReallyHot-ZZH
+21|completed|completed|受控执行阶段完成|Claude

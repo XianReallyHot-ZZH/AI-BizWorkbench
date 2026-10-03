@@ -1,0 +1,59 @@
+== P3 真实交付链（TASK-E8D2F49A8A @ .runtime/course/L16-transfer，delivery-serve :18016）==
+== ①提交（202 受理）==
+{"task_id":"TASK-E8D2F49A8A","accepted":true,"execution_mode":"verify","status_url":"/api/v1/tasks/TASK-E8D2F49A8A","view_url":"/api/v1/delivery/views/TASK-E8D2F49A8A"}
+== ②停 review（自动化跑真实客户 eval 后停在人审前）==
+{"id": "TASK-E8D2F49A8A", "status": "completed", "requirement_id": "REQ-COURSE-L16"}
+== ③记忆冷启动召回（L15 库文件副本迁移 → 带引用命中）==
+{
+  "ok": true,
+  "recall": {
+    "recall_id": "RECALL-e4798528",
+    "project_id": "PROJ-L15",
+    "task_id": "TASK-E8D2F49A8A",
+    "query": [
+      "receiving",
+      "库存",
+      "原子"
+    ],
+    "matches": [
+      {
+        "title": "采购入库须原子提交",
+        "reason": "applies:receiving",
+        "version": 1,
+        "family": "FAM-R1-RECEIVING",
+        "conflict_key": "",
+        "asset_id": "ASSET-d6e27bb0"
+      }
+    ],
+    "excluded": [],
+    "conflicts": [],
+    "budget": {
+      "limit": 12000,
+      "used": 109
+    },
+    "recalled_at": "2026-10-03T06:14:29Z"
+  }
+}
+== ④无关关键词对照（检索不到如实为空）==
+{
+  "ok": true,
+  "recall": {
+    "recall_id": "RECALL-c5cde26a",
+    "project_id": "PROJ-L15",
+    "task_id": "TASK-E8D2F49A8A",
+    "query": [
+      "财务对账"
+    ],
+    "matches": [],
+    "excluded": [],
+    "conflicts": [],
+    "budget": {
+      "limit": 12000,
+      "used": 0
+    },
+    "recalled_at": "2026-10-03T06:14:30Z"
+  }
+}
+== ⑤具名批准（reviewer=XianReallyHot-ZZH，decision=approve）==
+== ⑥终态 completed ==
+{"id": "TASK-E8D2F49A8A", "status": "completed", "reviewed_by": "XianReallyHot-ZZH", "review_decision": "approve"}
