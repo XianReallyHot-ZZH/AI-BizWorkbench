@@ -66,6 +66,7 @@ public final class HttpApi {
     private final Path runtime;
     private final TaskStore tasks;
     private final Feedback feedback;
+    private final workbench.evolution.EvolutionStore evolutions;
     private final Workflow.SuiteRunner suiteRunner;
     private final DeliveryAutomation automation;
 
@@ -73,6 +74,8 @@ public final class HttpApi {
         this.runtime = runtimeDir.toAbsolutePath().normalize();
         this.tasks = new TaskStore(this.runtime.resolve("workbench.db"));
         this.feedback = new Feedback(this.runtime.resolve("workbench.db"));
+        this.evolutions = new workbench.evolution.EvolutionStore(
+                this.runtime.resolve("workbench.db"));
         this.suiteRunner = suiteRunner;
         this.automation = new DeliveryAutomation(this.tasks, this.runtime, suiteRunner,
                 2, null, 3);
@@ -230,12 +233,12 @@ public final class HttpApi {
 
     /** 任务视图（DeliveryView 完整投影——L14 从简化占位升级，spec C4/C5）。 */
     public Map<String, Object> view(String taskId) {
-        return DeliveryView.view(tasks, feedback, taskId);
+        return DeliveryView.view(tasks, feedback, evolutions, taskId);
     }
 
     /** 列表投影（轻投影 + 汇总计数——L14 C4/C5）。 */
     public Map<String, Object> viewsList(int limit) {
-        return DeliveryView.list(tasks, feedback, limit);
+        return DeliveryView.list(tasks, feedback, evolutions, limit);
     }
 
     // ---- HTTP 路由 ------------------------------------------------------------------

@@ -1,0 +1,62 @@
+{
+  "ok": true,
+  "binding": {
+    "assets": [
+      {
+        "asset_id": "ASSET-d6e27bb0",
+        "family": "FAM-R1-RECEIVING",
+        "sha256": "07b7229cbc576b1a17adfaa3e5f371dfe240a02ece8582578e3fa966c143051c",
+        "snapshot": {
+          "applies": [
+            "receiving",
+            "purchase",
+            "atomic"
+          ],
+          "boundary": "仅收货入库路径；幂等重放分支不在改进面",
+          "conflict_key": "",
+          "content": "receive_purchase 的 APPROVED 分支三写（事件+库存+单据状态）必须单事务：中断窗口的部分提交会留下库存已动而状态未推进的不可重试态。改进=拷贝树单事务化；验证=触发器注入中断后五表不变量保持。",
+          "created_at": "2026-10-02T15:44:10Z",
+          "created_by": "Claude",
+          "excludes": [],
+          "family": "FAM-R1-RECEIVING",
+          "id": "ASSET-d6e27bb0",
+          "kind": "memory",
+          "project_id": "PROJ-L15",
+          "source": {
+            "created_at": "2026-10-02 15:41:38",
+            "evolution_id": "EVO-476AF0626E",
+            "request": "采购审批入库 R1 两段事务窗口验证（L12 运行实证：触发器中断后部分提交违反五表不变量）",
+            "requirement_id": "REQ-COURSE-L15",
+            "result": "",
+            "review": {
+              "decision": "",
+              "reviewed_at": "",
+              "reviewer": ""
+            },
+            "status": "rework",
+            "task_id": "TASK-R1SRC0001"
+          },
+          "state": "candidate",
+          "supersedes": "",
+          "title": "采购入库须原子提交",
+          "version": 1
+        },
+        "version": 1
+      }
+    ],
+    "bound_at": "2026-10-02T15:44:56Z",
+    "bound_by": "XianReallyHot-ZZH",
+    "decisions": [
+      {
+        "adopt": true,
+        "asset_id": "ASSET-d6e27bb0",
+        "reason": "R1 改进复用该经验"
+      }
+    ],
+    "id": "BIND-a97d75c2",
+    "plan_id": "PLAN-L15-R1",
+    "recall_id": "RECALL-8f74d191",
+    "task_id": "TASK-R1USE00001",
+    "binding_id": "BIND-a97d75c2"
+  }
+}

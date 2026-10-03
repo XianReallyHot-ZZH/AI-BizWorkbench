@@ -91,12 +91,29 @@ public final class DeliveryView {
         return build(tasks.get(taskId), feedbackItems(feedback), true, null);
     }
 
+    /**
+     * 单任务完整投影（L15 增量：evolution 块——上游 {@code delivery_view.py:298-311}
+     * {@code _related()} 同形，evolution 条目为账面级全量 list(500) 非任务级过滤；
+     * 上游 :281-284 断言面 {total, verified, items}，include_detail=False 时 items 空）。
+     */
+    public static Map<String, Object> view(TaskStore tasks, Feedback feedback,
+            workbench.evolution.EvolutionStore evolutions, String taskId) {
+        return build(tasks.get(taskId), feedbackItems(feedback),
+                evolutionItems(evolutions), true, null);
+    }
+
     /** 列表投影（轻投影 + 汇总计数；上游 list(limit) 同形）。 */
     public static Map<String, Object> list(TaskStore tasks, Feedback feedback, int limit) {
+        return list(tasks, feedback, null, limit);
+    }
+
+    /** 列表投影（L15 增量：第九计数 verified_evolutions——上游 :345 恢复原状，L14 D4 预埋兑现）。 */
+    public static Map<String, Object> list(TaskStore tasks, Feedback feedback,
+            workbench.evolution.EvolutionStore evolutions, int limit) {
         List<Map<String, Object>> items = feedbackItems(feedback);
         List<Map<String, Object>> views = new ArrayList<>();
         for (Map<String, Object> task : tasks.list(limit)) {
-            views.add(build(task, items, false, null));
+            views.add(build(task, items, evolutionItems(evolutions), false, null));
         }
         int active = 0;
         int review = 0;
@@ -105,6 +122,7 @@ public final class DeliveryView {
         int failed = 0;
         int unknown = 0;
         int pendingFeedback = 0;
+        int verifiedEvolutions = 0;
         for (Map<String, Object> view : views) {
             String code = statusCode(view);
             if (ACTIVE_STATUSES.contains(code)) {
@@ -126,6 +144,7 @@ public final class DeliveryView {
                 unknown++;
             }
             pendingFeedback += nestedInt(view, "feedback", "pending_review");
+            verifiedEvolutions += nestedInt(view, "evolution", "verified");
         }
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("total", views.size());
@@ -136,6 +155,8 @@ public final class DeliveryView {
         summary.put("failed", failed);
         summary.put("unknown", unknown);
         summary.put("pending_feedback", pendingFeedback);
+        // 上游第九计数（:345）：verified_evolutions 随 evolution 块 L15 增量补块恢复
+        summary.put("verified_evolutions", verifiedEvolutions);
         // 上游第九计数 verified_evolutions 属 evolution 块（D4 裁掉，L15 按断言面增量补块）
         Map<String, Object> listing = new LinkedHashMap<>();
         listing.put("schema", LIST_SCHEMA);
@@ -154,6 +175,14 @@ public final class DeliveryView {
     /** 投影本体：把存储原始行投成一条诚实的 API/Web 合同（上游 docstring 语义）。 */
     public static Map<String, Object> build(Map<String, Object> task,
             List<Map<String, Object>> feedbackItems, boolean includeDetail, OffsetDateTime now) {
+        return build(task, feedbackItems, List.of(), includeDetail, now);
+    }
+
+    /** 投影本体（L15 增量：evolution 条目入投影——上游 evolution_items 参数同形）。 */
+    public static Map<String, Object> build(Map<String, Object> task,
+            List<Map<String, Object>> feedbackItems,
+            List<Map<String, Object>> evolutionItems, boolean includeDetail,
+            OffsetDateTime now) {
         String taskId = text(task.get("id"));
         List<Map<String, Object>> feedback = new ArrayList<>();
         for (Map<String, Object> item : feedbackItems) {
@@ -210,6 +239,7 @@ public final class DeliveryView {
         view.put("eval", evalView);
         view.put("review", review);
         view.put("feedback", feedbackBlock(feedback, includeDetail));
+        view.put("evolution", evolutionBlock(evolutionItems, includeDetail));
         view.put("events", includeDetail ? eventViews(task) : List.of());
         view.put("allowed_actions", allowedActions(task));
         Map<String, Object> integrity = new LinkedHashMap<>();
@@ -383,6 +413,23 @@ public final class DeliveryView {
     }
 
     /** 反馈块：四计数（detail 时含条目）。 */
+    /** evolution 块（上游 :281-284 断言面逐字：total / verified / items）。 */
+    private static Map<String, Object> evolutionBlock(
+            List<Map<String, Object>> evolutionItems, boolean includeDetail) {
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("total", evolutionItems.size());
+        block.put("verified", evolutionItems.stream()
+                .filter(item -> "verified".equals(item.get("status"))).count());
+        block.put("items", includeDetail ? evolutionItems : List.of());
+        return block;
+    }
+
+    /** 账面级 evolution 条目（上游 _related() 同形：evolutions.list(500)，非任务级过滤）。 */
+    private static List<Map<String, Object>> evolutionItems(
+            workbench.evolution.EvolutionStore evolutions) {
+        return evolutions == null ? List.of() : evolutions.list(500);
+    }
+
     private static Map<String, Object> feedbackBlock(List<Map<String, Object>> feedback,
             boolean includeDetail) {
         int pending = 0;

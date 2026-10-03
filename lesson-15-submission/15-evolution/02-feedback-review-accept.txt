@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "feedback": {
+    "id": "FB-7A7473F6",
+    "task_id": "TASK-R1SRC0001",
+    "source": "ops",
+    "conclusion": "采购入库中断窗口留下部分提交：库存与事件已入账但单据状态未推进，重试语义不明",
+    "next_step": "由具名人员复核失败是否稳定；接受后才能建立 Evolution 候选",
+    "reviewed": 1,
+    "created_at": "2026-10-02 15:43:40",
+    "status": "accepted",
+    "reviewed_by": "XianReallyHot-ZZH",
+    "reviewed_at": "2026-10-02T15:43:41.544681Z",
+    "review_note": "L12 已运行实证，立项为 R1 改进",
+    "dedupe_key": null,
+    "evidence": null
+  }
+}

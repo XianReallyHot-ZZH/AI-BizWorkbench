@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "suite": "all",
+  "requested_cases": [
+    "l15_erp_upgrade_before_after"
+  ],
+  "generated_at": "2026-10-02T15:45:36.024795Z",
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "blocking_failed": 0,
+    "observing_failed": 0,
+    "decision": "pass"
+  },
+  "results": [
+    {
+      "name": "l15_erp_upgrade_before_after",
+      "level": "blocking",
+      "passed": true,
+      "duration_ms": 2279,
+      "evidence": "R1 受控改进：同一断言面前红后绿 + 客户 eval 前后照跑双绿 + vendors 恒空",
+      "error": null
+    }
+  ]
+}

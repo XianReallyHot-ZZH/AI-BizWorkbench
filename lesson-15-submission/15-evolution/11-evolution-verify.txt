@@ -1,0 +1,107 @@
+{
+  "ok": true,
+  "evolution": {
+    "id": "EVO-476AF0626E",
+    "feedback_id": "FB-7A7473F6",
+    "source_task_id": "TASK-R1SRC0001",
+    "candidate_task_id": "TASK-R1CAND001",
+    "business_refs": [
+      "SKU:R1-UPGRADE-01"
+    ],
+    "failure_signature": "receiving-two-phase-transaction-partial-commit",
+    "classification": "erp_rule",
+    "status": "verified",
+    "asset_changes": [
+      {
+        "path": "flowerp/service.py",
+        "reason": "receive_purchase APPROVED 分支三写合单事务（拷贝树）",
+        "type": "implementation"
+      },
+      {
+        "path": "eval/harness.py",
+        "reason": "新增 l15_receiving_interrupt_atomicity 起始红承载",
+        "type": "eval"
+      }
+    ],
+    "decision_by": "XianReallyHot-ZZH",
+    "decision_at": "2026-10-02T15:43:44Z",
+    "decision_note": "R1 属实，批准改进立项",
+    "blocking_report": "reports/TASK-R1CAND001-report.json",
+    "human_acceptance": "XianReallyHot-ZZH@2026-10-02T15:45:00Z",
+    "verified_by": "Claude",
+    "verified_at": "2026-10-02T15:44:22Z",
+    "created_at": "2026-10-02 15:43:42",
+    "updated_at": "2026-10-02 15:44:22",
+    "events": [
+      {
+        "id": 1,
+        "evolution_id": "EVO-476AF0626E",
+        "from_status": null,
+        "to_status": "proposed",
+        "detail": "已从具名接受的反馈建立进化候选",
+        "actor": "Claude",
+        "evidence": {
+          "source_task_id": "TASK-R1SRC0001",
+          "business_refs": [
+            "SKU:R1-UPGRADE-01"
+          ],
+          "feedback_id": "FB-7A7473F6"
+        },
+        "created_at": "2026-10-02 15:43:42"
+      },
+      {
+        "id": 2,
+        "evolution_id": "EVO-476AF0626E",
+        "from_status": "proposed",
+        "to_status": "approved",
+        "detail": "具名进化审核：approve；R1 属实，批准改进立项",
+        "actor": "XianReallyHot-ZZH",
+        "evidence": {
+          "note": "R1 属实，批准改进立项",
+          "decision": "approve"
+        },
+        "created_at": "2026-10-02 15:43:44"
+      },
+      {
+        "id": 3,
+        "evolution_id": "EVO-476AF0626E",
+        "from_status": "approved",
+        "to_status": "asset_changed",
+        "detail": "已登记版本化工程资产变化",
+        "actor": "Claude",
+        "evidence": {
+          "asset_changes": [
+            {
+              "path": "flowerp/service.py",
+              "reason": "receive_purchase APPROVED 分支三写合单事务（拷贝树）",
+              "type": "implementation"
+            },
+            {
+              "path": "eval/harness.py",
+              "reason": "新增 l15_receiving_interrupt_atomicity 起始红承载",
+              "type": "eval"
+            }
+          ]
+        },
+        "created_at": "2026-10-02 15:43:45"
+      },
+      {
+        "id": 4,
+        "evolution_id": "EVO-476AF0626E",
+        "from_status": "asset_changed",
+        "to_status": "verified",
+        "detail": "下一项交付任务已用阻断证据和具名验收证明资产升级有效",
+        "actor": "Claude",
+        "evidence": {
+          "candidate_task_id": "TASK-R1CAND001",
+          "blocking_failed": 0,
+          "decision": "pass",
+          "human_acceptance": "XianReallyHot-ZZH@2026-10-02T15:45:00Z",
+          "blocking_report": "reports/TASK-R1CAND001-report.json",
+          "report_sha256": "abbe959529097a99f90cdea533bd9aadfa7912fb3502715c8808217560dd2687"
+        },
+        "created_at": "2026-10-02 15:44:22"
+      }
+    ]
+  }
+}

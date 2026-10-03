@@ -5,10 +5,13 @@ import workbench.bootstrap.BootstrapCommands;
 import workbench.bootstrap.Command;
 import workbench.bootstrap.JsonOut;
 import workbench.delivery.DeliveryServe;
+import workbench.delivery.FeedbackCli;
+import workbench.evolution.EvolutionStore;
 import workbench.evals.l07.QualityGate;
 import workbench.evals.l08.CiEvidence;
 import workbench.execution.ExecutionCommands;
 import workbench.graph.GraphRunner;
+import workbench.learning.LearningCli;
 import workbench.loop.LoopRunner;
 import workbench.repair.RepairMapper;
 import workbench.spec.SpecCommands;
@@ -59,6 +62,21 @@ public final class Main {
         // 的对应面。operate 阶段首讲：执行链路封装为 202 + Task ID 的可提交、可查询
         // 资源，全绿停在 review 等具名人审）。
         REGISTRY.register("delivery-serve", DeliveryServe::execute);
+        // L15：反馈治理命令族经同一条缝注册（讲义 D5——REGISTRY +8 件 + spec 偏差
+        // feedback 一件：记忆系统七件沿 S01 CLI 合同直承〔workbench-learn-*，S01
+        // 冻结面 argparse 同名同义〕+ evolution 一件五子命令〔上游 argparse 单入口
+        // 同形〕+ feedback 一件三子命令〔上游 feedback.py main 同形，合同验收 1
+        // 「原始反馈先审核」的可观测面〕。适配器在 workbench.learning.LearningCli /
+        // workbench.evolution.EvolutionStore / workbench.delivery.FeedbackCli）。
+        REGISTRY.register("workbench-learn-create", LearningCli::create);
+        REGISTRY.register("workbench-learn-govern", LearningCli::govern);
+        REGISTRY.register("workbench-learn-recall", LearningCli::recall);
+        REGISTRY.register("workbench-learn-bind", LearningCli::bind);
+        REGISTRY.register("workbench-learn-run", LearningCli::run);
+        REGISTRY.register("workbench-learn-finish", LearningCli::finish);
+        REGISTRY.register("workbench-learn-show", LearningCli::show);
+        REGISTRY.register("evolution", EvolutionStore::execute);
+        REGISTRY.register("feedback", FeedbackCli::execute);
     }
 
     public static void main(String[] args) {

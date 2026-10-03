@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "summary": {
+    "total": 1,
+    "proposed": 0,
+    "approved": 0,
+    "asset_changed": 0,
+    "verified": 1,
+    "rejected": 0,
+    "deferred": 0,
+    "items": [
+      {
+        "id": "EVO-476AF0626E",
+        "feedback_id": "FB-7A7473F6",
+        "source_task_id": "TASK-R1SRC0001",
+        "candidate_task_id": "TASK-R1CAND001",
+        "business_refs": [
+          "SKU:R1-UPGRADE-01"
+        ],
+        "failure_signature": "receiving-two-phase-transaction-partial-commit",
+        "classification": "erp_rule",
+        "status": "verified",
+        "asset_changes": [
+          {
+            "path": "flowerp/service.py",
+            "reason": "receive_purchase APPROVED 分支三写合单事务（拷贝树）",
+            "type": "implementation"
+          },
+          {
+            "path": "eval/harness.py",
+            "reason": "新增 l15_receiving_interrupt_atomicity 起始红承载",
+            "type": "eval"
+          }
+        ],
+        "decision_by": "XianReallyHot-ZZH",
+        "decision_at": "2026-10-02T15:43:44Z",
+        "decision_note": "R1 属实，批准改进立项",
+        "blocking_report": "reports/TASK-R1CAND001-report.json",
+        "human_acceptance": "XianReallyHot-ZZH@2026-10-02T15:45:00Z",
+        "verified_by": "Claude",
+        "verified_at": "2026-10-02T15:44:22Z",
+        "created_at": "2026-10-02 15:43:42",
+        "updated_at": "2026-10-02 15:44:22"
+      }
+    ]
+  }
+}

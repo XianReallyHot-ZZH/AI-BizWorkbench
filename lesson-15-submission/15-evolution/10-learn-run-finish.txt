@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "finish": {
+    "outcome": "passed",
+    "binding_id": "BIND-a97d75c2",
+    "reviewer": "XianReallyHot-ZZH",
+    "phases": [
+      "precheck",
+      "implement",
+      "eval",
+      "review",
+      "outcome"
+    ]
+  }
+}

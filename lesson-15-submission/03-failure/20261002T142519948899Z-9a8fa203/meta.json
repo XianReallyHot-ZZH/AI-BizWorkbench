@@ -1,0 +1,15 @@
+{
+  "phase": "red",
+  "argv": [
+    "mvn",
+    "test",
+    "-Dtest=L15EvolutionContractTest,L15LearningContractTest,L15IncrementContractTest"
+  ],
+  "command": "[\"mvn\", \"test\", \"-Dtest=L15EvolutionContractTest,L15LearningContractTest,L15IncrementContractTest\"]",
+  "cwd": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench",
+  "returncode": 1,
+  "observed_at": "2026-10-02T14:25:19.948899+00:00",
+  "output_file": "/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/lesson-15-submission/03-failure/20261002T142519948899Z-9a8fa203/output.txt",
+  "sha256": "1d82a4b51fa6e80aa50a886a540c33e19c62323d0fb464cfc47ca4890e49f652",
+  "provenance": "local_teaching_capture"
+}

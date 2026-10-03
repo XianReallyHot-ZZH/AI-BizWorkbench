@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "recall": {
+    "recall_id": "RECALL-8f74d191",
+    "project_id": "PROJ-L15",
+    "task_id": "TASK-R1USE00001",
+    "query": [
+      "receiving",
+      "atomic"
+    ],
+    "matches": [
+      {
+        "title": "采购入库须原子提交",
+        "reason": "applies:receiving,atomic",
+        "version": 1,
+        "family": "FAM-R1-RECEIVING",
+        "conflict_key": "",
+        "asset_id": "ASSET-d6e27bb0"
+      }
+    ],
+    "excluded": [],
+    "conflicts": [],
+    "budget": {
+      "limit": 12000,
+      "used": 109
+    },
+    "recalled_at": "2026-10-02T15:44:14Z"
+  }
+}

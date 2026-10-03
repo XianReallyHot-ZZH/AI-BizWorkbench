@@ -1,0 +1,2 @@
+== 升级前（vendors 原样行为）==
+{"interrupted": true, "invariant_ok": false}

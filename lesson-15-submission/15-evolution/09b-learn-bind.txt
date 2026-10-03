@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "binding": {
+    "decisions": [
+      {
+        "asset_id": "ASSET-d6e27bb0",
+        "adopt": true,
+        "reason": "R1 改进复用该经验"
+      }
+    ],
+    "task_id": "TASK-R1USE00001",
+    "plan_id": "PLAN-L15-R1",
+    "recall_id": "RECALL-8f74d191",
+    "binding_id": "BIND-a97d75c2",
+    "assets": [
+      {
+        "family": "FAM-R1-RECEIVING",
+        "asset_id": "ASSET-d6e27bb0",
+        "version": 1,
+        "sha256": "07b7229cbc576b1a17adfaa3e5f371dfe240a02ece8582578e3fa966c143051c"
+      }
+    ]
+  }
+}
