@@ -6,6 +6,7 @@ import workbench.bootstrap.Command;
 import workbench.bootstrap.JsonOut;
 import workbench.delivery.DeliveryServe;
 import workbench.delivery.FeedbackCli;
+import workbench.environment.EnvironmentCheck;
 import workbench.evolution.EvolutionStore;
 import workbench.evals.l07.QualityGate;
 import workbench.evals.l08.CiEvidence;
@@ -13,6 +14,7 @@ import workbench.execution.ExecutionCommands;
 import workbench.graph.GraphRunner;
 import workbench.learning.LearningCli;
 import workbench.loop.LoopRunner;
+import workbench.release.ReleaseIndex;
 import workbench.repair.RepairMapper;
 import workbench.spec.SpecCommands;
 
@@ -77,6 +79,15 @@ public final class Main {
         REGISTRY.register("workbench-learn-show", LearningCli::show);
         REGISTRY.register("evolution", EvolutionStore::execute);
         REGISTRY.register("feedback", FeedbackCli::execute);
+        // L16：transfer 终讲两命令经同一条缝注册（讲义 D4——REGISTRY +2：
+        // workbenchIncrement「冷启动、发布证据索引与迁移答辩」的工作台命令面）。
+        // release-index = 上游 CLI course-release-index 紧凑化（argv 同形：task_id 位置
+        // 参数 + --runtime-dir + 三可选证据旗标；本仓无 course-* 命令族，更名落账）；
+        // environment-check = 上游 CLI 同名直承（只读安装检查，六面，scope:'installation'
+        // 只查不修）。适配器在 workbench.release.ReleaseIndex /
+        // workbench.environment.EnvironmentCheck。
+        REGISTRY.register("release-index", ReleaseIndex::execute);
+        REGISTRY.register("environment-check", EnvironmentCheck::execute);
     }
 
     public static void main(String[] args) {
