@@ -238,6 +238,18 @@ class L16ReleaseIndexContractTest {
                 .contains("post_eval_summary_mismatch");
     }
 
+    @Test
+    void releaseIndexTaskNotFoundFace(@TempDir Path runtime) throws Exception {
+        seed(runtime, "TASK-L16INDEX01");
+        // 复查轮 S-3：任务缺席失败路径（DoD 每规则一失败用例）。词面/rc 形态适配落账：
+        // 上游 TaskStore.get KeyError → CLI 层 rc 2；本仓走顶层 JSON 错误契约 rc 1
+        //（CLAUDE.md 结构约定「基础设施失败保持 JSON 错误契约」优先——处置表 S-3）
+        Cli.Result result = Cli.run("release-index", "TASK-MISSING-01",
+                "--runtime-dir", runtime.toString());
+        assertThat(result.exitCode()).as("任务缺席应 rc 1（JSON 错误契约）").isEqualTo(1);
+        assertThat(result.stdout() + result.stderr()).contains("任务不存在");
+    }
+
     // ---- 夹具（TaskStore 公开 API + SQL 直插终态，L12 ApprovalProbe 同形）--------------------------------------
 
     /** 建库 + 完整绿灯夹具（completed + 具名 approve + 差分通过 + 冻结 sha 吻合 + 报告与账面一致）。 */

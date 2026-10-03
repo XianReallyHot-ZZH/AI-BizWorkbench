@@ -48,7 +48,10 @@ public final class EnvironmentCheck {
             System.out.println(MAPPER.writeValueAsString(checkEnvironment()));
             return 0;
         } catch (Exception error) {
-            return 1;
+            // 顶层 JSON 错误契约同批一致（ReleaseIndex 同形——不静默吞，rc 1 带 JSON 错误体）
+            return workbench.bootstrap.JsonOut.fail(
+                    "environment-check 失败：%s: %s".formatted(
+                            error.getClass().getSimpleName(), error.getMessage()));
         }
     }
 

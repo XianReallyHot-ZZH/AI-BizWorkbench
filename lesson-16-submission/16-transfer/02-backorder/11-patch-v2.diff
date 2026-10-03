@@ -1,0 +1,63 @@
+--- /dev/fd/11	2026-10-03 14:50:49
++++ .runtime/course/l16-p3-copy/flowerp/service.py	2026-10-03 14:50:23
+@@ -403,3 +403,60 @@
+                 (PurchaseStatus.RECEIVED, request_id),
+             )
+         return {"purchase": self.purchase(request_id), "stock": result}
++
++
++    def register_backorder(self, sku: str, quantity: int, note: str = "", reference: str = "") -> dict:
++        sku = (sku or "").strip().upper()
++        if quantity <= 0:
++            raise ValueError("登记数量必须为正")
++        with self.store.connect() as conn:
++            if not conn.execute("SELECT 1 FROM products WHERE sku=?", (sku,)).fetchone():
++                raise NotFound(f"商品不存在：{sku}")
++            conn.execute(
++                "CREATE TABLE IF NOT EXISTS backorder_requests("
++                "id TEXT PRIMARY KEY, sku TEXT NOT NULL, quantity INTEGER NOT NULL, "
++                "note TEXT NOT NULL DEFAULT '', reference TEXT NOT NULL DEFAULT '', "
++                "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
++            )
++            ref_key = reference.strip()
++            if ref_key:
++                dup = conn.execute(
++                    "SELECT id FROM backorder_requests WHERE sku=? AND reference=?",
++                    (sku, ref_key),
++                ).fetchone()
++                if dup:
++                    raise ValueError(f"该订单已登记缺货：{dup['id']}")
++            bid = f"BO-{uuid.uuid4().hex[:8].upper()}"
++            conn.execute(
++                "INSERT INTO backorder_requests(id,sku,quantity,note,reference) VALUES(?,?,?,?,?)",
++                (bid, sku, quantity, note.strip(), reference.strip()),
++            )
++            row = conn.execute(
++                "SELECT * FROM backorder_requests WHERE id=?", (bid,)
++            ).fetchone()
++        return dict(row)
++
++    def list_backorders(self, sku: str = "", date_from: str = "", date_to: str = "") -> list[dict]:
++        key = (sku or "").strip().upper()
++        conditions, params = [], []
++        if key:
++            conditions.append("sku=?")
++            params.append(key)
++        if date_from.strip():
++            conditions.append("created_at>=?")
++            params.append(date_from.strip() + " 00:00:00")
++        if date_to.strip():
++            conditions.append("created_at<=?")
++            params.append(date_to.strip() + " 23:59:59")
++        where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
++        with self.store.connect() as conn:
++            if not conn.execute(
++                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='backorder_requests'"
++            ).fetchone():
++                return []
++            rows = conn.execute(
++                "SELECT * FROM backorder_requests" + where + " ORDER BY created_at DESC, rowid DESC",
++                tuple(params),
++            ).fetchall()
++        return [dict(row) for row in rows]
++

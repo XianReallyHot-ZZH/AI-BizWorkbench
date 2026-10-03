@@ -1,0 +1,80 @@
+{
+  "schema" : "workbench.release-index/v1",
+  "task_id" : "TASK-E8D2F49A8A",
+  "created_at" : "2026-10-03T06:51:28.535358Z",
+  "index_status" : "requires_human_review",
+  "request" : "P3 缺货登记：创建单因缺货被拒后登记未满足需求（不建负库存，拒绝照旧），现场抽取 REQUIREMENT:LIVE-DRAW",
+  "requirement_id" : "REQ-COURSE-L16",
+  "task_status" : "completed",
+  "execution_mode" : "verify",
+  "references" : {
+    "spec" : {
+      "path" : "../../../spec-P3-six-section.md",
+      "sha256" : "945bd90c317579f7af01c85972f5440690fd94bf6bfda61a8ae492b238b7ff07",
+      "bytes" : 1025,
+      "expected_sha256" : "7423c0cbcec9d38ab83604c5a34bc104a5f876a2fc1cce3d075a48a73e82e6af"
+    },
+    "pre_eval" : {
+      "path" : "../../../pre-eval-red.json",
+      "sha256" : "ee362dddfc30a9ddd06f964a0fb85cdd83b75b21695c70b40c49ce061ef50237",
+      "bytes" : 422
+    },
+    "post_eval" : {
+      "path" : "../../../post-eval-green.json",
+      "sha256" : "87c97dfd7fb64d280dab6900de17ee5f9c82062077c71392ea7dbc0ec78355aa",
+      "bytes" : 516
+    },
+    "pre_process" : {
+      "path" : "../../../pre-receipt.txt",
+      "sha256" : "deaba9d0ba193e62a70090a8346167bf20b8ba041c5b5be25e04d19b3411c0b2",
+      "bytes" : 181
+    },
+    "post_process" : {
+      "path" : "../../../post-receipt.txt",
+      "sha256" : "2951be5f1b1a8d3707492082a099200b69434d70d95aaff2cecdd7c2a41d59e7",
+      "bytes" : 300
+    },
+    "cold_start" : {
+      "path" : "../../../cold-start.md",
+      "sha256" : "1026813271898b2db90635ce013589b8b0c90081fa5e580da64fb6ae5ee0b0d9",
+      "bytes" : 1320
+    },
+    "product" : {
+      "path" : "../../../product.md",
+      "sha256" : "d0a2efbfd516831be173afa1518b61555ebe359e669cb0cefb5a7e3c74397961",
+      "bytes" : 711
+    },
+    "remaining_risks" : {
+      "path" : "../../../risks.md",
+      "sha256" : "9a2815ee09ac6495d685911b096deaff801fdeb3eac1dd30f13725ba2bd211bb",
+      "bytes" : 747
+    },
+    "diff_excerpt" : {
+      "path" : "diff-excerpt.txt",
+      "sha256" : "793431b6f0931a2b4dae4d550d016431c46d9440239ef4f3dfbc4584312879a6",
+      "bytes" : 2938
+    }
+  },
+  "evidence_gaps" : [ "spec_changed_after_freeze" ],
+  "pre_eval_summary" : {
+    "blocking_failed" : 1,
+    "decision" : "block"
+  },
+  "post_eval_summary" : {
+    "decision" : "pass",
+    "blocking_failed" : 0
+  },
+  "changed_files" : [ "flowerp/service.py" ],
+  "out_of_scope_files" : [ ],
+  "differential" : {
+    "accepted" : true,
+    "changed_files" : [ "flowerp/service.py" ]
+  },
+  "isolation" : null,
+  "human_review" : {
+    "reviewer" : "XianReallyHot-ZZH",
+    "decision" : "approve",
+    "note" : "P3 缺货登记现场交付验收：三态齐备，拒绝照旧，登记不建负库存"
+  },
+  "limitations" : [ "文件存在及指纹不证明内容真实或足以验收。", "改动摘要可能被执行器截短，不可作为可应用的完整 Patch。", "本命令不批准任务、不发布版本，也不证明学生结业。" ]
+}
