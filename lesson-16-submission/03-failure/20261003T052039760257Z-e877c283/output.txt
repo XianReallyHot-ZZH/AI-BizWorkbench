@@ -1,0 +1,215 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< dev.workbench:workbench-java >--------------------
+[INFO] Building workbench-java 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ workbench-java ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ workbench-java ---
+[INFO] Copying 118 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ workbench-java ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- dependency:3.6.1:build-classpath (build-child-classpath) @ workbench-java ---
+[INFO] Skipped writing classpath file '/Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/child-classpath.txt'.  No changes found.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ workbench-java ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running workbench.release.L16ReleaseIndexContractTest
+[ERROR] Tests run: 8, Failures: 8, Errors: 0, Skipped: 0, Time elapsed: 3.836 s <<< FAILURE! -- in workbench.release.L16ReleaseIndexContractTest
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexSpecChangedAfterFreezeGapFace(Path) -- Time elapsed: 1.235 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexSpecChangedAfterFreezeGapFace(L16ReleaseIndexContractTest.java:167)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexHumanAcceptanceGapFaces(Path) -- Time elapsed: 0.351 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[TASK-L16GAP0001 应 rc 0] 
+expected: 0
+ but was: 2
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexHumanAcceptanceGapFaces(L16ReleaseIndexContractTest.java:133)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexAssemblesTraceableReferencesFace(Path) -- Time elapsed: 0.246 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[release-index 应 rc 0：invalid choice: "release-index"
+] 
+expected: 0
+ but was: 2
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexAssemblesTraceableReferencesFace(L16ReleaseIndexContractTest.java:71)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexEvidenceBoundaryFaces(Path) -- Time elapsed: 0.422 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "invalid choice: "release-index"
+"
+to contain:
+  "必须是本运行目录内的证据文件" 
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexEvidenceBoundaryFaces(L16ReleaseIndexContractTest.java:185)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexSummaryMismatchGapFace(Path) -- Time elapsed: 0.456 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexSummaryMismatchGapFace(L16ReleaseIndexContractTest.java:236)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexOutOfScopeGapFace(Path) -- Time elapsed: 0.288 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexOutOfScopeGapFace(L16ReleaseIndexContractTest.java:220)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexStaysPendingHumanReviewFace(Path) -- Time elapsed: 0.243 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexStaysPendingHumanReviewFace(L16ReleaseIndexContractTest.java:106)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.release.L16ReleaseIndexContractTest.releaseIndexVerifiedAndPostEvalGapFaces(Path) -- Time elapsed: 0.288 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.release.L16ReleaseIndexContractTest.releaseIndexVerifiedAndPostEvalGapFaces(L16ReleaseIndexContractTest.java:151)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running workbench.environment.L16ColdStartContractTest
+[ERROR] Tests run: 3, Failures: 3, Errors: 0, Skipped: 0, Time elapsed: 0.639 s <<< FAILURE! -- in workbench.environment.L16ColdStartContractTest
+[ERROR] workbench.environment.L16ColdStartContractTest.environmentCheckCoversColdStartFaces -- Time elapsed: 0.217 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+
+expected: 0
+ but was: 2
+	at workbench.environment.L16ColdStartContractTest.environmentCheckCoversColdStartFaces(L16ColdStartContractTest.java:67)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.environment.L16ColdStartContractTest.environmentCheckUsageFace -- Time elapsed: 0.198 s <<< FAILURE!
+java.lang.AssertionError: 
+
+Expecting actual:
+  "invalid choice: "environment-check"
+"
+to contain:
+  "--bogus-flag" 
+	at workbench.environment.L16ColdStartContractTest.environmentCheckUsageFace(L16ColdStartContractTest.java:83)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[ERROR] workbench.environment.L16ColdStartContractTest.environmentCheckGreenReadOnlyFace -- Time elapsed: 0.220 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+[净树安装自检应 rc 0：invalid choice: "environment-check"
+] 
+expected: 0
+ but was: 2
+	at workbench.environment.L16ColdStartContractTest.environmentCheckGreenReadOnlyFace(L16ColdStartContractTest.java:47)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   L16ColdStartContractTest.environmentCheckCoversColdStartFaces:67 
+expected: 0
+ but was: 2
+[ERROR]   L16ColdStartContractTest.environmentCheckGreenReadOnlyFace:47 [净树安装自检应 rc 0：invalid choice: "environment-check"
+] 
+expected: 0
+ but was: 2
+[ERROR]   L16ColdStartContractTest.environmentCheckUsageFace:83 
+Expecting actual:
+  "invalid choice: "environment-check"
+"
+to contain:
+  "--bogus-flag" 
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexAssemblesTraceableReferencesFace:71 [release-index 应 rc 0：invalid choice: "release-index"
+] 
+expected: 0
+ but was: 2
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexEvidenceBoundaryFaces:185 
+Expecting actual:
+  "invalid choice: "release-index"
+"
+to contain:
+  "必须是本运行目录内的证据文件" 
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexHumanAcceptanceGapFaces:133 [TASK-L16GAP0001 应 rc 0] 
+expected: 0
+ but was: 2
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexOutOfScopeGapFace:220 
+expected: 0
+ but was: 2
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexSpecChangedAfterFreezeGapFace:167 
+expected: 0
+ but was: 2
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexStaysPendingHumanReviewFace:106 
+expected: 0
+ but was: 2
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexSummaryMismatchGapFace:236 
+expected: 0
+ but was: 2
+[ERROR]   L16ReleaseIndexContractTest.releaseIndexVerifiedAndPostEvalGapFaces:151 
+expected: 0
+ but was: 2
+[INFO] 
+[ERROR] Tests run: 11, Failures: 11, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.610 s
+[INFO] Finished at: 2026-10-03T13:20:52+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project workbench-java: There are test failures.
+[ERROR] 
+[ERROR] Please refer to /Users/xianreallyhotzzh/Development/Code/github/AI-BizWorkbench/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
